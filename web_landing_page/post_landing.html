@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Dynamic meta tags - replace with server-side rendering -->
+    <title>{{post.title}} - FounderVers</title>
+    <meta name="description" content="{{post.description}}">
+    
+    <!-- Open Graph for social media previews -->
+    <meta property="og:title" content="{{post.title}} - FounderVers">
+    <meta property="og:description" content="{{post.description}}">
+    <meta property="og:image" content="{{post.image_url || 'https://foundervers.com/og-default.jpg'}}">
+    <meta property="og:url" content="https://foundervers.com/posts/{{post.id}}">`
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="FounderVers">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{post.title}} - FounderVers">
+    <meta name="twitter:description" content="{{post.description}}">
+    <meta name="twitter:image" content="{{post.image_url || 'https://foundervers.com/og-default.jpg'}}">
+    <meta name="twitter:site" content="@foundervers">
+    
+    <!-- App Store Smart Banners -->
+    <meta name="apple-itunes-app" content="app-id=YOUR_IOS_APP_ID, app-argument=https://foundervers.com/posts/{{post.id}}">
+    <meta name="google-play-app" content="app-id=com.foundervers.app, app-argument=https://foundervers.com/posts/{{post.id}}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            color: white;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            margin: 0 auto 10px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .app-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .tagline {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        /* Post Preview Card */
+        .post-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin: 20px 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            flex-grow: 1;
+        }
+        
+        .author-section {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .author-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+            margin-right: 12px;
+        }
+        
+        .author-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .author-info .role {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .post-title {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+        }
+        
+        .post-description {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #444;
+            margin-bottom: 16px;
+        }
+        
+        .post-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .post-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 0 10px;
+        }
+        
+        .cta-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+        
+        .cta-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 24px;
+        }
+        
+        .cta-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 300px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .cta-button:active {
+            transform: translateY(0);
+        }
+        
+        .app-benefits {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .benefit {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .benefit-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        /* Social Proof */
+        .social-proof {
+            background: rgba(255,255,255,0.9);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .rating {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .rating-text {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+        
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 40px 0;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .post-card {
+                padding: 20px;
+                margin: 15px 0;
+            }
+            
+            .post-title {
+                font-size: 20px;
+            }
+            
+            .cta-button {
+                font-size: 16px;
+                padding: 14px 28px;
+            }
+        }
+        
+        /* Desktop fallback */
+        @media (min-width: 768px) {
+            .container {
+                max-width: 500px;
+                padding: 40px 20px;
+            }
+            
+            .desktop-message {
+                background: rgba(255,255,255,0.9);
+                border-radius: 12px;
+                padding: 20px;
+                margin: 20px 0;
+                text-align: center;
+            }
+            
+            .qr-code {
+                width: 150px;
+                height: 150px;
+                margin: 16px auto;
+                background: #f0f0f0;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #666;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">FV</div>
+            <h1 class="app-name">FounderVers</h1>
+            <p class="tagline">Where founders connect & ideas come to life</p>
+        </header>
+        
+        <!-- Loading State (hidden by default) -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p style="color: white;">Loading post...</p>
+        </div>
+        
+        <!-- Main Content -->
+        <main id="main-content">
+            <!-- Post Preview Card -->
+            <article class="post-card">
+                <div class="author-section">
+                    <div class="author-avatar" id="author-avatar">
+                        {{post.author.initials || 'FV'}}
+                    </div>
+                    <div class="author-info">
+                        <h3 id="author-name">{{post.author.name || 'Founder'}}</h3>
+                        <p class="role" id="author-role">{{post.author.role || 'Entrepreneur'}}</p>
+                    </div>
+                </div>
+                
+                <h2 class="post-title" id="post-title">
+                    {{post.title || 'Exciting startup opportunity awaits!'}}
+                </h2>
+                
+                <p class="post-description" id="post-description">
+                    {{post.description || 'Join thousands of founders sharing ideas, getting feedback, and building the future together.'}}
+                </p>
+                
+                <!-- Post Image (if available) -->
+                <img id="post-image" class="post-image" style="display: none;" alt="Post image">
+                
+                <div class="post-stats">
+                    <div class="stat-item">
+                        <span>💬</span>
+                        <span id="comments-count">{{post.comments_count || 23}}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>❤️</span>
+                        <span id="likes-count">{{post.likes_count || 127}}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>🔄</span>
+                        <span id="shares-count">{{post.shares_count || 8}}</span>
+                    </div>
+                </div>
+            </article>
+            
+            <!-- CTA Section -->
+            <div class="cta-section">
+                <h3 class="cta-title">Join the conversation</h3>
+                <p class="cta-subtitle">Get the full experience in our app</p>
+                
+                <button class="cta-button" onclick="downloadApp()" id="cta-button">
+                    📱 Open in FounderVers
+                </button>
+                
+                <div class="app-benefits">
+                    <div class="benefit">
+                        <div class="benefit-icon">🚀</div>
+                        <div>10k+ Founders</div>
+                    </div>
+                    <div class="benefit">
+                        <div class="benefit-icon">💡</div>
+                        <div>Daily Ideas</div>
+                    </div>
+                    <div class="benefit">
+                        <div class="benefit-icon">🤝</div>
+                        <div>Real Connections</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Social Proof -->
+            <div class="social-proof">
+                <div class="rating">⭐⭐⭐⭐⭐ 4.8/5</div>
+                <p class="rating-text">"Essential app for every entrepreneur" - App Store</p>
+            </div>
+            
+            <!-- Desktop Message -->
+            <div class="desktop-message" style="display: none;" id="desktop-message">
+                <h4>Scan to open on your phone</h4>
+                <div class="qr-code" id="qr-code">
+                    QR Code Here
+                </div>
+                <p>Or send yourself a text with the download link</p>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2025 FounderVers • Building the future together</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Configuration
+        const CONFIG = {
+            API_BASE: 'https://foundervers.com/api', // Replace with your API
+            IOS_APP_URL: 'https://apps.apple.com/app/foundervers/id123456789',
+            ANDROID_APP_URL: 'https://play.google.com/store/apps/details?id=com.foundervers.app',
+            FALLBACK_POST: {
+                id: 1,
+                title: 'Revolutionary AI Startup Idea',
+                description: 'Discover how AI is transforming entrepreneurship. Join thousands of founders sharing breakthrough ideas and building the next unicorn companies.',
+                author: {
+                    name: 'Alex Founder',
+                    role: 'Serial Entrepreneur',
+                    initials: 'AF'
+                },
+                stats: {
+                    comments: 45,
+                    likes: 234,
+                    shares: 18
+                }
+            }
+        };
+        
+        // Get post ID from URL
+        function getPostId() {
+            const pathParts = window.location.pathname.split('/');
+            const postIndex = pathParts.findIndex(part => part === 'posts');
+            return postIndex !== -1 && pathParts[postIndex + 1] 
+                ? pathParts[postIndex + 1] 
+                : null;
+        }
+        
+        // Device detection
+        function getDeviceType() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            if (/iphone|ipad|ipod/.test(userAgent)) return 'ios';
+            if (/android/.test(userAgent)) return 'android';
+            return 'desktop';
+        }
+        
+        // Load post data
+        async function loadPost() {
+            const postId = getPostId();
+            if (!postId) {
+                console.log('No post ID found, using fallback');
+                displayPost(CONFIG.FALLBACK_POST);
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                const response = await fetch(`${CONFIG.API_BASE}/posts/${postId}/preview`);
+                
+                if (response.ok) {
+                    const post = await response.json();
+                    displayPost(post);
+                } else {
+                    console.log('API error, using fallback');
+                    displayPost(CONFIG.FALLBACK_POST);
+                }
+            } catch (error) {
+                console.error('Failed to load post:', error);
+                displayPost(CONFIG.FALLBACK_POST);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Display post data
+        function displayPost(post) {
+            // Update meta tags
+            document.title = `${post.title} - FounderVers`;
+            updateMetaTag('description', post.description);
+            updateMetaTag('og:title', `${post.title} - FounderVers`);
+            updateMetaTag('og:description', post.description);
+            
+            // Update content
+            document.getElementById('post-title').textContent = post.title;
+            document.getElementById('post-description').textContent = post.description;
+            
+            if (post.author) {
+                document.getElementById('author-name').textContent = post.author.name;
+                document.getElementById('author-role').textContent = post.author.role || 'Entrepreneur';
+                document.getElementById('author-avatar').textContent = post.author.initials || post.author.name.charAt(0);
+            }
+            
+            if (post.image_url) {
+                const img = document.getElementById('post-image');
+                img.src = post.image_url;
+                img.style.display = 'block';
+            }
+            
+            // Update stats
+            if (post.stats || post) {
+                document.getElementById('comments-count').textContent = post.comments_count || post.stats?.comments || 23;
+                document.getElementById('likes-count').textContent = post.likes_count || post.stats?.likes || 127;
+                document.getElementById('shares-count').textContent = post.shares_count || post.stats?.shares || 8;
+            }
+        }
+        
+        // Update meta tags
+        function updateMetaTag(property, content) {
+            let tag = document.querySelector(`meta[property="${property}"]`) || 
+                     document.querySelector(`meta[name="${property}"]`);
+            if (tag) {
+                tag.setAttribute('content', content);
+            }
+        }
+        
+        // Show/hide loading
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('main-content').style.display = show ? 'none' : 'block';
+        }
+        
+        // Download app function
+        function downloadApp() {
+            const device = getDeviceType();
+            const postId = getPostId();
+            const deepLink = `https://foundervers.com/posts/${postId || '1'}`;
+            
+            // Track download attempt
+            trackEvent('app_download_clicked', { 
+                device, 
+                post_id: postId,
+                source: 'landing_page' 
+            });
+            
+            switch (device) {
+                case 'ios':
+                    // Try to open app first, fallback to App Store
+                    window.location.href = `foundervers://posts/${postId || '1'}`;
+                    setTimeout(() => {
+                        window.location.href = CONFIG.IOS_APP_URL;
+                    }, 1000);
+                    break;
+                    
+                case 'android':
+                    // Try to open app first, fallback to Play Store
+                    window.location.href = `intent://foundervers.com/posts/${postId || '1'}#Intent;scheme=https;package=com.foundervers.app;S.browser_fallback_url=${CONFIG.ANDROID_APP_URL};end`;
+                    break;
+                    
+                default:
+                    // Desktop - show QR code or send to mobile
+                    showDesktopOptions();
+            }
+        }
+        
+        // Show desktop options
+        function showDesktopOptions() {
+            const desktopMessage = document.getElementById('desktop-message');
+            desktopMessage.style.display = 'block';
+            
+            // Generate QR code for the current URL
+            generateQRCode(window.location.href);
+            
+            // Update CTA button for desktop
+            const ctaButton = document.getElementById('cta-button');
+            ctaButton.textContent = '📧 Send to my phone';
+            ctaButton.onclick = sendToPhone;
+        }
+        
+        // Generate QR code (simplified)
+        function generateQRCode(url) {
+            const qrDiv = document.getElementById('qr-code');
+            // You can integrate with a QR code service like QR Server
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
+            qrDiv.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;">`;
+        }
+        
+        // Send to phone function (desktop)
+        function sendToPhone() {
+            const phone = prompt('Enter your phone number:');
+            if (phone) {
+                // You can integrate with SMS service
+                alert('Download link will be sent to your phone!');
+                trackEvent('sms_link_requested', { phone_provided: true });
+            }
+        }
+        
+        // Analytics tracking
+        function trackEvent(eventName, properties) {
+            console.log('Track:', eventName, properties);
+            
+            // Integrate with your analytics service
+            // Examples: Google Analytics, Mixpanel, Segment
+            /*
+            gtag('event', eventName, properties);
+            mixpanel.track(eventName, properties);
+            analytics.track(eventName, properties);
+            */
+        }
+        
+        // Auto-redirect on mobile (with delay)
+        function autoRedirect() {
+            const device = getDeviceType();
+            if (device !== 'desktop') {
+                setTimeout(() => {
+                    const userInteracted = document.querySelector('.cta-button:hover');
+                    if (!userInteracted) {
+                        console.log('Auto-redirecting to app store...');
+                        downloadApp();
+                    }
+                }, 5000); // 5 second delay
+            }
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPost();
+            
+            // Show desktop message on large screens
+            if (window.innerWidth > 768) {
+                setTimeout(() => {
+                    document.getElementById('desktop-message').style.display = 'block';
+                    generateQRCode(window.location.href);
+                }, 2000);
+            }
+            
+            // Set up auto-redirect (optional)
+            // autoRedirect();
+            
+            // Track page view
+            trackEvent('landing_page_viewed', {
+                post_id: getPostId(),
+                device: getDeviceType(),
+                referrer: document.referrer
+            });
+        });
+        
+        // Handle visibility change (user comes back from app store)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                trackEvent('returned_to_page', {
+                    post_id: getPostId()
+                });
+            }
+        });
+    </script>
+</body>
+</html>

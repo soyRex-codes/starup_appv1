@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "lint": {
+    "files": {
+      "include": ["**/*.ts"]
+    }
+  },
+  "fmt": {
+    "files": {
+      "include": ["**/*.ts"]
+    }
+  },
+  "imports": {
+    "@std/http": "jsr:@std/http@1.0.20",
+    "@std/path": "jsr:@std/path@1.0.20",
+    "@std/fs": "jsr:@std/fs@1.0.20",
+    "@std/streams": "jsr:@std/streams@1.0.20"
+  }
+}
