@@ -217,10 +217,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
               if (val == 'share') {
                 final messenger = ScaffoldMessenger.of(context);
                 try {
+                  // Get the position of the button for iOS share sheet positioning
+                  final RenderBox? box = context.findRenderObject() as RenderBox?;
+                  final Rect? sharePositionOrigin = box != null
+                      ? box.localToGlobal(Offset.zero) & box.size
+                      : null;
+                  
                   await ShareService.sharePost(
                     postId: _post.id,
                     title: _post.title,
                     description: _post.description,
+                    sharePositionOrigin: sharePositionOrigin,
                   );
                   if (mounted) {
                     messenger.showSnackBar(

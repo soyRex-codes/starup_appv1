@@ -1,0 +1,544 @@
+import type {} from '../_shared/deno-runtime.d.ts';
+
+export {};
+
+// CORS Configuration
+const APP_CONFIRMATION_ALLOWED_ORIGINS = [
+  'https://foundervers.com',
+  'https://app.foundervers.com',
+  'https://www.foundervers.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:8080',
+];
+
+const APP_CONFIRMATION_DYNAMIC_ORIGIN_PATTERNS = [
+  /^https:\/\/[a-zA-Z0-9-]+\.foundervers\.com$/,
+  /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/,
+  /^https:\/\/[a-zA-Z0-9-]+\.netlify\.app$/,
+];
+
+function validateOriginForConfirmation(request: Request): string | null {
+  const origin = request.headers.get('origin');
+  if (!origin) return null;
+  if (APP_CONFIRMATION_ALLOWED_ORIGINS.includes(origin)) return origin;
+  for (const pattern of APP_CONFIRMATION_DYNAMIC_ORIGIN_PATTERNS) {
+    if (pattern.test(origin)) return origin;
+  }
+  return null;
+}
+
+function createConfirmationCorsHeaders(validatedOrigin: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
+    'Content-Type': 'application/json',
+  };
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin;
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  }
+  return headers;
+}
+
+function handleCorsPreflightRequest(request: Request): Response | null {
+  if (request.method !== 'OPTIONS') return null;
+  const validatedOrigin = validateOriginForConfirmation(request);
+  if (!validatedOrigin && request.headers.get('origin')) {
+    return new Response(null, {
+      status: 403,
+      statusText: 'Forbidden',
+      headers: { 'Vary': 'Origin' },
+    });
+  }
+  return new Response(null, {
+    status: 204,
+    headers: createConfirmationCorsHeaders(validatedOrigin),
+  });
+}
+
+interface ConfirmationRequest {
+  applicant_name: string
+  applicant_email: string
+  service_type: string
+  service_type_display: string
+  application_id: string
+  business_name?: string
+}
+
+interface EmailResponse {
+  success: boolean
+  message: string
+  application_id: string
+  email_sent: boolean
+  email_id?: string
+}
+
+// HTML escaping helper
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+    .replace(/`/g, "&#x60;");
+}
+
+console.log("send-application-confirmation function loaded")
+
+Deno.serve(async (req: Request) => {
+  // Handle CORS preflight
+  const preflightResponse = handleCorsPreflightRequest(req);
+  if (preflightResponse) {
+    return preflightResponse;
+  }
+
+  // Validate origin and create CORS headers
+  const validatedOrigin = validateOriginForConfirmation(req);
+  const corsHeaders = createConfirmationCorsHeaders(validatedOrigin);
+
+  // Only reject if origin is provided but not validated
+  // Database calls won't have origin header, so we allow them
+  if (req.headers.get('origin') && !validatedOrigin) {
+    return new Response('Forbidden - Origin not allowed', {
+      status: 403,
+      headers: corsHeaders,
+    });
+  }
+
+  try {
+    const requestData: ConfirmationRequest = await req.json()
+    
+    const { 
+      applicant_name, 
+      applicant_email,
+      service_type,
+      service_type_display,
+      application_id,
+      business_name
+    } = requestData
+
+    // Validate required fields
+    if (!applicant_name || !applicant_email || !application_id) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Missing required fields: applicant_name, applicant_email, or application_id' 
+        }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
+    console.log('📧 Sending confirmation email for application:', application_id)
+    console.log('📬 To:', applicant_email)
+    console.log('👤 Applicant:', applicant_name)
+    console.log('📋 Service:', service_type_display)
+
+    // Create beautiful HTML email for applicant
+    const htmlBody = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Application Received - FounderVers</title>
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6; 
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+          }
+          .email-wrapper {
+            width: 100%;
+            background-color: #f5f5f5;
+            padding: 40px 0;
+          }
+          .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          }
+          .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+          }
+          .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 600;
+          }
+          .header p {
+            margin: 0;
+            font-size: 16px;
+            opacity: 0.9;
+          }
+          .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+          }
+          .content { 
+            padding: 40px 30px;
+          }
+          .greeting {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+          }
+          .message-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+          }
+          .message-box p {
+            margin: 0 0 10px 0;
+          }
+          .message-box p:last-child {
+            margin-bottom: 0;
+          }
+          .details-box {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+          }
+          .detail-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f3f5;
+          }
+          .detail-row:last-child {
+            border-bottom: none;
+          }
+          .detail-label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 140px;
+          }
+          .detail-value {
+            color: #212529;
+            flex: 1;
+          }
+          .timeline {
+            margin: 30px 0;
+          }
+          .timeline-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+          }
+          .timeline-icon {
+            background: #667eea;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+          }
+          .timeline-content h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+            font-size: 16px;
+          }
+          .timeline-content p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+          }
+          .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+          }
+          .footer { 
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+          }
+          .footer p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #6c757d;
+          }
+          .footer a {
+            color: #667eea;
+            text-decoration: none;
+          }
+          .social-links {
+            margin: 20px 0 10px 0;
+          }
+          .social-links a {
+            display: inline-block;
+            margin: 0 8px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="email-wrapper">
+          <div class="container">
+            <div class="header">
+              <div class="icon">✅</div>
+              <h1>Application Received!</h1>
+              <p>We've got your ${escapeHtml(service_type_display)} application</p>
+            </div>
+            
+            <div class="content">
+              <div class="greeting">
+                Hi ${escapeHtml(applicant_name)},
+              </div>
+              
+              <p>Thank you for choosing FounderVers! We're excited to help you with your business needs.</p>
+              
+              <div class="message-box">
+                <p><strong>📬 Your application has been successfully received</strong></p>
+                <p>Our team will review your ${escapeHtml(service_type_display)} request and get back to you as soon as possible.</p>
+              </div>
+              
+              <div class="details-box">
+                <h3 style="margin-top: 0; color: #333;">📋 Application Details</h3>
+                <div class="detail-row">
+                  <span class="detail-label">Application ID:</span>
+                  <span class="detail-value"><code>${escapeHtml(application_id)}</code></span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Service Type:</span>
+                  <span class="detail-value">${escapeHtml(service_type_display)}</span>
+                </div>
+                ${business_name ? `
+                <div class="detail-row">
+                  <span class="detail-label">Business Name:</span>
+                  <span class="detail-value">${escapeHtml(business_name)}</span>
+                </div>
+                ` : ''}
+                <div class="detail-row">
+                  <span class="detail-label">Submitted:</span>
+                  <span class="detail-value">${new Date().toLocaleString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Status:</span>
+                  <span class="detail-value" style="color: #f59e0b; font-weight: 600;">⏳ Pending Review</span>
+                </div>
+              </div>
+              
+              <div class="timeline">
+                <h3 style="color: #333;">⏱️ What Happens Next?</h3>
+                
+                <div class="timeline-item">
+                  <div class="timeline-icon">1</div>
+                  <div class="timeline-content">
+                    <h4>Application Review</h4>
+                    <p>Our team will review your application within 24-48 hours.</p>
+                  </div>
+                </div>
+                
+                <div class="timeline-item">
+                  <div class="timeline-icon">2</div>
+                  <div class="timeline-content">
+                    <h4>Provider Assignment</h4>
+                    <p>We'll match you with the best service provider for your needs.</p>
+                  </div>
+                </div>
+                
+                <div class="timeline-item">
+                  <div class="timeline-icon">3</div>
+                  <div class="timeline-content">
+                    <h4>Direct Contact</h4>
+                    <p>You'll receive a follow-up email or call to discuss next steps.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <p style="color: #666; margin-bottom: 15px;">Need to check your application status?</p>
+                <a href="https://foundervers.com/profile/applications" class="cta-button">
+                  View My Applications
+                </a>
+              </div>
+              
+              <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin: 25px 0;">
+                <p style="margin: 0; color: #856404;"><strong>⚠️ Important:</strong> If you don't hear from us within 48 hours, please check your spam folder or contact us at <a href="mailto:support@foundervers.com" style="color: #856404;">support@foundervers.com</a></p>
+              </div>
+              
+              <p style="color: #666; font-size: 14px; margin-top: 30px;">
+                If you have any questions or need immediate assistance, feel free to reply to this email or reach out to our support team.
+              </p>
+            </div>
+            
+            <div class="footer">
+              <p><strong>FounderVers Business Services</strong></p>
+              <p>Empowering Entrepreneurs, One Service at a Time</p>
+              
+              <div class="social-links">
+                <a href="https://foundervers.com">Website</a> |
+                <a href="https://foundervers.com/help">Help Center</a> |
+                <a href="mailto:support@foundervers.com">Contact Support</a>
+              </div>
+              
+              <p style="font-size: 12px; color: #999; margin-top: 20px;">
+                This is an automated confirmation email. Please do not reply directly to this message.
+                <br>© ${new Date().getFullYear()} FounderVers. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    // Plain text fallback
+    const textBody = `
+Hi ${applicant_name},
+
+Thank you for submitting your ${service_type_display} application to FounderVers!
+
+APPLICATION DETAILS:
+- Application ID: ${application_id}
+- Service Type: ${service_type_display}
+${business_name ? `- Business Name: ${business_name}\n` : ''}- Status: Pending Review
+- Submitted: ${new Date().toLocaleString()}
+
+WHAT HAPPENS NEXT?
+1. Application Review (24-48 hours)
+2. Provider Assignment
+3. Direct Contact
+
+You can track your application status at: https://foundervers.com/profile/applications
+
+If you have any questions, contact us at support@foundervers.com
+
+Best regards,
+The FounderVers Team
+
+---
+This is an automated confirmation email from FounderVers.
+© ${new Date().getFullYear()} FounderVers. All rights reserved.
+    `.trim()
+
+    // Send email via SendGrid
+    const sendgridApiKey = Deno.env.get('SENDGRID_API_KEY')
+    
+    if (!sendgridApiKey) {
+      console.warn('⚠️ No SENDGRID_API_KEY found. Email will not be sent.')
+      console.log('🔧 To enable emails: Add SENDGRID_API_KEY to Supabase Environment Variables')
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Application received but confirmation email not sent (no API key)',
+          application_id: application_id,
+          email_sent: false,
+          note: 'Configure SENDGRID_API_KEY to enable email notifications'
+        }),
+        { status: 200, headers: corsHeaders }
+      )
+    }
+
+    console.log('📧 Sending confirmation via SendGrid...')
+    const sendgridResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sendgridApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        personalizations: [{
+          to: [{ email: applicant_email, name: applicant_name }],
+          subject: `✅ Application Received - ${service_type_display} | FounderVers`
+        }],
+        from: {
+          email: 'foundervers@gmail.com',
+          name: 'FounderVers'
+        },
+        content: [
+          {
+            type: 'text/html',
+            value: htmlBody
+          },
+          {
+            type: 'text/plain',
+            value: textBody
+          }
+        ],
+        custom_args: {
+          application_id: application_id,
+          service_type: service_type
+        }
+      }),
+    })
+
+    if (sendgridResponse.status === 202) {
+      console.log('✅ Confirmation email sent successfully via SendGrid!')
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Confirmation email sent successfully',
+          application_id: application_id,
+          email_sent: true
+        }),
+        { status: 200, headers: corsHeaders }
+      )
+    } else {
+      const errorText = await sendgridResponse.text()
+      console.error('❌ SendGrid error:', errorText)
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Failed to send confirmation email',
+          error: errorText,
+          application_id: application_id,
+          email_sent: false
+        }),
+        { status: 500, headers: corsHeaders }
+      )
+    }
+
+  } catch (error) {
+    console.error('❌ Function error:', error)
+    
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        message: 'Error processing confirmation email',
+        error: String(error)
+      }), 
+      { status: 500, headers: corsHeaders }
+    )
+  }
+})

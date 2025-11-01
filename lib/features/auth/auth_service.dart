@@ -18,9 +18,38 @@ class AuthService {
         await _client.auth.signInWithPassword(email: email, password: password);
 
     if (response.user != null) {
+      // Check if user is suspended before allowing login
+      await _checkUserSuspension(response.user!.id);
       await _upsertUserProfile();
     }
     return response;
+  }
+
+  /// Check if user is suspended and sign them out if they are
+  Future<void> _checkUserSuspension(String userId) async {
+    try {
+      final userProfile = await _client
+          .from('users')
+          .select('is_suspended, suspension_reason')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (userProfile != null && userProfile['is_suspended'] == true) {
+        // Sign out the suspended user immediately
+        await _client.auth.signOut();
+
+        final reason = userProfile['suspension_reason'] as String? ??
+            'Your account has been suspended. Please contact support.';
+
+        throw AuthException(
+          'Account suspended: $reason',
+        );
+      }
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      // If we can't check suspension status, allow login but log the error
+      if (kDebugMode) debugPrint('⚠️ Could not check suspension status: $e');
+    }
   }
 
   Future<AuthResponse> registerWithEmailPassword({
@@ -46,7 +75,8 @@ class AuthService {
       if (response.user != null) {
         if (kDebugMode) {
           debugPrint('✅ User created: ${response.user!.id}');
-          debugPrint('📧 Email confirmed: ${response.user!.emailConfirmedAt != null}');
+          debugPrint(
+              '📧 Email confirmed: ${response.user!.emailConfirmedAt != null}');
           debugPrint('🔐 Session exists: ${response.session != null}');
         }
 
@@ -54,7 +84,8 @@ class AuthService {
         // User must verify email with OTP before they can use the account
         if (response.session != null) {
           await _client.auth.signOut();
-          if (kDebugMode) debugPrint('🚪 User signed out - must verify email first');
+          if (kDebugMode)
+            debugPrint('🚪 User signed out - must verify email first');
         }
 
         // Create basic user profile immediately (before email confirmation)
@@ -66,9 +97,11 @@ class AuthService {
             displayName: displayName,
             isEmailVerified: false,
           );
-          if (kDebugMode) debugPrint('✅ Basic user profile created (unverified)');
+          if (kDebugMode)
+            debugPrint('✅ Basic user profile created (unverified)');
         } catch (profileError) {
-          if (kDebugMode) debugPrint('⚠️ Failed to create user profile: $profileError');
+          if (kDebugMode)
+            debugPrint('⚠️ Failed to create user profile: $profileError');
           // Don't fail the whole registration for this
         }
       }
@@ -80,7 +113,7 @@ class AuthService {
         debugPrint('Error type: ${e.runtimeType}');
         debugPrint('Full error: $e');
         debugPrint('Error details: ${e.toString()}');
-        
+
         // Check if it's a specific Supabase error
         if (e.toString().contains('AuthApiException')) {
           debugPrint('🚨 This is a Supabase AuthApiException');
@@ -159,8 +192,9 @@ class AuthService {
       await _client.from('users').update({
         'email_verified': true,
       }).eq('id', user.id);
-      
-      if (kDebugMode) debugPrint('✅ Email marked as verified for user: ${user.id}');
+
+      if (kDebugMode)
+        debugPrint('✅ Email marked as verified for user: ${user.id}');
     } on PostgrestException catch (e) {
       if (kDebugMode) debugPrint('Mark email verified error: $e');
     }

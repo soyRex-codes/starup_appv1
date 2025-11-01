@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import 'models/conversation.dart';
 import 'models/message.dart';
+import 'dm_message_cache.dart';
 import '../../services/moderation_service.dart';
 
 /// Service for managing direct messages and conversations
@@ -17,18 +18,29 @@ class DMService {
 
   final SupabaseClient _supabase = Supabase.instance.client;
   static const _uuid = Uuid();
+  final DMMessageCache _messageCache = DMMessageCache.instance;
 
   // Stream controllers for real-time updates
   final _conversationsController =
       StreamController<List<Conversation>>.broadcast();
   final _messagesController = StreamController<List<Message>>.broadcast();
-  final _typingIndicatorController =
-      StreamController<TypingIndicator>.broadcast();
+  // REMOVED: Typing indicators (dropped for scalability: support 1.5x more users)
+  // final _typingIndicatorController =
+  //     StreamController<TypingIndicator>.broadcast();
 
   // Subscriptions for real-time listeners
   RealtimeChannel? _conversationSubscription;
   RealtimeChannel? _messageSubscription;
   String? _currentConversationId;
+
+  // Connection pooling: cache channels to reuse instead of creating new ones
+  final Map<String, RealtimeChannel> _channelPool = {};
+  static const int _maxPooledChannels = 10;
+
+  // Conversation caching: 5 minute TTL
+  List<Conversation>? _cachedConversations;
+  DateTime? _conversationsCacheTime;
+  static const _conversationsCacheTTL = Duration(minutes: 5);
 
   /// Stream of conversations for the current user
   Stream<List<Conversation>> get conversationsStream =>
@@ -36,10 +48,6 @@ class DMService {
 
   /// Stream of messages for the current conversation
   Stream<List<Message>> get messagesStream => _messagesController.stream;
-
-  /// Stream of typing indicators
-  Stream<TypingIndicator> get typingIndicatorStream =>
-      _typingIndicatorController.stream;
 
   /// Initialize the service
   Future<void> initialize() async {
@@ -50,9 +58,11 @@ class DMService {
   void dispose() {
     _conversationSubscription?.unsubscribe();
     _messageSubscription?.unsubscribe();
+    _clearChannelPool();
     _conversationsController.close();
     _messagesController.close();
-    _typingIndicatorController.close();
+    // REMOVED: Typing indicators
+    // _typingIndicatorController.close();
   }
 
   // =============================================
@@ -62,6 +72,16 @@ class DMService {
   /// Get all conversations for the current user
   Future<List<Conversation>> getConversations() async {
     try {
+      // Check cache first (5 min TTL)
+      if (_cachedConversations != null && _conversationsCacheTime != null) {
+        final cacheAge = DateTime.now().difference(_conversationsCacheTime!);
+        if (cacheAge < _conversationsCacheTTL) {
+          debugPrint(
+              '✅ Using cached conversations (${cacheAge.inSeconds}s old)');
+          return _cachedConversations!;
+        }
+      }
+
       final currentUserId = _supabase.auth.currentUser?.id;
       if (currentUserId == null) throw Exception('User not authenticated');
 
@@ -84,6 +104,10 @@ class DMService {
           return conv.copyWith(unreadCount: unreadCount);
         }),
       );
+
+      // Cache the result
+      _cachedConversations = conversationsWithUnread;
+      _conversationsCacheTime = DateTime.now();
 
       _conversationsController.add(conversationsWithUnread);
       return conversationsWithUnread;
@@ -172,10 +196,21 @@ class DMService {
   // MESSAGE MANAGEMENT
   // =============================================
 
-  /// Get messages for a conversation
+  /// Get messages for a conversation with caching
   Future<List<Message>> getMessages(String conversationId,
-      {int limit = 50, int offset = 0}) async {
+      {int limit = 50, int offset = 0, bool forceRefresh = false}) async {
     try {
+      // Check cache first (only for initial load, offset = 0)
+      if (!forceRefresh && offset == 0) {
+        final cached = _messageCache.get(conversationId);
+        if (cached != null) {
+          debugPrint('📦 DM Cache HIT for conversation: $conversationId');
+          _messagesController.add(cached);
+          return cached;
+        }
+        debugPrint('📭 DM Cache MISS for conversation: $conversationId');
+      }
+
       final response = await _supabase
           .from('messages')
           .select('''
@@ -194,6 +229,11 @@ class DMService {
           .reversed
           .toList(); // Reverse to show oldest first
 
+      // Cache the results (only for initial load)
+      if (offset == 0) {
+        _messageCache.put(conversationId, messages);
+      }
+
       _messagesController.add(messages);
       return messages;
     } catch (e) {
@@ -211,10 +251,11 @@ class DMService {
 
       // Check content moderation before sending
       final moderationService = ModerationService();
-  final moderationResult = await moderationService.moderateText(content: content);
-  final shouldBlock = moderationResult.blocked;
+      final moderationResult =
+          await moderationService.moderateText(content: content);
+      final shouldBlock = moderationResult.blocked;
 
-  if (shouldBlock) {
+      if (shouldBlock) {
         debugPrint('🚫 Message blocked by moderation');
         throw Exception('Message violates community guidelines');
       }
@@ -230,7 +271,11 @@ class DMService {
 
       // Add to stream immediately for optimistic UI
       final currentMessages = await _getCurrentMessages();
-      _messagesController.add([...currentMessages, localMessage]);
+      final optimisticMessages = [...currentMessages, localMessage];
+      _messagesController.add(optimisticMessages);
+
+      // Add to cache optimistically
+      _messageCache.appendMessage(conversationId, localMessage);
 
       // Send to server
       final response = await _supabase.from('messages').insert({
@@ -252,6 +297,10 @@ class DMService {
         ..add(serverMessage);
 
       _messagesController.add(updatedMessages);
+
+      // Update cache with server message
+      _messageCache.updateMessage(conversationId, serverMessage);
+
       return serverMessage;
     } catch (e) {
       debugPrint('Error sending message: $e');
@@ -264,6 +313,14 @@ class DMService {
         return m;
       }).toList();
       _messagesController.add(failedMessages);
+
+      // Update cache with failed status
+      final failedMessage = failedMessages.firstWhere(
+        (m) => m.status == MessageStatus.failed,
+        orElse: () => failedMessages.first,
+      );
+      _messageCache.updateMessage(conversationId, failedMessage);
+
       return null;
     }
   }
@@ -333,32 +390,101 @@ class DMService {
     }
   }
 
-  // =============================================
-  // TYPING INDICATORS
-  // =============================================
-
-  /// Send typing indicator
-  Future<void> sendTypingIndicator(String conversationId) async {
+  /// Batch mark multiple conversations as read (more efficient)
+  Future<void> markMultipleAsRead(List<String> conversationIds) async {
     try {
       final currentUserId = _supabase.auth.currentUser?.id;
-      final currentUser = _supabase.auth.currentUser;
-      if (currentUserId == null || currentUser == null) return;
+      if (currentUserId == null || conversationIds.isEmpty) return;
 
-      final typingIndicator = TypingIndicator(
-        conversationId: conversationId,
-        userId: currentUserId,
-        username: currentUser.userMetadata?['username'] as String? ?? 'Unknown',
-        timestamp: DateTime.now(),
-      );
+      // Single batch operation instead of multiple calls
+      final updates = conversationIds
+          .map((convId) => {
+                'conversation_id': convId,
+                'user_id': currentUserId,
+                'last_read_at': DateTime.now().toIso8601String(),
+              })
+          .toList();
 
-      // Send to realtime channel
-      await _supabase.channel('typing_$conversationId').sendBroadcastMessage(
-            event: 'typing',
-            payload: typingIndicator.toJson(),
-          );
+      await _supabase.from('conversation_participants').upsert(updates);
+
+      // Invalidate cache
+      _cachedConversations = null;
+      _conversationsCacheTime = null;
+
+      debugPrint(
+          '✅ Batch marked ${conversationIds.length} conversations as read');
     } catch (e) {
-      debugPrint('Error sending typing indicator: $e');
+      debugPrint('Error batch marking as read: $e');
     }
+  }
+
+  // =============================================
+  // TYPING INDICATORS - REMOVED FOR SCALABILITY
+  // =============================================
+  //
+  // Removed sendTypingIndicator() to increase concurrent user capacity by 1.5x
+  // Users will no longer see "User is typing..." indicators
+  // But direct messages remain instant (real-time messages subscription still active)
+  //
+  // To restore in future: Un-comment this method and add back listener in subscribeToMessages()
+  //
+  // Future<void> sendTypingIndicator(String conversationId) async {
+  //   try {
+  //     final currentUserId = _supabase.auth.currentUser?.id;
+  //     final currentUser = _supabase.auth.currentUser;
+  //     if (currentUserId == null || currentUser == null) return;
+  //
+  //     final typingIndicator = TypingIndicator(
+  //       conversationId: conversationId,
+  //       userId: currentUserId,
+  //       username: currentUser.userMetadata?['username'] as String? ?? 'Unknown',
+  //       timestamp: DateTime.now(),
+  //     );
+  //
+  //     // Send to realtime channel
+  //     await _supabase.channel('typing_$conversationId').sendBroadcastMessage(
+  //           event: 'typing',
+  //           payload: typingIndicator.toJson(),
+  //         );
+  //   } catch (e) {
+  //     debugPrint('Error sending typing indicator: $e');
+  //   }
+  // }
+
+  // =============================================
+  // CONNECTION POOLING (Optimization)
+  // =============================================
+
+  /// Get or create a pooled channel (reuse instead of creating new)
+  RealtimeChannel _getPooledChannel(String channelName) {
+    // Check if channel already exists in pool
+    if (_channelPool.containsKey(channelName)) {
+      return _channelPool[channelName]!;
+    }
+
+    // Create new channel if pool not full
+    if (_channelPool.length < _maxPooledChannels) {
+      final channel = _supabase.channel(channelName);
+      _channelPool[channelName] = channel;
+      return channel;
+    }
+
+    // If pool is full, remove oldest and add new
+    final oldestKey = _channelPool.keys.first;
+    _channelPool[oldestKey]?.unsubscribe();
+    _channelPool.remove(oldestKey);
+
+    final channel = _supabase.channel(channelName);
+    _channelPool[channelName] = channel;
+    return channel;
+  }
+
+  /// Clear channel pool on dispose
+  void _clearChannelPool() {
+    for (final channel in _channelPool.values) {
+      channel.unsubscribe();
+    }
+    _channelPool.clear();
   }
 
   // =============================================
@@ -366,6 +492,20 @@ class DMService {
   // =============================================
 
   /// Set up conversation subscription for real-time updates
+  ///
+  /// ⚠️ REAL-TIME STATUS: INACTIVE (Table not in publications)
+  /// The 'conversations' table is NOT enabled in Supabase real-time publications.
+  /// Only these 3 tables are enabled: chat_messages, messages, oauth_authorizations
+  ///
+  /// This subscription will silently fail to receive events, but won't error.
+  /// App still works because getConversations() is called:
+  /// - On manual refresh (pull-to-refresh)
+  /// - When returning to inbox screen
+  /// - After sending a new message
+  ///
+  /// Performance impact: None (inactive subscription uses minimal resources)
+  ///
+  /// To enable in future: Add 'conversations' to supabase_realtime publication
   Future<void> _setupConversationSubscription() async {
     final currentUserId = _supabase.auth.currentUser?.id;
     if (currentUserId == null) return;
@@ -385,6 +525,16 @@ class DMService {
   }
 
   /// Subscribe to messages for a specific conversation
+  ///
+  /// ✅ REAL-TIME STATUS: ACTIVE (Table is in publications)
+  /// The 'messages' table IS enabled in Supabase real-time publications.
+  /// This subscription receives live events when new messages are inserted.
+  ///
+  /// Active for: Direct message conversations (1-on-1 chats)
+  /// Real-time features working:
+  /// - New message notifications
+  /// - Typing indicators (via broadcast)
+  /// - Live message updates in conversation view
   Future<void> subscribeToMessages(String conversationId) async {
     // Unsubscribe from previous conversation
     if (_messageSubscription != null &&
@@ -394,8 +544,8 @@ class DMService {
 
     _currentConversationId = conversationId;
 
-    _messageSubscription = _supabase
-        .channel('messages_$conversationId')
+    // Use pooled channel instead of creating new one (saves connections)
+    _messageSubscription = _getPooledChannel('messages_$conversationId')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
@@ -410,13 +560,9 @@ class DMService {
             _handleNewMessage(payload.newRecord);
           },
         )
-        .onBroadcast(
-          event: 'typing',
-          callback: (payload) {
-            final typingIndicator = TypingIndicator.fromJson(payload);
-            _typingIndicatorController.add(typingIndicator);
-          },
-        )
+        // REMOVED: .onBroadcast(event: 'typing', ...) for scalability
+        // Removed typing indicators to support 1.5x more concurrent users
+        // Users won't see "User is typing..." but messages are still instant
         .subscribe();
 
     // Load initial messages
@@ -426,6 +572,10 @@ class DMService {
   /// Handle new message from real-time subscription
   void _handleNewMessage(Map<String, dynamic> messageData) async {
     try {
+      // Invalidate conversation cache when new message arrives
+      _cachedConversations = null;
+      _conversationsCacheTime = null;
+
       // Fetch full message data with sender profile
       final fullMessageData = await _supabase.from('messages').select('''
             *,

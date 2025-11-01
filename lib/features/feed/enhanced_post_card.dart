@@ -6,16 +6,16 @@ import 'package:foundervers/features/post_creation/post_creation_page.dart';
 import 'package:foundervers/services/share_service.dart';
 import 'package:foundervers/features/post_creation/post_detail_page.dart';
 import 'package:foundervers/core/storage_utils.dart';
-import 'package:foundervers/features/profile/public_profile_page.dart';
+import 'package:foundervers/features/profile/unified_profile_page.dart';
 import 'package:foundervers/features/feed/feed_service.dart';
 import 'package:foundervers/features/dm/new_dm_repos.dart';
 import 'package:foundervers/features/suggestions/suggestion_form.dart';
 import 'package:foundervers/features/messaging/message_compose_sheet.dart';
 import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/widgets/video_player_widget.dart';
-import 'package:foundervers/app/theme.dart';
 import 'package:foundervers/widgets/comments/comment_sheet.dart';
-import 'package:foundervers/services/comment_service.dart';
+import 'package:foundervers/core/utils/time_formatter.dart';
+import 'package:foundervers/services/bookmark_service.dart';
 
 class EnhancedPostCard extends StatefulWidget {
   const EnhancedPostCard({
@@ -41,27 +41,53 @@ class EnhancedPostCard extends StatefulWidget {
 
 class _EnhancedPostCardState extends State<EnhancedPostCard> {
   bool _isDescriptionExpanded = false;
+  bool _isBookmarked = false;
+  bool _isTogglingBookmark = false;
   final ThreadRepository _threadRepo = ThreadRepository();
   final MessageRepository _msgRepo = MessageRepository();
-  final CommentService _commentService = CommentService();
   final _me = Supabase.instance.client.auth.currentUser;
-  int _commentCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadCommentCount();
+    // No longer need to load comment count - it's in widget.post.commentCount!
+    _checkBookmarkStatus();
   }
 
-  Future<void> _loadCommentCount() async {
-    try {
-      final count = await _commentService.getCommentCount(widget.post.id);
-      if (mounted) {
-        setState(() => _commentCount = count);
-      }
-    } catch (e) {
-      // Silently fail - comment count is not critical
-      print('Error loading comment count: $e');
+  Future<void> _checkBookmarkStatus() async {
+    final isBookmarked =
+        await BookmarkService.instance.isBookmarked(widget.post.id);
+    if (mounted) {
+      setState(() {
+        _isBookmarked = isBookmarked;
+      });
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    if (_isTogglingBookmark) return;
+
+    setState(() {
+      _isTogglingBookmark = true;
+    });
+
+    final newStatus =
+        await BookmarkService.instance.toggleBookmark(widget.post.id);
+
+    if (mounted) {
+      setState(() {
+        _isBookmarked = newStatus;
+        _isTogglingBookmark = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(newStatus ? '💾 Post saved' : '🗑️ Post removed from saved'),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -82,6 +108,9 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   }
 
   Future<void> _handleActionButton(String actionType) async {
+    // Ensure any existing text inputs lose focus before opening a sheet
+    FocusManager.instance.primaryFocus?.unfocus();
+
     if (_me == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please log in to take action')),
@@ -167,13 +196,43 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: SuggestionForm(
-            postId: widget.post.id, postTitle: widget.post.title),
-      ),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return GestureDetector(
+          onTap: () => FocusScope.of(ctx).unfocus(),
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.8,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder: (sheetContext, scrollController) {
+              final theme = Theme.of(sheetContext);
+              return Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  boxShadow: const [
+                    BoxShadow(
+                      blurRadius: 12,
+                      offset: Offset(0, -4),
+                      color: Color(0x1F000000),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: SuggestionForm(
+                    postId: widget.post.id,
+                    postTitle: widget.post.title,
+                    scrollController: scrollController,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -183,14 +242,22 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
 
     return _PressScale(
       child: Container(
-        decoration: const BoxDecoration(
+        margin: const EdgeInsets.only(bottom: 12, left: 0, right: 0),
+        decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(
-            bottom: BorderSide(
-              color: Color(0xFFE5E5E5),
-              width: 0.5,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-          ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -219,23 +286,30 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                     );
                     if (changed == true) widget.onEdited();
                   },
-                  child: Container(
-                    height: 200, // Consistent with new image sizing
-                    decoration: const BoxDecoration(
-                        gradient: LinearGradient(colors: [
-                      AppColors.primarySoft,
-                      AppColors.subtleFill
-                    ]) // Orange gradient
-                        ),
-                    child: const Center(
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Container(
+                      decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xFFFF6B2C).withOpacity(0.1),
+                          const Color(0xFFFF6B2C).withOpacity(0.05),
+                        ],
+                      )),
+                      child: Center(
                         child: Icon(Icons.lightbulb_outline,
-                            size: 48, color: Colors.white70)),
+                            size: 56,
+                            color: const Color(0xFFFF6B2C).withOpacity(0.3)),
+                      ),
+                    ),
                   ),
                 ),
 
               // Content Section - Full width optimization
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -243,7 +317,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                       // Moderation banner (only if not approved and viewer is author/admin)
                       Builder(builder: (context) {
                         final mod = widget.post.moderationStatus ?? 'approved';
-                        final currentUser = Supabase.instance.client.auth.currentUser;
+                        final currentUser =
+                            Supabase.instance.client.auth.currentUser;
                         final isAuthor = currentUser?.id == widget.post.userId;
                         // Lightweight admin detection using AppEnv.adminEmails if available (safe fallback)
                         bool isAdmin = false;
@@ -264,18 +339,21 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                           bg = const Color(0xFFFFF4E5);
                           fg = const Color(0xFF8A5800);
                           icon = Icons.hourglass_top_rounded;
-                          label = 'This post is under review and only visible to you.';
+                          label =
+                              'This post is under review and only visible to you.';
                         } else if (mod == 'blocked') {
                           bg = const Color(0xFFFFE9E9);
                           fg = const Color(0xFF8A1A1A);
                           icon = Icons.block_rounded;
-                          label = 'Blocked: Only you can see this. Edit or delete to resubmit.';
+                          label =
+                              'Blocked: Only you can see this. Edit or delete to resubmit.';
                         } else {
                           return const SizedBox.shrink();
                         }
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 12),
                           decoration: BoxDecoration(
                             color: bg,
                             borderRadius: BorderRadius.circular(8),
@@ -288,7 +366,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                               Expanded(
                                 child: Text(label,
                                     style: TextStyle(
-                                      fontSize: 12.5,
+                                      fontSize: 14,
                                       height: 1.25,
                                       color: fg,
                                       fontWeight: FontWeight.w500,
@@ -298,15 +376,23 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                 TextButton(
                                   onPressed: () async {
                                     // Quick edit shortcut
-                                    final saved = await Navigator.of(context).push<bool>(
+                                    final saved =
+                                        await Navigator.of(context).push<bool>(
                                       MaterialPageRoute(
-                                        builder: (_) => PostCreationPage(existing: widget.post),
+                                        builder: (_) => PostCreationPage(
+                                            existing: widget.post),
                                       ),
                                     );
                                     if (saved == true) widget.onEdited();
                                   },
-                                  style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
-                                  child: Text('Edit', style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 12)),
+                                  style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8)),
+                                  child: Text('Edit',
+                                      style: TextStyle(
+                                          color: fg,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14)),
                                 ),
                             ],
                           ),
@@ -321,14 +407,12 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                               name: widget.post.author?.displayName,
                               userId: widget.post.author?.userId,
                               onTap: () {
+                                // Allow viewing anyone's profile, including your own
                                 if (widget.post.author?.userId != null &&
-                                    widget.post.author!.userId.isNotEmpty &&
-                                    widget.post.author!.userId !=
-                                        Supabase.instance.client.auth
-                                            .currentUser?.id) {
+                                    widget.post.author!.userId.isNotEmpty) {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (context) => PublicProfilePage(
+                                      builder: (context) => UnifiedProfilePage(
                                         userId: widget.post.author!.userId,
                                         userName:
                                             widget.post.author?.displayName,
@@ -342,21 +426,63 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  // User's full name as primary text (bold) - LinkedIn style
-                                  Text(
-                                    widget.post.author?.displayName ??
-                                        'Unknown User',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      height: 1.2,
-                                    ),
+                                  // User's full name as primary text (bold) - LinkedIn style with verification badge
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          widget.post.author?.displayName ??
+                                              'Unknown User',
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            height: 1.2,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      // Blue verified badge for verified users
+                                      if (widget.post.author?.emailVerified ==
+                                          true)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(left: 4),
+                                          child: Icon(
+                                            Icons.verified,
+                                            size: 18,
+                                            color: Colors.blue[700],
+                                          ),
+                                        ),
+                                    ],
                                   ),
+                                  // Time posted - accurate from database
+                                  if (widget.post.createdAt != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Text(
+                                        TimeFormatter.formatTimeAgo(
+                                            widget.post.createdAt!),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                          height: 1.2,
+                                        ),
+                                      ),
+                                    ),
                                   // Removed username line for cleaner, more professional look
                                 ],
                               ),
                             ),
+                            // Bookmark Button - Clean icon-only button
+                            _BookmarkButton(
+                              isBookmarked: _isBookmarked,
+                              isLoading: _isTogglingBookmark,
+                              onToggle: _toggleBookmark,
+                            ),
+                            const SizedBox(width: 4),
                             // Menu with Share + Edit/Delete options
                             PopupMenuButton<String>(
                               icon: const Icon(Icons.more_vert, size: 20),
@@ -364,10 +490,20 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                 if (val == 'share') {
                                   final messenger =
                                       ScaffoldMessenger.of(context);
+
+                                  // Get the position of the button for iOS share sheet positioning
+                                  final RenderBox? box =
+                                      context.findRenderObject() as RenderBox?;
+                                  final Rect? sharePositionOrigin = box != null
+                                      ? box.localToGlobal(Offset.zero) &
+                                          box.size
+                                      : null;
+
                                   await ShareService.sharePost(
                                     postId: widget.post.id,
                                     title: widget.post.title,
                                     description: widget.post.description,
+                                    sharePositionOrigin: sharePositionOrigin,
                                   );
                                   if (mounted) {
                                     messenger.showSnackBar(
@@ -479,19 +615,19 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                               TextSpan(
                                 text: 'Startup: ',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.grey[600],
+                                  color: const Color.fromARGB(255, 0, 0, 0),
                                   height: 1.2,
                                 ),
                               ),
-                              // Startup name with enhanced styling
+                              // Startup with enhanced styling
                               TextSpan(
                                 text: widget.post.title,
                                 style: const TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.blue,
+                                  color: Color.fromARGB(255, 235, 128, 13),
                                   height: 1.2,
                                 ),
                               ),
@@ -500,36 +636,47 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                         ),
                       ),
 
-                      // Combined Tags and Goals Row - Optimized spacing
+                      // Combined Tags and Goals Row - keep chips on a single line and allow horizontal scroll on overflow
                       if (widget.subtitle.isNotEmpty ||
                           widget.goalLabel != null) ...[
                         const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: [
-                            // Hashtag as chip for consistency
-                            if (widget.subtitle.isNotEmpty)
-                              _CompactChip(
-                                text: widget.subtitle,
-                                color: Colors.grey[100]!,
-                                borderColor: Colors.grey[300]!,
-                              ),
-                            // Goal label
-                            if (widget.goalLabel != null)
-                              _CompactChip(
-                                text: widget.goalLabel!,
-                                color: Colors.blue[50]!,
-                                borderColor: Colors.blue[200]!,
-                              ),
-                            // Funding goal if present
-                            if (widget.post.fundingGoal != null)
-                              _CompactChip(
-                                text: 'Goal: \$${widget.post.fundingGoal}',
-                                color: Colors.green[50]!,
-                                borderColor: Colors.green[200]!,
-                              ),
-                          ],
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              if (widget.subtitle.isNotEmpty) ...[
+                                _CompactChip(
+                                  text: widget.subtitle,
+                                  color: const Color(0xFFF8FAFC), // Slate-50
+                                  borderColor: Colors.white, // Slate-300
+                                  textColor:
+                                      const Color(0xFF475569), // Slate-600
+                                ),
+                                const SizedBox(width: 0),
+                              ],
+                              if (widget.goalLabel != null) ...[
+                                _CompactChip(
+                                  text: widget.goalLabel!,
+                                  color:
+                                      const Color(0xFFF8FAFC), // Light blue-50
+                                  borderColor: Colors.white, // Blue-200
+                                  textColor:
+                                      const Color(0xFF16A34A), // Blue-700
+                                ),
+                                const SizedBox(width: 0),
+                              ],
+                              if (widget.post.fundingGoal != null) ...[
+                                _CompactChip(
+                                  text: 'Goal: \$${widget.post.fundingGoal}',
+                                  color: const Color(0xFFF8FAFC), // Emerald-50
+                                  borderColor: Colors.white, // Black border
+                                  textColor:
+                                      const Color(0xFFA16207), // Emerald-700
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ],
 
@@ -543,8 +690,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                             _isDescriptionExpanded
                                 ? (widget.post.description ?? '').trim()
                                 : _truncatedDescription,
-                            style:
-                                const TextStyle(fontSize: 13.5, height: 1.35),
+                            style: const TextStyle(fontSize: 14, height: 1.35),
                           ),
                           if (_shouldShowSeeMore) ...[
                             const SizedBox(height: 4),
@@ -560,7 +706,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                     ? 'See less'
                                     : 'See more',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 15,
                                   color: Theme.of(context).primaryColor,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -570,51 +716,57 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                         ],
                       ),
 
-                      // Action Buttons Row - Always Visible
-                      const SizedBox(height: 16),
+                      // Action Buttons Row - Modern Instagram/LinkedIn Style
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           // Show Invest, Collab, Suggest only if not own post
                           if (widget.meUid != widget.post.userId) ...[
-                            Expanded(
-                              child: _ActionButton(
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: _ModernActionButton(
                                 label: 'Invest',
-                                icon: AppIcons.money(size: 14),
-                                color:
-                                    AppColors.primary, // Orange for investment
+                                icon: AppIcons.money(size: 16),
+                                variant: ActionButtonVariant.primary,
                                 onPressed: () => _handleActionButton('invest'),
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: _ActionButton(
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: _ModernActionButton(
                                 label: 'Collab',
-                                icon: AppIcons.collab(size: 14),
-                                color: AppColors
-                                    .accent, // Golden yellow for collaboration
+                                icon: AppIcons.collab(size: 16),
+                                variant: ActionButtonVariant.secondary,
                                 onPressed: () => _handleActionButton('collab'),
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: _ActionButton(
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: _ModernActionButton(
                                 label: 'Suggest',
-                                icon: AppIcons.suggest(size: 14),
-                                color: AppColors
-                                    .accentDark, // Deep orange for suggestions
+                                icon: AppIcons.suggest(size: 16),
+                                variant: ActionButtonVariant.tertiary,
                                 onPressed: () => _handleActionButton('suggest'),
                               ),
                             ),
                             const SizedBox(width: 8),
                           ],
-                          // Comment Button - Always visible for everyone (icon only when has badge)
-                          Expanded(
-                            child: _ActionButton(
-                              label: 'Comment',
-                              icon: const Icon(Icons.comment_outlined, size: 14),
-                              color: const Color(0xFF6B4EE6), // Purple for comments
-                              badge: _commentCount > 0 ? _commentCount.toString() : null,
-                              hideLabel: _commentCount > 0,
+                          // Comment Button - Always visible with badge (just show count number)
+                          Flexible(
+                            fit: FlexFit.loose,
+                            child: _ModernActionButton(
+                              label: widget.post.commentCount > 0
+                                  ? '${widget.post.commentCount}'
+                                  : '',
+                              icon: Image.asset(
+                                'lib/icons/comment-alt-dots.png',
+                                width: 16,
+                                height: 16,
+                                color: Colors.black,
+                              ),
+                              variant: ActionButtonVariant.outlined,
                               onPressed: _openComments,
                             ),
                           ),
@@ -629,84 +781,149 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
 
   Future<void> _openComments() async {
     await CommentSheet.show(context, widget.post);
-    // Reload comment count after closing
-    _loadCommentCount();
+    // Comment count will auto-update via trigger - no need to reload!
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
+/// Modern action button variants following social media best practices
+enum ActionButtonVariant {
+  primary, // Solid orange - most important action
+  secondary, // Outlined orange - supporting action
+  tertiary, // Ghost/subtle - less important
+  outlined, // Simple black/white - for comments
+}
+
+/// Modern action button with consistent design system
+class _ModernActionButton extends StatefulWidget {
+  const _ModernActionButton({
     required this.label,
     required this.icon,
-    required this.color,
+    required this.variant,
     required this.onPressed,
-    this.badge,
-    this.hideLabel = false,
   });
 
   final String label;
   final Widget icon;
-  final Color color;
+  final ActionButtonVariant variant;
   final VoidCallback onPressed;
-  final String? badge;
-  final bool hideLabel;
+
+  @override
+  State<_ModernActionButton> createState() => _ModernActionButtonState();
+}
+
+class _ModernActionButtonState extends State<_ModernActionButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.92).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onPressed,
+    // Define colors based on variant - Modern, professional color system
+    Color backgroundColor;
+    Color foregroundColor;
+    Color? borderColor;
+    double elevation;
+
+    switch (widget.variant) {
+      case ActionButtonVariant.primary:
+        backgroundColor = Colors.white; // color of the button background
+        foregroundColor = const Color.fromARGB(
+            255, 54, 209, 101); // this is color of the icon
+        borderColor = const Color(0xFFD1D5DB); // Black border
+        elevation = 0;
+        break;
+      case ActionButtonVariant.secondary:
+        backgroundColor = Colors.white; // light blue - Collab
+        foregroundColor =
+            const Color.fromARGB(255, 15, 209, 219); // white - Partnership
+        borderColor = const Color(0xFFD1D5DB); // Black border
+        elevation = 0;
+        break;
+      case ActionButtonVariant.tertiary:
+        backgroundColor = Colors.white; // color of the button background
+        foregroundColor = const Color(0xFFF97316); // Vibrant Orange - Ideas
+        borderColor = const Color(0xFFD1D5DB); // Black border;
+        elevation = 0;
+        break;
+      case ActionButtonVariant.outlined:
+        backgroundColor = Colors.white; // White background
+        foregroundColor = Colors.black; // Black text
+        borderColor = const Color(0xFFD1D5DB); // Black border
+        elevation = 0;
+        break;
+    }
+
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onPressed();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (context, child) => Transform.scale(
+          scale: _scale.value,
+          child: child,
+        ),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          height: 30,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: color.withValues(alpha: 0.2),
-              width: 1,
-            ),
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(12),
+            border: borderColor != null
+                ? Border.all(color: borderColor, width: 1.5)
+                : null,
+            boxShadow: elevation > 0
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(width: 14, height: 14, child: icon),
-              if (!hideLabel) ...[
-                const SizedBox(width: 4),
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: widget.icon,
+              ),
+              if (widget.label.isNotEmpty) ...[
+                const SizedBox(width: 6),
                 Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        height: 1.0,
-                      ),
-                      maxLines: 1,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
-              if (badge != null) ...[
-                if (!hideLabel) const SizedBox(width: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                   child: Text(
-                    badge!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                    widget.label,
+                    style: TextStyle(
+                      color: foregroundColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ],
@@ -718,7 +935,7 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// Supporting widgets - copied from original feed_page.dart
+// Supporting widgets - card press animation
 
 class _PressScale extends StatefulWidget {
   final Widget child;
@@ -850,25 +1067,31 @@ class _PostImageThumbState extends State<_PostImageThumb> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Container(
-        height: 200, // Slightly taller for better visual balance
-        color: Colors.grey[200],
-        child: const Center(child: CircularProgressIndicator()),
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Container(
+          width: double.infinity,
+          color: Colors.grey[100],
+          child: const Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
     if (_error != null || _url == null) {
-      return Container(
-        height: 200, // Consistent height with loading state
-        color: Colors.grey[300],
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.broken_image, size: 40, color: Colors.white70),
-            SizedBox(height: 8),
-            Text('Media unavailable',
-                style: TextStyle(color: Colors.white70, fontSize: 12)),
-          ],
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Container(
+          width: double.infinity,
+          color: Colors.grey[100],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.broken_image, size: 40, color: Colors.grey[400]),
+              const SizedBox(height: 8),
+              Text('Media unavailable',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+            ],
+          ),
         ),
       );
     }
@@ -877,15 +1100,16 @@ class _PostImageThumbState extends State<_PostImageThumb> {
     if (widget.mediaType == 'video') {
       return Hero(
         tag: widget.heroTag,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: 120,
-            maxHeight: 400,
-          ),
-          child: VideoPlayerWidget(
-            videoUrl: _url!,
-            height: null, // Let it size naturally within constraints
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Container(
             width: double.infinity,
+            color: Colors.grey[100],
+            child: VideoPlayerWidget(
+              videoUrl: _url!,
+              height: double.infinity,
+              width: double.infinity,
+            ),
           ),
         ),
       );
@@ -927,39 +1151,37 @@ class _PostImageThumbState extends State<_PostImageThumb> {
       },
       child: Hero(
         tag: widget.heroTag,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: 120, // Minimum height to ensure visibility
-            maxHeight: 400, // Maximum height to prevent overly tall images
-          ),
-          child: Image.network(
-            _url!,
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Container(
             width: double.infinity,
-            fit: BoxFit
-                .contain, // Changed from cover to contain to show full image
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                height: 170,
-                color: Colors.grey[200],
-                child: const Center(child: CircularProgressIndicator()),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                height: 170,
-                color: Colors.grey[300],
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.broken_image, size: 40, color: Colors.white70),
-                    SizedBox(height: 8),
-                    Text('Image unavailable',
-                        style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
-                ),
-              );
-            },
+            color: Colors.grey[100],
+            child: Image.network(
+              _url!,
+              width: double.infinity,
+              fit: BoxFit.contain, // Shrinks image to fit without cropping
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Colors.grey[100],
+                  child: const Center(child: CircularProgressIndicator()),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.white,
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                      SizedBox(height: 8),
+                      Text('Image unavailable',
+                          style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -1001,33 +1223,35 @@ class _CompactChip extends StatelessWidget {
   final String text;
   final Color color;
   final Color borderColor;
+  final Color textColor;
 
   const _CompactChip({
     required this.text,
     required this.color,
     required this.borderColor,
+    required this.textColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      constraints:
-          const BoxConstraints(maxWidth: 200), // Prevent overly long chips
+      constraints: const BoxConstraints(maxWidth: 160),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor, width: 0.8),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          height: 1.3,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          height: 1.2,
+          color: textColor,
         ),
         maxLines: 1,
-        overflow: TextOverflow.ellipsis, // Handle long text gracefully
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -1067,29 +1291,33 @@ class _MediaCarouselState extends State<_MediaCarousel> {
       onTap: widget.onTap,
       child: Stack(
         children: [
-          // Image carousel
-          SizedBox(
-            height: 300,
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              itemCount: media.length,
-              itemBuilder: (context, index) {
-                final mediaItem = media[index];
-                return _PostImageThumb(
-                  key: ValueKey(
-                      '${widget.post.id}_${mediaItem.filePath ?? mediaItem.filename}_$index'),
-                  mediaPath: mediaItem.filePath ?? mediaItem.filename,
-                  bucket: AppEnv.startupbuilderBucket,
-                  heroTag:
-                      'pimg_${widget.post.id}_${mediaItem.id ?? mediaItem.filename?.hashCode ?? 0}_$index',
-                  mediaType: mediaItem.type,
-                );
-              },
+          // Image carousel with 16:9 aspect ratio for modern social media look
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Container(
+              width: double.infinity,
+              color: Colors.white, // White background for letterboxed space
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                itemCount: media.length,
+                itemBuilder: (context, index) {
+                  final mediaItem = media[index];
+                  return _PostImageThumb(
+                    key: ValueKey(
+                        '${widget.post.id}_${mediaItem.filePath ?? mediaItem.filename}_$index'),
+                    mediaPath: mediaItem.filePath ?? mediaItem.filename,
+                    bucket: AppEnv.startupbuilderBucket,
+                    heroTag:
+                        'pimg_${widget.post.id}_${mediaItem.id ?? mediaItem.filename?.hashCode ?? 0}_$index',
+                    mediaType: mediaItem.type,
+                  );
+                },
+              ),
             ),
           ),
 
@@ -1179,6 +1407,46 @@ class _MediaCarouselState extends State<_MediaCarousel> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Bookmark button with filled/outlined states
+class _BookmarkButton extends StatelessWidget {
+  const _BookmarkButton({
+    required this.isBookmarked,
+    required this.isLoading,
+    required this.onToggle,
+  });
+
+  final bool isBookmarked;
+  final bool isLoading;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    const bookmarkColor = Color(0xFF10B981); // Green for save action
+
+    return IconButton(
+      icon: isLoading
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: bookmarkColor,
+              ),
+            )
+          : Icon(
+              isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
+              size: 22,
+              color: bookmarkColor,
+            ),
+      onPressed: isLoading ? null : onToggle,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      splashRadius: 20,
+      tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark post',
     );
   }
 }

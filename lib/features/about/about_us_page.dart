@@ -6,6 +6,12 @@ class AboutUsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 375; // iPhone SE, iPhone 12/13 mini
+    final horizontalPadding = isSmallScreen ? 16.0 : 20.0;
+    final verticalSpacing = isSmallScreen ? 16.0 : 20.0;
+    final sectionSpacing = isSmallScreen ? 24.0 : 32.0;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -27,14 +33,14 @@ class AboutUsPage extends StatelessWidget {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(horizontalPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Hero Section
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -63,8 +69,8 @@ class AboutUsPage extends StatelessWidget {
                 children: [
                   // App Logo
                   Container(
-                    width: 80,
-                    height: 80,
+                    width: isSmallScreen ? 64 : 80,
+                    height: isSmallScreen ? 64 : 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       boxShadow: [
@@ -78,26 +84,27 @@ class AboutUsPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const FounderVersLogo(
-                      width: 80,
-                      height: 80,
+                    child: FounderVersLogo(
+                      width: isSmallScreen ? 64 : 80,
+                      height: isSmallScreen ? 64 : 80,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: isSmallScreen ? 12 : 16),
                   Text(
                     'FounderVers',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: isSmallScreen ? 24 : 28,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: isSmallScreen ? 6 : 8),
                   Text(
                     'Connecting Visionary Founders',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: isSmallScreen ? 14 : 16,
                       color: Colors.grey.shade600,
                       fontWeight: FontWeight.w500,
                     ),
@@ -106,7 +113,7 @@ class AboutUsPage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 32),
+            SizedBox(height: sectionSpacing),
 
             // Mission Section
             _SectionCard(
@@ -115,9 +122,10 @@ class AboutUsPage extends StatelessWidget {
               title: 'Our Mission',
               content:
                   'We believe every great idea deserves the right connections to become reality. FounderVers exists to bridge the gap between visionary founders, passionate investors, and skilled collaborators.',
+              isSmallScreen: isSmallScreen,
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: verticalSpacing),
 
             // How We Make It Possible
             _SectionCard(
@@ -126,14 +134,15 @@ class AboutUsPage extends StatelessWidget {
               title: 'How We Make It Possible',
               content:
                   'Through our thoughtful, form-based approach to connections, we ensure every interaction is meaningful. Whether you\'re seeking investment, collaboration, or simply want to share suggestions, our platform facilitates genuine relationships built on mutual respect and shared vision.',
+              isSmallScreen: isSmallScreen,
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: verticalSpacing),
 
             // Platform Features
-            _FeatureSection(),
+            _FeatureSection(isSmallScreen: isSmallScreen),
 
-            const SizedBox(height: 20),
+            SizedBox(height: verticalSpacing),
 
             // Vision Section
             _SectionCard(
@@ -142,14 +151,15 @@ class AboutUsPage extends StatelessWidget {
               title: 'Our Vision',
               content:
                   'To create the world\'s most trusted ecosystem where founders can connect, collaborate, and build the future together. We envision a platform where great ideas meet great people, fostering innovation that makes a positive impact on the world.',
+              isSmallScreen: isSmallScreen,
             ),
 
-            const SizedBox(height: 32),
+            SizedBox(height: sectionSpacing),
 
             // Values Section
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
@@ -170,35 +180,41 @@ class AboutUsPage extends StatelessWidget {
                             color: Colors.green, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
-                        'Our Values',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                      const Expanded(
+                        child: Text(
+                          'Our Values',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: isSmallScreen ? 12 : 16),
                   _ValueItem('Authenticity',
-                      'We believe in genuine connections and honest communication.'),
+                      'We believe in genuine connections and honest communication.',
+                      isSmallScreen: isSmallScreen),
                   _ValueItem('Innovation',
-                      'We constantly evolve to serve our community better.'),
+                      'We constantly evolve to serve our community better.',
+                      isSmallScreen: isSmallScreen),
                   _ValueItem('Respect',
-                      'Every founder\'s journey is unique and deserves respect.'),
+                      'Every founder\'s journey is unique and deserves respect.',
+                      isSmallScreen: isSmallScreen),
                   _ValueItem('Privacy',
-                      'Your ideas and communications are protected and private.'),
+                      'Your ideas and communications are protected and private.',
+                      isSmallScreen: isSmallScreen),
                 ],
               ),
             ),
 
-            const SizedBox(height: 32),
+            SizedBox(height: sectionSpacing),
 
             // Call to Action
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -215,26 +231,26 @@ class AboutUsPage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.handshake_outlined,
                     color: Colors.white,
-                    size: 32,
+                    size: isSmallScreen ? 28 : 32,
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
+                  SizedBox(height: isSmallScreen ? 8 : 12),
+                  Text(
                     'Join Our Community',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: isSmallScreen ? 18 : 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: isSmallScreen ? 6 : 8),
+                  Text(
                     'Ready to connect with like-minded founders and turn your vision into reality?',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: isSmallScreen ? 13 : 14,
                       color: Colors.white,
                       height: 1.4,
                     ),
@@ -243,7 +259,7 @@ class AboutUsPage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: verticalSpacing),
           ],
         ),
       ),
@@ -257,18 +273,20 @@ class _SectionCard extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.content,
+    required this.isSmallScreen,
   });
 
   final IconData icon;
   final Color iconColor;
   final String title;
   final String content;
+  final bool isSmallScreen;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -295,21 +313,23 @@ class _SectionCard extends StatelessWidget {
                 child: Icon(icon, color: iconColor, size: 20),
               ),
               const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 16 : 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isSmallScreen ? 10 : 12),
           Text(
             content,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: isSmallScreen ? 13 : 14,
               color: Colors.grey.shade700,
               height: 1.5,
             ),
@@ -321,11 +341,15 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _FeatureSection extends StatelessWidget {
+  const _FeatureSection({required this.isSmallScreen});
+
+  final bool isSmallScreen;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -353,27 +377,34 @@ class _FeatureSection extends StatelessWidget {
                     color: Colors.purple, size: 20),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Platform Features',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              Expanded(
+                child: Text(
+                  'Platform Features',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 16 : 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isSmallScreen ? 12 : 16),
           _FeatureItem(Icons.business_outlined, 'Smart Investment Matching',
-              'Connect with investors who align with your vision'),
+              'Connect with investors who align with your vision',
+              isSmallScreen: isSmallScreen),
           _FeatureItem(Icons.group_outlined, 'Collaboration Hub',
-              'Find co-founders and team members who complement your skills'),
+              'Find co-founders and team members who complement your skills',
+              isSmallScreen: isSmallScreen),
           _FeatureItem(Icons.chat_bubble_outline, 'Thoughtful Messaging',
-              'Form-based approach ensures meaningful conversations'),
+              'Form-based approach ensures meaningful conversations',
+              isSmallScreen: isSmallScreen),
           _FeatureItem(Icons.lightbulb_outline, 'Suggestion System',
-              'Share and receive valuable feedback privately'),
+              'Share and receive valuable feedback privately',
+              isSmallScreen: isSmallScreen),
           _FeatureItem(Icons.security_outlined, 'Privacy First',
-              'Your ideas and conversations remain confidential'),
+              'Your ideas and conversations remain confidential',
+              isSmallScreen: isSmallScreen),
         ],
       ),
     );
@@ -381,16 +412,18 @@ class _FeatureSection extends StatelessWidget {
 }
 
 class _FeatureItem extends StatelessWidget {
-  const _FeatureItem(this.icon, this.title, this.description);
+  const _FeatureItem(this.icon, this.title, this.description,
+      {required this.isSmallScreen});
 
   final IconData icon;
   final String title;
   final String description;
+  final bool isSmallScreen;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: isSmallScreen ? 10 : 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -411,8 +444,8 @@ class _FeatureItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 13 : 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
@@ -421,7 +454,7 @@ class _FeatureItem extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: isSmallScreen ? 11 : 12,
                     color: Colors.grey.shade600,
                     height: 1.3,
                   ),
@@ -436,15 +469,16 @@ class _FeatureItem extends StatelessWidget {
 }
 
 class _ValueItem extends StatelessWidget {
-  const _ValueItem(this.title, this.description);
+  const _ValueItem(this.title, this.description, {required this.isSmallScreen});
 
   final String title;
   final String description;
+  final bool isSmallScreen;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: isSmallScreen ? 10 : 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -464,8 +498,8 @@ class _ValueItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 13 : 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
@@ -474,7 +508,7 @@ class _ValueItem extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: isSmallScreen ? 12 : 13,
                     color: Colors.grey.shade600,
                     height: 1.3,
                   ),

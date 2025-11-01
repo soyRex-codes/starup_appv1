@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart' as dotenv;
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:foundervers/app/auth_gate.dart';
 import 'package:foundervers/app/theme.dart';
 import 'package:foundervers/services/screenshot_permission_service.dart';
@@ -18,16 +19,35 @@ Future<void> _bootstrap() async {
       const String.fromEnvironment('SUPABASE_URL');
   final supabaseAnonKey = dotenv.dotenv.maybeGet('SUPABASE_ANON_KEY') ??
       const String.fromEnvironment('SUPABASE_ANON_KEY');
-      
+  final stripePublishableKey =
+      dotenv.dotenv.maybeGet('STRIPE_PUBLISHABLE_KEY') ??
+          const String.fromEnvironment('STRIPE_PUBLISHABLE_KEY');
+
+  // Initialize Stripe (mobile only - not supported on web)
+  if (!kIsWeb && stripePublishableKey.isNotEmpty) {
+    try {
+      Stripe.publishableKey = stripePublishableKey;
+      await Stripe.instance.applySettings();
+      print('✅ Stripe initialized successfully');
+    } catch (e) {
+      print('⚠️ Warning: Stripe initialization failed: $e');
+    }
+  } else if (kIsWeb) {
+    print('ℹ️ Stripe skipped on web platform');
+  } else {
+    print('⚠️ Warning: Stripe publishable key not found');
+  }
+
   if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
     // Use the new network service with retry logic for Samsung Galaxy devices
     final success = await NetworkService.initializeSupabaseWithRetry(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
     );
-    
+
     if (!success) {
-      print('⚠️ Warning: Supabase initialization failed. App may not function properly.');
+      print(
+          '⚠️ Warning: Supabase initialization failed. App may not function properly.');
     } else {
       print('✅ Supabase initialized successfully');
     }

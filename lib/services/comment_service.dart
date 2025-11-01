@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/services/supa.dart';
 import 'package:foundervers/models/comment.dart';
+import 'package:foundervers/services/notification_service.dart';
 
 /// Service for managing comments with real-time capabilities
 class CommentService {
@@ -78,15 +79,12 @@ class CommentService {
         throw Exception('Comment cannot be empty');
       }
 
-      final data = await _client
-          .from('comments')
-          .insert({
-            'post_id': postId,
-            'author_id': userId,
-            'content': trimmedContent,
-            'category': category.value,
-          })
-          .select('''
+      final data = await _client.from('comments').insert({
+        'post_id': postId,
+        'author_id': userId,
+        'content': trimmedContent,
+        'category': category.value,
+      }).select('''
             id,
             post_id,
             author_id,
@@ -97,10 +95,14 @@ class CommentService {
             updated_at,
             edited,
             author:users!author_id(id, name, username, full_name, avatar_url)
-          ''')
-          .single();
+          ''').single();
 
-      return CommentModel.fromJson(data);
+      final comment = CommentModel.fromJson(data);
+
+      // Create notification for post owner (fire and forget)
+      _notifyPostOwner(postId, comment);
+
+      return comment;
     } catch (e) {
       print('Error adding comment: $e');
       rethrow;
@@ -122,16 +124,13 @@ class CommentService {
         throw Exception('Reply cannot be empty');
       }
 
-      final data = await _client
-          .from('comments')
-          .insert({
-            'post_id': postId,
-            'author_id': userId,
-            'content': trimmedContent,
-            'category': 'general', // Replies don't need categories
-            'parent_comment_id': parentCommentId,
-          })
-          .select('''
+      final data = await _client.from('comments').insert({
+        'post_id': postId,
+        'author_id': userId,
+        'content': trimmedContent,
+        'category': 'general', // Replies don't need categories
+        'parent_comment_id': parentCommentId,
+      }).select('''
             id,
             post_id,
             author_id,
@@ -142,10 +141,14 @@ class CommentService {
             updated_at,
             edited,
             author:users!author_id(id, name, username, full_name, avatar_url)
-          ''')
-          .single();
+          ''').single();
 
-      return CommentModel.fromJson(data);
+      final reply = CommentModel.fromJson(data);
+
+      // Create notification for parent comment author (fire and forget)
+      _notifyParentCommentAuthor(parentCommentId, postId, reply);
+
+      return reply;
     } catch (e) {
       print('Error adding reply: $e');
       rethrow;
@@ -202,13 +205,77 @@ class CommentService {
     }
 
     // Second pass: attach replies to their parents
-    List<CommentModel> attachReplies(CommentModel parent) {
-      final replies = repliesByParent[parent.id] ?? [];
-      return replies.map((reply) => reply.copyWith(replies: attachReplies(reply))).toList();
-    }
+    return rootComments.map((root) {
+      return _attachReplies(root, repliesByParent);
+    }).toList();
+  }
 
-    return rootComments
-        .map((root) => root.copyWith(replies: attachReplies(root)))
-        .toList();
+  /// Recursively attach replies to a comment
+  CommentModel _attachReplies(
+      CommentModel comment, Map<String, List<CommentModel>> repliesByParent) {
+    final replies = repliesByParent[comment.id] ?? [];
+    final nestedReplies =
+        replies.map((r) => _attachReplies(r, repliesByParent)).toList();
+    return comment.copyWith(replies: nestedReplies);
+  }
+
+  /// Create notification for post owner when someone comments
+  Future<void> _notifyPostOwner(int postId, CommentModel comment) async {
+    try {
+      // Get post owner and title
+      final post = await _client
+          .from('posts')
+          .select('user_id, title')
+          .eq('id', postId)
+          .single();
+
+      final postOwnerId = post['user_id'] as String;
+      final postTitle = post['title'] as String;
+
+      // Get commenter name
+      final commenterName = comment.author?.displayName ?? 'Someone';
+
+      // Create notification
+      await NotificationService.notifyComment(
+        postOwnerId: postOwnerId,
+        commenterName: commenterName,
+        postId: postId,
+        postTitle: postTitle,
+        commenterId: comment.authorId,
+      );
+    } catch (e) {
+      print('Error creating comment notification: $e');
+      // Don't throw - notification is non-critical
+    }
+  }
+
+  /// Create notification for parent comment author when someone replies
+  Future<void> _notifyParentCommentAuthor(
+      String parentCommentId, int postId, CommentModel reply) async {
+    try {
+      // Get parent comment author
+      final parentComment = await _client
+          .from('comments')
+          .select('author_id')
+          .eq('id', parentCommentId)
+          .single();
+
+      final parentAuthorId = parentComment['author_id'] as String;
+
+      // Get replier name
+      final replierName = reply.author?.displayName ?? 'Someone';
+
+      // Create notification
+      await NotificationService.notifyReply(
+        originalCommenterId: parentAuthorId,
+        replierName: replierName,
+        commentId: parentCommentId,
+        postId: postId,
+        replierId: reply.authorId,
+      );
+    } catch (e) {
+      print('Error creating reply notification: $e');
+      // Don't throw - notification is non-critical
+    }
   }
 }

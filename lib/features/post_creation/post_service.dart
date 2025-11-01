@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/services/supa.dart';
 import 'package:foundervers/features/feed/feed_service.dart';
+import 'package:foundervers/models/post.dart';
 
 class PostService {
   final SupabaseClient _s = Supa.client;
@@ -264,7 +266,7 @@ class PostService {
   }
 
   /// Fetch posts for a specific user (for public profile viewing)
-  Future<List<Map<String, dynamic>>> fetchUserPosts({
+  Future<List<PostModel>> fetchUserPosts({
     required String userId,
     int limit = 20,
     int offset = 0,
@@ -286,7 +288,8 @@ class PostService {
           created_at,
           updated_at,
           moderation_status,
-          status
+          status,
+          comment_count
         ''')
         .eq('user_id', userId)
         .order('created_at', ascending: false)
@@ -295,40 +298,79 @@ class PostService {
     final posts =
         (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
+    if (posts.isEmpty) {
+      return [];
+    }
+
     // Get media for all posts in one query if there are posts
-    if (posts.isNotEmpty) {
-      final postIds = posts.map((p) => p['id']).toList();
-      final mediaRows = await _s
-          .from('media')
-          .select(
-              'id,post_id,type,filename,original_name,file_path,file_size,uploaded_at')
-          .filter('post_id', 'in', '(${postIds.join(',')})')
-          .order('id');
+    final postIds = posts.map((p) => p['id']).toList();
+    final mediaRows = await _s
+        .from('media')
+        .select(
+            'id,post_id,type,filename,original_name,file_path,file_size,uploaded_at')
+        .filter('post_id', 'in', '(${postIds.join(',')})')
+        .order('id');
 
-      final mediaList = (mediaRows as List)
-          .map((e) => Map<String, dynamic>.from(e as Map))
-          .toList();
+    final mediaList = (mediaRows as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
 
-      // Group media by post_id
-      final mediaByPostId = <int, List<Map<String, dynamic>>>{};
-      for (final media in mediaList) {
-        final postId = media['post_id'] as int;
-        mediaByPostId.putIfAbsent(postId, () => []).add(media);
-      }
+    // Group media by post_id
+    final mediaByPostId = <int, List<Map<String, dynamic>>>{};
+    for (final media in mediaList) {
+      final postId = media['post_id'] as int;
+      mediaByPostId.putIfAbsent(postId, () => []).add(media);
+    }
 
-      // Add media to each post
-      for (final post in posts) {
-        final postId = post['id'] as int;
-        post['media'] = mediaByPostId[postId] ?? [];
-      }
-    } else {
-      // No posts, add empty media arrays
-      for (final post in posts) {
-        post['media'] = <Map<String, dynamic>>[];
+    // Add media to each post
+    for (final post in posts) {
+      final postId = post['id'] as int;
+      post['media'] = mediaByPostId[postId] ?? [];
+    }
+
+    // Convert to PostModel instances
+    var postModels =
+        posts.map((post) => PostModel.fromJson(post)).toList(growable: false);
+
+    // Fetch author info (supports potential future multiple authors)
+    final userIds =
+        postModels.map((p) => p.userId).where((id) => id.isNotEmpty).toSet();
+
+    if (userIds.isNotEmpty) {
+      try {
+        final usersResp = await _s
+            .from('users')
+            .select('id,name,username,full_name,avatar_url,email_verified')
+            .filter(
+              'id',
+              'in',
+              '(${userIds.map((e) => '"$e"').join(',')})',
+            );
+
+        final authors = <String, AuthorSummary>{};
+        for (final user in usersResp as List) {
+          final row = Map<String, dynamic>.from(user as Map);
+          final uid = (row['id'] ?? '').toString();
+          if (uid.isEmpty) continue;
+          authors[uid] = AuthorSummary(
+            userId: uid,
+            name: row['name'] as String?,
+            username: row['username'] as String?,
+            fullName: row['full_name'] as String?,
+            avatarUrl: row['avatar_url'] as String?,
+            emailVerified: row['email_verified'] as bool?,
+          );
+        }
+
+        postModels = postModels
+            .map((post) => post.copyWith(author: authors[post.userId]))
+            .toList(growable: false);
+      } catch (e) {
+        debugPrint('Error enriching posts with author info: $e');
       }
     }
 
-    return posts;
+    return postModels;
   }
 
   /// Fetch user creation timestamp (created_at) from users table.

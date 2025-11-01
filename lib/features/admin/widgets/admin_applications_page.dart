@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/admin_service.dart';
+import 'application_detail_page.dart';
+import '../../../services/business_application_service.dart';
 
 class AdminApplicationsPage extends StatefulWidget {
   const AdminApplicationsPage({super.key});
@@ -47,70 +49,6 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
     }
   }
 
-  Future<void> _updateApplicationStatus(int applicationId, String newStatus) async {
-    try {
-      await AdminService.updateApplicationStatus(applicationId, newStatus, null);
-      await _loadApplications(); // Refresh the list
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Application status updated to $newStatus')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating status: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _assignApplication(int applicationId) async {
-    final assignedToController = TextEditingController();
-
-    final assignedTo = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Assign Application'),
-        content: TextField(
-          controller: assignedToController,
-          decoration: const InputDecoration(
-            labelText: 'Assign to',
-            hintText: 'Enter service provider name...',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, assignedToController.text),
-            child: const Text('Assign'),
-          ),
-        ],
-      ),
-    );
-
-    if (assignedTo != null && assignedTo.isNotEmpty) {
-      try {
-        await AdminService.assignApplication(applicationId, assignedTo);
-        await _loadApplications();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Application assigned to $assignedTo')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error assigning application: $e')),
-          );
-        }
-      }
-    }
-  }
-
   Widget _buildApplicationCard(Map<String, dynamic> application) {
     final status = application['status'] as String;
     final serviceType = application['service_type'] as String;
@@ -139,96 +77,96 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        serviceType.replaceAll('_', ' ').toUpperCase(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ApplicationDetailPage(
+                application: application,
+                onUpdate: _loadApplications,
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          serviceType.replaceAll('_', ' ').toUpperCase(),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        applicantName,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      Text(
-                        applicantEmail,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                        const SizedBox(height: 4),
+                        Text(
+                          applicantName,
+                          style: const TextStyle(fontSize: 14),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: statusColor),
-                  ),
-                  child: Text(
-                    status.toUpperCase(),
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                        Text(
+                          applicantEmail,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Submitted: ${createdAt.toString().split('T')[0]}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-            if (assignedTo != null) ...[
-              const SizedBox(height: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: statusColor),
+                    ),
+                    child: Text(
+                      status.toUpperCase(),
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Text(
-                'Assigned to: $assignedTo',
+                'Submitted: ${createdAt.toString().split('T')[0]}',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
-            ],
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButton<String>(
-                    value: status,
-                    items: ['pending', 'reviewed', 'assigned', 'completed']
-                        .map((status) => DropdownMenuItem(
-                              value: status,
-                              child: Text(status.toUpperCase()),
-                            ))
-                        .toList(),
-                    onChanged: (newStatus) {
-                      if (newStatus != null) {
-                        _updateApplicationStatus(application['id'], newStatus);
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () => _assignApplication(application['id']),
-                  child: const Text('Assign'),
+              if (assignedTo != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Assigned to: $assignedTo',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
-            ),
-          ],
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey[400],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -260,11 +198,16 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
                         ),
                         value: _selectedStatus,
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('All Statuses')),
-                          const DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                          const DropdownMenuItem(value: 'reviewed', child: Text('Reviewed')),
-                          const DropdownMenuItem(value: 'assigned', child: Text('Assigned')),
-                          const DropdownMenuItem(value: 'completed', child: Text('Completed')),
+                          const DropdownMenuItem(
+                              value: null, child: Text('All Statuses')),
+                          const DropdownMenuItem(
+                              value: 'pending', child: Text('Pending')),
+                          const DropdownMenuItem(
+                              value: 'reviewed', child: Text('Reviewed')),
+                          const DropdownMenuItem(
+                              value: 'assigned', child: Text('Assigned')),
+                          const DropdownMenuItem(
+                              value: 'completed', child: Text('Completed')),
                         ],
                         onChanged: (value) {
                           setState(() => _selectedStatus = value);
@@ -281,12 +224,15 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
                         ),
                         value: _selectedServiceType,
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('All Services')),
-                          const DropdownMenuItem(value: 'tax_help', child: Text('Tax Help')),
-                          const DropdownMenuItem(value: 'business_registration', child: Text('Business Registration')),
-                          const DropdownMenuItem(value: 'legal_services', child: Text('Legal Services')),
-                          const DropdownMenuItem(value: 'accounting', child: Text('Accounting')),
-                          const DropdownMenuItem(value: 'marketing', child: Text('Marketing')),
+                          const DropdownMenuItem(
+                              value: null, child: Text('All Services')),
+                          // Dynamically generate dropdown items from service types
+                          ...BusinessApplicationService.serviceTypeNames.entries
+                              .map((entry) => DropdownMenuItem(
+                                    value: entry.key,
+                                    child: Text(entry.value),
+                                  ))
+                              .toList(),
                         ],
                         onChanged: (value) {
                           setState(() => _selectedServiceType = value);

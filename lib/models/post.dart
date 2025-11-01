@@ -41,6 +41,7 @@ class AuthorSummary {
   final String? username;
   final String? fullName;
   final String? avatarUrl;
+  final bool? emailVerified; // For blue verification badge
 
   const AuthorSummary({
     required this.userId,
@@ -48,6 +49,7 @@ class AuthorSummary {
     this.username,
     this.fullName,
     this.avatarUrl,
+    this.emailVerified,
   });
 
   /// Get display name prioritizing full name over name over username
@@ -104,6 +106,8 @@ class PostModel {
   final DateTime? updatedAt;
   final String? moderationStatus;
   final String? status; // published/draft etc.
+  final int
+      commentCount; // Denormalized count from database (eliminates N+1 queries)
   final List<PostMedia> media;
   final AuthorSummary? author; // hydrated separately
 
@@ -122,6 +126,7 @@ class PostModel {
     this.updatedAt,
     this.moderationStatus,
     this.status,
+    this.commentCount = 0, // Default to 0 if not provided
     this.media = const [],
     this.author,
   });
@@ -141,6 +146,7 @@ class PostModel {
         updatedAt: updatedAt,
         moderationStatus: moderationStatus,
         status: status,
+        commentCount: commentCount, // Include in copyWith
         media: media,
         author: author ?? this.author,
       );
@@ -160,6 +166,8 @@ class PostModel {
         updatedAt: _asDate(json['updated_at']),
         moderationStatus: json['moderation_status'] as String?,
         status: json['status'] as String?,
+        commentCount: _asInt(json['comment_count']) ??
+            0, // Parse comment_count from database
         media: (json['media'] as List<dynamic>?)
                 ?.map((m) => PostMedia.fromJson(m as Map<String, dynamic>))
                 .where((media) {
@@ -176,6 +184,7 @@ class PostModel {
               return true;
             }).toList() ??
             [],
+        author: _authorFromJson(json['author']),
       );
 }
 
@@ -193,5 +202,31 @@ DateTime? _asDate(dynamic value) {
   if (value == null) return null;
   if (value is DateTime) return value;
   if (value is String) return DateTime.tryParse(value);
+  return null;
+}
+
+AuthorSummary? _authorFromJson(dynamic value) {
+  if (value == null) return null;
+  if (value is Map<String, dynamic>) {
+    final map = value;
+    final rawId = map['userId'] ?? map['id'] ?? map['user_id'];
+    final userId = rawId?.toString() ?? '';
+    if (userId.isEmpty) return null;
+    return AuthorSummary(
+      userId: userId,
+      name: map['name'] as String?,
+      username: map['username'] as String?,
+      fullName: map['fullName'] as String? ?? map['full_name'] as String?,
+      avatarUrl: map['avatarUrl'] as String? ?? map['avatar_url'] as String?,
+      emailVerified:
+          map['emailVerified'] as bool? ?? map['email_verified'] as bool?,
+    );
+  }
+
+  if (value is Map) {
+    final map = Map<String, dynamic>.from(value);
+    return _authorFromJson(map);
+  }
+
   return null;
 }

@@ -130,6 +130,7 @@ class _MessageComposeBottomSheetState extends State<MessageComposeBottomSheet> {
       );
 
       if (mounted) {
+        FocusManager.instance.primaryFocus?.unfocus();
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

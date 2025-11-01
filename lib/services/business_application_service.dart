@@ -1,6 +1,10 @@
 /// Business Application Service
 /// Handles submissions to the business services ecosystem.
-/// Email notifications are automatically sent via database triggers.
+///
+/// Automatic Email Notifications:
+/// - Applicants receive instant confirmation emails with application details
+/// - Admins receive notification emails for new applications
+/// - All emails are sent automatically via database triggers + Edge Functions
 library;
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,10 +12,57 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class BusinessApplicationService {
   static final _supabase = Supabase.instance.client;
 
+  /// Save application as DRAFT before payment
+  /// Returns application_id for payment processing
+  static Future<Map<String, dynamic>> saveDraftApplication({
+    required String serviceType,
+    required String applicantName,
+    required String applicantEmail,
+    required Map<String, dynamic> formData,
+  }) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+
+      final result = await _supabase
+          .from('business_applications')
+          .insert({
+            'service_type': serviceType,
+            'applicant_id': userId,
+            'applicant_name': applicantName,
+            'applicant_email': applicantEmail,
+            'form_data': formData,
+            'status': 'draft',
+            'payment_status': 'pending',
+          })
+          .select()
+          .single();
+
+      return {
+        'success': true,
+        'application_id': result['id'],
+        'message': 'Application saved as draft',
+        'data': result,
+      };
+    } on PostgrestException catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to save draft: ${e.message}',
+        'error': e.toString(),
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred',
+        'error': e.toString(),
+      };
+    }
+  }
+
   /// Submit a business service application
   ///
-  /// The database trigger will automatically send an email notification
-  /// to the admin when this application is inserted.
+  /// The database triggers will automatically:
+  /// 1. Send a confirmation email to the applicant
+  /// 2. Send a notification email to the admin team
   static Future<Map<String, dynamic>> submitApplication({
     required String serviceType,
     required String applicantName,
@@ -23,7 +74,7 @@ class BusinessApplicationService {
       final userId = _supabase.auth.currentUser?.id;
 
       // Insert the application into the database
-      // This will automatically trigger an email notification to admin
+      // This will automatically trigger both email notifications
       final result = await _supabase
           .from('business_applications')
           .insert({
@@ -32,7 +83,8 @@ class BusinessApplicationService {
             'applicant_name': applicantName,
             'applicant_email': applicantEmail,
             'form_data': formData,
-            'status': 'pending',
+            'status': 'paid', // Start as paid after payment
+            'payment_status': 'completed',
           })
           .select()
           .single();
@@ -41,7 +93,7 @@ class BusinessApplicationService {
         'success': true,
         'application_id': result['id'],
         'message':
-            'Application submitted successfully! Our team will contact you within 24-48 hours.',
+            'Application submitted successfully! Check your email ($applicantEmail) for confirmation and next steps.',
         'data': result,
       };
     } on PostgrestException catch (e) {
@@ -56,6 +108,61 @@ class BusinessApplicationService {
         'message': 'An unexpected error occurred. Please try again.',
         'error': e.toString(),
       };
+    }
+  }
+
+  /// Mark application as paid after successful payment
+  /// Updates application status and payment info
+  static Future<Map<String, dynamic>> markApplicationAsPaid({
+    required int applicationId,
+    required String paymentId,
+  }) async {
+    try {
+      final result = await _supabase
+          .from('business_applications')
+          .update({
+            'status': 'paid',
+            'payment_status': 'completed',
+            'payment_id': paymentId,
+            'paid_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', applicationId)
+          .select()
+          .single();
+
+      return {
+        'success': true,
+        'message': 'Application marked as paid',
+        'data': result,
+      };
+    } on PostgrestException catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to update application: ${e.message}',
+        'error': e.toString(),
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Get application by ID
+  static Future<Map<String, dynamic>?> getApplicationById(
+      int applicationId) async {
+    try {
+      final result = await _supabase
+          .from('business_applications')
+          .select()
+          .eq('id', applicationId)
+          .maybeSingle();
+
+      return result;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -205,6 +312,8 @@ class BusinessApplicationService {
     'employee_hiring': 'Employee Hiring',
     'investor_finding': 'Investor Finding',
     'business_consultation': 'Business Consultation',
+    'market_research': 'Market Research',
+    'patent_filing': 'Patent Filing',
   };
 
   /// Get display name for service type

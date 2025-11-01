@@ -5,7 +5,7 @@ import 'new_dm_repos.dart';
 import 'dm_profile_cache.dart';
 import '../../app/app_icons.dart';
 import '../../app/theme.dart';
-import '../../features/profile/public_profile_page.dart';
+import '../../features/profile/unified_profile_page.dart';
 
 /// Public thread view for individual conversations
 class ThreadView extends StatefulWidget {
@@ -36,7 +36,10 @@ class _ThreadViewState extends State<ThreadView> {
     super.initState();
     _loadParticipantInfo();
     _loadPage();
-    _attachRealtime();
+    // LAZY LOAD: Only attach realtime when widget is visible
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _attachRealtime();
+    });
   }
 
   /// Load the other participant's profile information
@@ -140,6 +143,28 @@ class _ThreadViewState extends State<ThreadView> {
   }
 
   void _attachRealtime() {
+    // ⚠️ REAL-TIME STATUS: INACTIVE (Table doesn't exist)
+    //
+    // CONFUSION ALERT: This code references 'dm_messages' table which DOESN'T EXIST!
+    //
+    // Current database schema (per main_mobile_app_database_schema.sql line 45):
+    // - 'dm_messages' table was DROPPED in migration
+    // - Replaced by 'messages' table (with conversation_id foreign key)
+    //
+    // This is OLD/DEAD CODE from previous DM implementation.
+    // Subscription will fail silently since table doesn't exist.
+    //
+    // App still works because:
+    // - _loadMore() manually fetches messages from correct 'messages' table
+    // - UI refreshes on _send() optimistic updates
+    // - Real-time is bonus feature, not required
+    //
+    // Correct implementation would subscribe to 'messages' table (which IS enabled):
+    // table: 'messages'  // ✅ This table exists and is in publications
+    // filter: conversation_id = widget.thread.threadId
+    //
+    // Safe to leave as-is (no performance impact), but could be updated to use
+    // correct table name if real-time thread updates are desired in future.
     final client = Supabase.instance.client;
     _channel = client.channel('thread_${widget.thread.threadId}');
     _channel!.onPostgresChanges(
@@ -334,7 +359,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
                 if (widget.message.senderId.isNotEmpty) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => PublicProfilePage(
+                      builder: (context) => UnifiedProfilePage(
                         userId: widget.message.senderId,
                         userName: _sender?.name,
                       ),

@@ -65,6 +65,7 @@ class UserService {
             company,
             location,
             avatar_url,
+            email_verified,
             created_at
           ''').eq('id', userId).limit(1);
 

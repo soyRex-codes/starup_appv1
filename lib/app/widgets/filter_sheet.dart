@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:foundervers/core/constants.dart';
 import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/app/theme.dart';
+import 'package:foundervers/models/post_age.dart';
 
 class FilterSheet extends StatefulWidget {
   const FilterSheet({
     super.key,
     this.initialCategory,
     this.initialGoal,
+    this.initialDateRange,
   });
 
   final String? initialCategory;
   final String? initialGoal;
+  final PostAge? initialDateRange;
 
   @override
   State<FilterSheet> createState() => _FilterSheetState();
@@ -20,12 +23,14 @@ class FilterSheet extends StatefulWidget {
 class _FilterSheetState extends State<FilterSheet> {
   String? _selectedCategory;
   String? _selectedGoal;
+  PostAge _selectedDateRange = PostAge.all;
 
   @override
   void initState() {
     super.initState();
     _selectedCategory = widget.initialCategory;
     _selectedGoal = widget.initialGoal;
+    _selectedDateRange = widget.initialDateRange ?? PostAge.all;
   }
 
   @override
@@ -94,13 +99,15 @@ class _FilterSheetState extends State<FilterSheet> {
                         ),
                       ),
                     if (_hasActiveFilters()) const SizedBox(width: 12),
-                    // Close button
+                    // Close button (X icon)
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        child: AppIcons.close(
+                        child: Icon(
+                          Icons.close,
                           size: 24,
+                          color: Colors.grey[700],
                         ),
                       ),
                     ),
@@ -110,6 +117,9 @@ class _FilterSheetState extends State<FilterSheet> {
             ),
           ),
           const Divider(height: 1),
+
+          // Date Range Row (NEW)
+          _buildDateRangeRow(),
 
           // Filter Content
           // Content
@@ -264,6 +274,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         Navigator.pop(context, {
                           'category': _selectedCategory,
                           'goal': _selectedGoal,
+                          'dateRange': _selectedDateRange.value,
                         });
                       },
                       style: ElevatedButton.styleFrom(
@@ -293,6 +304,93 @@ class _FilterSheetState extends State<FilterSheet> {
     );
   }
 
+  Widget _buildDateRangeRow() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: Border(
+          bottom: BorderSide(color: Colors.grey[200]!),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label with icon
+          Row(
+            children: [
+              Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+              const SizedBox(width: 8),
+              Text(
+                'Date Range',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Segmented chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: PostAge.values.asMap().entries.map((entry) {
+                final age = entry.value;
+                final isSelected = _selectedDateRange == age;
+                final isLast = entry.key == PostAge.values.length - 1;
+
+                return Padding(
+                  padding: EdgeInsets.only(right: isLast ? 0 : 8),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedDateRange = age),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primary : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.grey[300]!,
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        age.label,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected ? Colors.white : Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _getShortGoalLabel(String goal) {
     switch (goal) {
       case 'funding':
@@ -315,13 +413,17 @@ class _FilterSheetState extends State<FilterSheet> {
   }
 
   bool _hasActiveFilters() {
-    return _selectedCategory != null || _selectedGoal != null;
+    return _selectedCategory != null ||
+        _selectedGoal != null ||
+        _selectedDateRange != PostAge.all;
   }
 
   void _clearFilters() {
-    setState(() {
-      _selectedCategory = null;
-      _selectedGoal = null;
+    // Clear filters and immediately apply (close sheet)
+    Navigator.pop(context, {
+      'category': null,
+      'goal': null,
+      'dateRange': PostAge.all.value,
     });
   }
 
@@ -329,6 +431,7 @@ class _FilterSheetState extends State<FilterSheet> {
     final filters = <String>[];
     if (_selectedCategory != null) filters.add('Category');
     if (_selectedGoal != null) filters.add('Goal');
+    if (_selectedDateRange != PostAge.all) filters.add('Date');
 
     if (filters.isEmpty) return 'Show All Posts';
     return 'Apply ${filters.join(' + ')} Filter${filters.length > 1 ? 's' : ''}';

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/features/dm/dm_unread_controller.dart';
 import 'package:foundervers/features/dm/dm_profile_cache.dart';
 import 'package:foundervers/features/dm/thread_view.dart';
-import 'package:foundervers/features/profile/public_profile_page.dart';
+import 'package:foundervers/features/profile/unified_profile_page.dart';
 import 'package:foundervers/features/dm/new_dm_repos.dart';
 
 /// Modern inbox powered by new dm_* schema.
@@ -81,13 +80,13 @@ class _NewInboxPageState extends State<NewInboxPage> {
       );
     }
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Inbox'),
-        actions: [
-          IconButton(
-              icon: AppIcons.refresh(size: 20),
-              onPressed: _loading ? null : _load),
-        ],
+        title: null, // Remove title - already shown in tab
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        toolbarHeight: 0, // Collapse app bar completely
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -109,9 +108,27 @@ class _NewInboxPageState extends State<NewInboxPage> {
                           separatorBuilder: (_, __) => const Divider(height: 1),
                           itemBuilder: (context, i) {
                             final t = _threads[i];
+
+                            // DEBUG: Log participant information
+                            debugPrint(
+                                '🔍 Thread $i: participantIds = ${t.participantIds}');
+                            debugPrint(
+                                '🔍 Current user ID (_me.id) = ${_me.id}');
+
                             final otherIds = t.participantIds
                                 .where((id) => id != _me.id)
                                 .toList();
+
+                            debugPrint(
+                                '🔍 otherIds after filtering = $otherIds');
+
+                            // Safety check: if participantIds is empty or only contains current user
+                            if (otherIds.isEmpty &&
+                                t.participantIds.isNotEmpty) {
+                              debugPrint(
+                                  '⚠️  WARNING: Thread has no other participants! participantIds = ${t.participantIds}');
+                            }
+
                             // Prefetch profile for first other participant
                             if (otherIds.isNotEmpty) {
                               DmProfileCache.instance.fetch(otherIds.first);
@@ -187,7 +204,7 @@ class _ParticipantAvatarState extends State<_ParticipantAvatar> {
         if (widget.uid.isNotEmpty) {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => PublicProfilePage(
+              builder: (context) => UnifiedProfilePage(
                 userId: widget.uid,
                 userName: _p?.name,
               ),
@@ -236,28 +253,13 @@ class _ParticipantNameState extends State<_ParticipantName> {
   Widget build(BuildContext context) {
     final name = _p?.name ?? widget.fallback;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque, // Prevent tap from bubbling to parent
-      onTap: () {
-        if (widget.uid.isNotEmpty) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PublicProfilePage(
-                userId: widget.uid,
-                userName: name,
-              ),
-            ),
-          );
-        }
-      },
-      child: Text(
-        name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Colors.black87,
-          fontWeight: FontWeight.w500,
-        ),
+    return Text(
+      name,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        color: Colors.black87,
+        fontWeight: FontWeight.w500,
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/business_application_service.dart';
 import '../../services/file_upload_service.dart';
+import 'payment_summary_page.dart';
 
 enum BusinessServiceType {
   taxHelp,
@@ -84,8 +85,8 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         formDataCopy.remove('applicant_name');
         formDataCopy.remove('applicant_email');
 
-        // Submit the application
-        final result = await BusinessApplicationService.submitApplication(
+        // Save application as DRAFT before payment
+        final result = await BusinessApplicationService.saveDraftApplication(
           serviceType: serviceTypeKey,
           applicantName: applicantName,
           applicantEmail: applicantEmail,
@@ -93,12 +94,23 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         );
 
         if (result['success'] == true) {
-          setState(() {
-            _currentView = PortalView.success;
-          });
+          final applicationId = result['application_id'] as int;
+          final applicationData = result['data'] as Map<String, dynamic>;
+
+          // Navigate to payment summary page
+          if (mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PaymentSummaryPage(
+                  applicationId: applicationId,
+                  applicationData: applicationData,
+                ),
+              ),
+            );
+          }
         } else {
           _showErrorSnackBar(result['message'] ??
-              'Failed to submit application. Please try again.');
+              'Failed to save application. Please try again.');
         }
       } catch (e) {
         _showErrorSnackBar('An error occurred: ${e.toString()}');
@@ -291,12 +303,19 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text(
-                      'Submit Request',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.arrow_forward, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Review & Pay',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
             ),
           ),
@@ -887,7 +906,13 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
       ),
       _buildDropdownField(
         'Product/Service Stage',
-        ['Concept/Idea', 'MVP/Prototype', 'Beta/Testing', 'Launched', 'Mature Product'],
+        [
+          'Concept/Idea',
+          'MVP/Prototype',
+          'Beta/Testing',
+          'Launched',
+          'Mature Product'
+        ],
         'productStage',
       ),
       _buildTextAreaField('Product/Service Description', 'productDescription'),
@@ -896,12 +921,23 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
       _buildTextAreaField('Key Questions You Want Answered', 'keyQuestions'),
       _buildDropdownField(
         'Geographic Market Focus',
-        ['Local/Regional', 'National', 'International', 'Global', 'Online/Digital'],
+        [
+          'Local/Regional',
+          'National',
+          'International',
+          'Global',
+          'Online/Digital'
+        ],
         'geographicFocus',
       ),
       _buildDropdownField(
         'Research Timeline',
-        ['Rush (1-2 weeks)', 'Standard (3-4 weeks)', 'Comprehensive (6-8 weeks)', 'Ongoing'],
+        [
+          'Rush (1-2 weeks)',
+          'Standard (3-4 weeks)',
+          'Comprehensive (6-8 weeks)',
+          'Ongoing'
+        ],
         'researchTimeline',
       ),
       _buildDropdownField(
@@ -909,9 +945,11 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         ['<\$1k', '\$1k-3k', '\$3k-7k', '\$7k-15k', '\$15k+'],
         'researchBudget',
       ),
-      _buildTextAreaField('Current Market Assumptions or Hypotheses', 'marketAssumptions'),
+      _buildTextAreaField(
+          'Current Market Assumptions or Hypotheses', 'marketAssumptions'),
       _buildTextInputField('Competitor Names (comma-separated)', 'competitors'),
-      _buildTextAreaField('Specific Research Deliverables Needed', 'deliverables'),
+      _buildTextAreaField(
+          'Specific Research Deliverables Needed', 'deliverables'),
       _buildFileUploadField(
           'Upload existing research, business plan, or product materials',
           fieldKey: 'research_documents'),
@@ -922,16 +960,30 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
     return [
       _buildDropdownField(
         'Type of Patent',
-        ['Utility Patent', 'Design Patent', 'Provisional Patent', 'Plant Patent', 'Not Sure'],
+        [
+          'Utility Patent',
+          'Design Patent',
+          'Provisional Patent',
+          'Plant Patent',
+          'Not Sure'
+        ],
         'patentType',
       ),
       _buildDropdownField(
         'Invention Stage',
-        ['Concept/Idea', 'Prototype Built', 'Tested/Validated', 'In Production', 'Commercially Available'],
+        [
+          'Concept/Idea',
+          'Prototype Built',
+          'Tested/Validated',
+          'In Production',
+          'Commercially Available'
+        ],
         'inventionStage',
       ),
-      _buildTextAreaField('Invention/Product Description', 'inventionDescription'),
-      _buildTextAreaField('What Makes Your Invention Unique?', 'uniqueFeatures'),
+      _buildTextAreaField(
+          'Invention/Product Description', 'inventionDescription'),
+      _buildTextAreaField(
+          'What Makes Your Invention Unique?', 'uniqueFeatures'),
       _buildDropdownField(
         'Industry Category',
         [
@@ -948,31 +1000,61 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
       ),
       _buildDropdownField(
         'Patent Search Completed?',
-        ['Yes - Professional Search', 'Yes - Basic Search', 'No - Need Help', 'Not Sure'],
+        [
+          'Yes - Professional Search',
+          'Yes - Basic Search',
+          'No - Need Help',
+          'Not Sure'
+        ],
         'patentSearchStatus',
       ),
       _buildTextAreaField('Known Prior Art or Similar Patents', 'priorArt'),
       _buildDropdownField(
         'Commercial Plans',
-        ['License to Others', 'Manufacture/Sell Myself', 'Prevent Others from Using', 'Not Sure'],
+        [
+          'License to Others',
+          'Manufacture/Sell Myself',
+          'Prevent Others from Using',
+          'Not Sure'
+        ],
         'commercialPlans',
       ),
       _buildDropdownField(
         'Geographic Protection Needed',
-        ['US Only', 'US + Canada', 'US + Europe', 'US + Asia', 'Worldwide', 'Not Sure'],
+        [
+          'US Only',
+          'US + Canada',
+          'US + Europe',
+          'US + Asia',
+          'Worldwide',
+          'Not Sure'
+        ],
         'geographicProtection',
       ),
       _buildDropdownField(
         'Timeline Urgency',
-        ['Rush (ASAP)', 'Standard (2-3 months)', 'No Rush (6+ months)', 'Flexible'],
+        [
+          'Rush (ASAP)',
+          'Standard (2-3 months)',
+          'No Rush (6+ months)',
+          'Flexible'
+        ],
         'timeline',
       ),
       _buildDropdownField(
         'Budget Range',
-        ['<\$5k', '\$5k-10k', '\$10k-20k', '\$20k-50k', '\$50k+', 'Need Consultation'],
+        [
+          '<\$5k',
+          '\$5k-10k',
+          '\$10k-20k',
+          '\$20k-50k',
+          '\$50k+',
+          'Need Consultation'
+        ],
         'patentBudget',
       ),
-      _buildTextAreaField('Additional Details or Special Considerations', 'additionalDetails'),
+      _buildTextAreaField(
+          'Additional Details or Special Considerations', 'additionalDetails'),
       _buildFileUploadField(
           'Upload invention drawings, prototypes, or technical documents',
           fieldKey: 'patent_documents'),

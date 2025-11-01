@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,6 +11,7 @@ import 'package:foundervers/models/post.dart';
 import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/features/post_creation/post_service.dart';
 import 'package:foundervers/services/moderation_service.dart';
+import 'package:foundervers/services/media_compression_service.dart';
 
 // Post creation / editing page.
 class PostCreationPage extends StatefulWidget {
@@ -34,6 +36,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
 
   final _svc = PostService();
   final List<PlatformFile> _files = [];
+  final _compressionService = MediaCompressionService.instance;
 
   Future<void> _pickMedia() async {
     if (_saving) return;
@@ -44,7 +47,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
         allowMultiple: true,
         type: FileType.media,
         allowedExtensions: null,
-        withData: false,
+        withData: kIsWeb, // Enable bytes for web platform
       );
 
       if (result != null && result.files.isNotEmpty) {
@@ -163,13 +166,13 @@ class _PostCreationPageState extends State<PostCreationPage> {
       // Always re-check on edit too (content might change to disallowed)
       final textModeration = await moderationService.moderatePost(
         title: _title.text.trim(),
-        description: _description.text.trim().isEmpty
-            ? null
-            : _description.text.trim(),
+        description:
+            _description.text.trim().isEmpty ? null : _description.text.trim(),
       );
 
       if (textModeration.blocked) {
-        setState(() => _error = 'Content blocked: ${textModeration.reasons.join(', ')}');
+        setState(() =>
+            _error = 'Content blocked: ${textModeration.reasons.join(', ')}');
         return;
       }
       // Determine moderation status (pending posts already show banner in feed, no snackbar needed)
@@ -214,22 +217,6 @@ class _PostCreationPageState extends State<PostCreationPage> {
         for (var i = 0; i < _files.length; i++) {
           final f = _files[i];
           try {
-            // Check if file path is available
-            if (f.path == null) {
-              setState(() => _error =
-                  'File "${f.name}" has no valid path. Please try selecting it again.');
-              continue; // Skip this file and continue with others
-            }
-
-            final file = File(f.path!);
-            final fileSize = await file.length();
-
-            // Check file size before processing (50MB limit)
-            if (fileSize > 50 * 1024 * 1024) {
-              throw Exception(
-                  'File "${f.name}" is too large (${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB). Maximum size is 50MB.');
-            }
-
             final ext = (f.name.contains('.') ? f.name.split('.').last : 'jpg')
                 .toLowerCase();
             final ts = DateTime.now().millisecondsSinceEpoch;
@@ -239,35 +226,99 @@ class _PostCreationPageState extends State<PostCreationPage> {
             // Determine content type more accurately
             final contentType = StorageUtils.getMimeType(f.name);
 
-            // Use streaming upload for large files (>5MB) to prevent memory issues
             String storedPath;
-            if (fileSize > 5 * 1024 * 1024) {
-              // Stream upload for large files (videos, large images)
-              storedPath = await _svc.uploadMediaFile(
-                bucket: bucket,
-                path: storagePath,
-                file: file,
-                contentType: contentType,
-              );
-            } else {
-              // Binary upload for small files (backward compatibility)
-              final bytes = await file.readAsBytes();
+
+            if (kIsWeb) {
+              // Web platform - use bytes
+              if (f.bytes == null) {
+                setState(() => _error =
+                    'File "${f.name}" has no data. Please try selecting it again.');
+                continue;
+              }
+
               storedPath = await _svc.uploadMediaBinary(
                 bucket: bucket,
                 path: storagePath,
-                bytes: bytes,
+                bytes: f.bytes!,
                 contentType: contentType,
               );
-            }
 
-            mediaRows.add({
-              'post_id': postId,
-              'type': contentType.startsWith('video/') ? 'video' : 'image',
-              'filename': filename,
-              'original_name': f.name,
-              'file_path': storedPath,
-              'file_size': fileSize,
-            });
+              // Use file size from PlatformFile
+              mediaRows.add({
+                'post_id': postId,
+                'type': contentType.startsWith('video/') ? 'video' : 'image',
+                'filename': filename,
+                'original_name': f.name,
+                'file_path': storedPath,
+                'file_size': f.size,
+              });
+            } else {
+              // Mobile/Desktop platform - use file path
+              if (f.path == null) {
+                setState(() => _error =
+                    'File "${f.name}" has no valid path. Please try selecting it again.');
+                continue;
+              }
+
+              final file = File(f.path!);
+              final fileSize = await file.length();
+
+              // Check file size before processing (50MB limit)
+              if (fileSize > 50 * 1024 * 1024) {
+                throw Exception(
+                    'File "${f.name}" is too large (${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB). Maximum size is 50MB.');
+              }
+
+              // 🚀 COMPRESS MEDIA BEFORE UPLOAD
+              File fileToUpload = file;
+              int finalFileSize = fileSize;
+
+              if (_compressionService.isImage(file) ||
+                  _compressionService.isVideo(file)) {
+                debugPrint('🔄 Compressing ${f.name} before upload...');
+                final compressedFile = await _compressionService.compressFile(
+                  file,
+                  imageQuality: 70, // Medium quality (recommended)
+                );
+                fileToUpload = compressedFile;
+                finalFileSize = await compressedFile.length();
+
+                if (finalFileSize < fileSize) {
+                  final savings = ((fileSize - finalFileSize) / fileSize * 100);
+                  debugPrint(
+                      '✅ Compressed: ${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB → ${(finalFileSize / 1024 / 1024).toStringAsFixed(1)}MB (${savings.toStringAsFixed(1)}% saved)');
+                }
+              }
+
+              // Use streaming upload for large files (>5MB) to prevent memory issues
+              if (finalFileSize > 5 * 1024 * 1024) {
+                // Stream upload for large files (videos, large images)
+                storedPath = await _svc.uploadMediaFile(
+                  bucket: bucket,
+                  path: storagePath,
+                  file: fileToUpload,
+                  contentType: contentType,
+                );
+              } else {
+                // Binary upload for small files (backward compatibility)
+                final bytes = await fileToUpload.readAsBytes();
+                storedPath = await _svc.uploadMediaBinary(
+                  bucket: bucket,
+                  path: storagePath,
+                  bytes: bytes,
+                  contentType: contentType,
+                );
+              }
+
+              mediaRows.add({
+                'post_id': postId,
+                'type': contentType.startsWith('video/') ? 'video' : 'image',
+                'filename': filename,
+                'original_name': f.name,
+                'file_path': storedPath,
+                'file_size': finalFileSize, // Use compressed size
+              });
+            }
           } catch (uploadError) {
             // Continue with other uploads but track the error
             setState(() => _error =
@@ -282,7 +333,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
             final path = media['file_path'] as String;
             return 'https://${AppEnv.supabaseUrl.replaceFirst('https://', '')}/storage/v1/object/public/$bucket/$path';
           }).toList();
-          
+
           // Image placeholder moderation (approximation)
           final imageModeration = await moderationService.moderatePost(
             title: _title.text.trim(),
@@ -293,13 +344,21 @@ class _PostCreationPageState extends State<PostCreationPage> {
           );
 
           if (imageModeration.blocked) {
-            final pathsToDelete = mediaRows.map((m) => m['file_path'] as String).toList();
-            try { await Supabase.instance.client.storage.from(bucket).remove(pathsToDelete); } catch (_) {}
-            try { await _svc.deletePost(id: postId); } catch (_) {}
-            setState(() => _error = 'Images blocked (${imageModeration.reasons.join(', ')}). Remove them and try again.');
+            final pathsToDelete =
+                mediaRows.map((m) => m['file_path'] as String).toList();
+            try {
+              await Supabase.instance.client.storage
+                  .from(bucket)
+                  .remove(pathsToDelete);
+            } catch (_) {}
+            try {
+              await _svc.deletePost(id: postId);
+            } catch (_) {}
+            setState(() => _error =
+                'Images blocked (${imageModeration.reasons.join(', ')}). Remove them and try again.');
             return;
           }
-          
+
           try {
             await _svc.insertMediaRows(postId: postId, mediaList: mediaRows);
           } catch (mediaInsertError) {
@@ -671,19 +730,42 @@ class _MediaPickerBox extends StatelessWidget {
                                     ],
                                   ),
                                 )
-                              : Image.file(
-                                  File(files[i].path!),
-                                  width: 88,
-                                  height: 88,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                    width: 88,
-                                    height: 88,
-                                    color: Colors.grey[300],
-                                    child: AppIcons.warning(size: 24),
-                                  ),
-                                ),
+                              : kIsWeb
+                                  ? (files[i].bytes != null
+                                      ? Image.memory(
+                                          files[i].bytes!,
+                                          width: 88,
+                                          height: 88,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                            width: 88,
+                                            height: 88,
+                                            color: Colors.grey[300],
+                                            child: AppIcons.warning(size: 24),
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 88,
+                                          height: 88,
+                                          color: Colors.grey[300],
+                                          child: const Icon(Icons.image),
+                                        ))
+                                  : Image.file(
+                                      File(files[i].path!),
+                                      width: 88,
+                                      height: 88,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Container(
+                                        width: 88,
+                                        height: 88,
+                                        color: Colors.grey[300],
+                                        child: AppIcons.warning(size: 24),
+                                      ),
+                                    ),
                         ),
                         Positioned(
                           right: 2,

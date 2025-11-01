@@ -25,8 +25,19 @@ class _ForgotPasswordPageNewState extends State<ForgotPasswordPageNew> {
 
   bool get _isEmailValid {
     final email = _emailController.text.trim();
-    return email.isNotEmpty &&
-        RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    // More robust email validation that works for all standard email formats
+    // Accepts emails from 3 characters minimum (a@b.c) up to 254 characters (RFC 5321)
+    if (email.isEmpty || email.length < 3) return false;
+    
+    // Simple and reliable email regex that accepts all valid formats
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+      caseSensitive: false,
+    );
+    
+    final isValid = emailRegex.hasMatch(email);
+    debugPrint('📧 Email validation: "$email" -> $isValid');
+    return isValid;
   }
 
   Future<void> _requestPasswordReset() async {
@@ -73,8 +84,20 @@ class _ForgotPasswordPageNewState extends State<ForgotPasswordPageNew> {
       return 'Please enter your email address';
     }
 
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value.trim())) {
+    final email = value.trim();
+    
+    // Check minimum length
+    if (email.length < 3) {
+      return 'Email address is too short';
+    }
+    
+    // More robust email validation
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+      caseSensitive: false,
+    );
+    
+    if (!emailRegex.hasMatch(email)) {
       return 'Please enter a valid email address';
     }
 

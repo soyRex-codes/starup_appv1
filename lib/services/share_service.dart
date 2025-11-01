@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -8,36 +7,47 @@ class ShareService {
       'https://startupnest-a3jdnswbja-uc.a.run.app'; // Your actual deployed URL
 
   /// Share post with native OS share sheet and deep links
+  /// 
+  /// IMPORTANT iOS Requirements:
+  /// - iOS doesn't support the 'subject' parameter (removed to fix silent failure)
+  /// - iOS/iPadOS requires sharePositionOrigin for popover positioning
+  /// 
+  /// [sharePositionOrigin] - Required for iPad to position the share sheet popover.
+  /// Pass a Rect relative to the button that triggered the share.
   static Future<void> sharePost({
     required int postId,
     required String title,
     String? description,
     String? imageUrl,
+    Rect? sharePositionOrigin,
   }) async {
     try {
-      // Generate shareable deep link (simplified for now)
       final shareUrl = _generateShareUrl(postId);
-
-      // Create compelling share text
       final shareText = _buildShareText(title, description, shareUrl);
-
-      // Track sharing attempt
-      _trackShareAttempt(postId);
-
-      // Trigger native share sheet
+      
+      // iOS FIX: Provide sharePositionOrigin for iPad popover positioning
+      // If not provided, use center of screen as fallback
       final result = await Share.shareWithResult(
         shareText,
-        subject: title,
+        sharePositionOrigin: sharePositionOrigin ?? const Rect.fromLTWH(0, 0, 100, 100),
       );
 
-      // Track successful shares
+      debugPrint('Share result status: ${result.status}');
+      
+      // Don't show snackbar for dismissed shares - that's normal user behavior
       if (result.status == ShareResultStatus.success) {
-        _trackShareSuccess(postId, result.raw);
+        debugPrint('✅ Share completed successfully');
+      } else if (result.status == ShareResultStatus.dismissed) {
+        debugPrint('Share dismissed by user');
+      } else if (result.status == ShareResultStatus.unavailable) {
+        debugPrint('⚠️ Share unavailable on this platform');
       }
+      
+      _trackShareAttempt(postId);
     } catch (e) {
-      debugPrint('Advanced share failed: $e');
-      // Fallback to simple clipboard copy
-      await _fallbackShare(title, description);
+      debugPrint('❌ Share error: $e');
+      // Only show error if there's an actual failure, not dismissal
+      rethrow;
     }
   }
 
@@ -78,36 +88,9 @@ class ShareService {
     return buffer.toString();
   }
 
-  /// Fallback sharing method
-  static Future<void> _fallbackShare(String title, String? description) async {
-    final text = description != null ? '$title\n\n$description' : title;
-    await Clipboard.setData(ClipboardData(text: text));
-  }
-
   /// Track sharing analytics
   static void _trackShareAttempt(int postId) {
     debugPrint('📤 Share attempt for post $postId');
     // Implement analytics tracking (Firebase, Mixpanel, etc.)
-  }
-
-  static void _trackShareSuccess(int postId, String platform) {
-    debugPrint('✅ Share success for post $postId on $platform');
-    // Track successful shares for growth metrics
-  }
-
-  /// Show share options (legacy method - now simplified)
-  static void showShareOptions(
-    BuildContext context, {
-    required String title,
-    String? description,
-    String? imageUrl,
-  }) {
-    // Direct share - no modal needed
-    sharePost(
-      postId: 0, // You'll need to pass the actual post ID
-      title: title,
-      description: description,
-      imageUrl: imageUrl,
-    );
   }
 }

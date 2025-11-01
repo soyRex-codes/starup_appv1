@@ -24,4 +24,8 @@ class AppEnv {
   static String get openAIAPIKey =>
       dotenv.dotenv.maybeGet('OPENAI_API_KEY') ??
       const String.fromEnvironment('OPENAI_API_KEY');
+
+  static String get hiveAIAPIKey =>
+      dotenv.dotenv.maybeGet('HIVE_AI_API_KEY') ??
+      const String.fromEnvironment('HIVE_AI_API_KEY');
 }

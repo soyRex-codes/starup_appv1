@@ -67,8 +67,8 @@ class _SignInPageState extends State<SignInPage> {
         if (password != confirmPassword) {
           throw Exception('Passwords do not match');
         }
-        if (password.length < 6) {
-          throw Exception('Password must be at least 6 characters long');
+        if (password.length < 12) {
+          throw Exception('Password must be at least 12 characters long');
         }
       }
 
@@ -87,28 +87,31 @@ class _SignInPageState extends State<SignInPage> {
         if (response.user != null) {
           // Always require email verification for new signups
           // Send verification email using the correct method
-          final result = await PasswordResetService.instance.requestEmailVerification(
+          final result =
+              await PasswordResetService.instance.requestEmailVerification(
             email: email,
           );
-          
+
           if (result['success'] == true) {
             if (mounted) {
               // Success - navigate to OTP page
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => OtpVerificationPage.emailVerification(email),
+                  builder: (context) =>
+                      OtpVerificationPage.emailVerification(email),
                 ),
               );
             }
           } else {
             // Handle different error cases
-            if (result['message']?.contains('rate') == true || 
+            if (result['message']?.contains('rate') == true ||
                 result['message']?.contains('wait') == true) {
               if (mounted) {
                 // Rate limited - navigate to OTP page with helpful message
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => OtpVerificationPage.emailVerification(email),
+                    builder: (context) =>
+                        OtpVerificationPage.emailVerification(email),
                   ),
                 );
                 // Show informative message after navigation
@@ -116,7 +119,8 @@ class _SignInPageState extends State<SignInPage> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('Account created! You can request a new verification code on the next page if needed.'),
+                        content: const Text(
+                            'Account created! You can request a new verification code on the next page if needed.'),
                         backgroundColor: Colors.blue,
                         duration: const Duration(seconds: 4),
                       ),
@@ -125,7 +129,8 @@ class _SignInPageState extends State<SignInPage> {
                 });
               }
             } else {
-              throw Exception(result['message'] ?? 'Failed to send verification email');
+              throw Exception(
+                  result['message'] ?? 'Failed to send verification email');
             }
           }
         } else {
@@ -141,34 +146,43 @@ class _SignInPageState extends State<SignInPage> {
           debugPrint('Full error: $e');
           debugPrint('Error string: ${e.toString()}');
         }
-        
+
         setState(() {
           // More specific error handling
           final errorStr = e.toString().toLowerCase();
-          
+
           // Check for specific Supabase auth errors first
-          if (errorStr.contains('email_address_invalid') || errorStr.contains('invalid_email')) {
+          if (errorStr.contains('email_address_invalid') ||
+              errorStr.contains('invalid_email')) {
             _error = 'Please enter a valid email address.';
           } else if (errorStr.contains('signup_disabled')) {
-            _error = 'Account creation is currently disabled. Please try again later.';
+            _error =
+                'Account creation is currently disabled. Please try again later.';
           } else if (errorStr.contains('password_too_short')) {
-            _error = 'Password must be at least 6 characters long.';
-          } else if (errorStr.contains('user_already_registered') || errorStr.contains('email_address_not_available')) {
-            _error = 'An account with this email already exists. Please sign in instead.';
-          } else if (errorStr.contains('over_email_send_rate_limit') || 
-                     errorStr.contains('rate_limit') ||
-                     errorStr.contains('429')) {
+            _error = 'Password must be at least 12 characters long.';
+          } else if (errorStr.contains('user_already_registered') ||
+              errorStr.contains('email_address_not_available')) {
+            _error =
+                'An account with this email already exists. Please sign in instead.';
+          } else if (errorStr.contains('over_email_send_rate_limit') ||
+              errorStr.contains('rate_limit') ||
+              errorStr.contains('429')) {
             final match = RegExp(r'after (\d+) seconds').firstMatch(errorStr);
             final waitTime = match?.group(1);
             if (waitTime != null) {
-              _error = 'Too many email requests. Please wait $waitTime seconds before trying again.';
+              _error =
+                  'Too many email requests. Please wait $waitTime seconds before trying again.';
             } else {
-              _error = 'Too many requests. Please wait a minute before trying again.';
+              _error =
+                  'Too many requests. Please wait a minute before trying again.';
             }
-          } else if (errorStr.contains('socketexception') || errorStr.contains('failed host lookup')) {
-            _error = 'Network connection issue. Please check your internet connection and try again.';
+          } else if (errorStr.contains('socketexception') ||
+              errorStr.contains('failed host lookup')) {
+            _error =
+                'Network connection issue. Please check your internet connection and try again.';
           } else if (errorStr.contains('timeout')) {
-            _error = 'Connection timeout. Please check your internet connection and try again.';
+            _error =
+                'Connection timeout. Please check your internet connection and try again.';
           } else {
             // Show the actual error for debugging but in a user-friendly way
             if (kDebugMode) {
@@ -249,7 +263,7 @@ class _SignInPageState extends State<SignInPage> {
               decoration: InputDecoration(
                 labelText: 'Password',
                 border: const OutlineInputBorder(),
-                helperText: !_isLogin ? 'Minimum 6 characters' : null,
+                helperText: !_isLogin ? 'Minimum 12 characters' : null,
                 suffixIcon: IconButton(
                   icon: Icon(
                     _isPasswordVisible

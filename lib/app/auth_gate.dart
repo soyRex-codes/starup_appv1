@@ -5,6 +5,8 @@ import 'package:foundervers/app/home_page.dart';
 import 'package:foundervers/features/auth/sign_in_page.dart';
 import 'package:foundervers/features/auth/user_service.dart';
 import 'package:foundervers/widgets/foundervers_logo.dart';
+import 'package:foundervers/services/bookmark_service.dart';
+import 'package:foundervers/services/notification_service.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -32,17 +34,45 @@ class AuthGate extends StatelessWidget {
         final session = snapshot.data?.session;
         if (session == null) return const SignInPage();
 
-        // On auth state change, ensure profile row exists
-        _postAuthHousekeeping(session.user);
+        // On auth state change, ensure profile row exists and check suspension
+        _postAuthHousekeeping(session.user, context);
         return const HomePage();
       },
     );
   }
 }
 
-Future<void> _postAuthHousekeeping(User user) async {
+Future<void> _postAuthHousekeeping(User user, BuildContext context) async {
   // Fire and forget; minor if it fails.
   try {
+    // First check if user is suspended
+    final userProfile = await Supabase.instance.client
+        .from('users')
+        .select('is_suspended, suspension_reason')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (userProfile != null && userProfile['is_suspended'] == true) {
+      // User is suspended - sign them out immediately
+      await Supabase.instance.client.auth.signOut();
+
+      final reason = userProfile['suspension_reason'] as String? ??
+          'Your account has been suspended. Please contact support.';
+
+      if (context.mounted) {
+        // Show suspension message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Account suspended: $reason'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      return;
+    }
+
+    // If not suspended, proceed with normal housekeeping
     final svc = UserService();
     await svc.upsertUser(
       userId: user.id,
@@ -54,6 +84,20 @@ Future<void> _postAuthHousekeeping(User user) async {
       emailVerified: user.emailConfirmedAt != null,
       updateLastLoginOnlyIfExists: false,
     );
+
+    // Warm up bookmark cache in background (don't await - fire and forget)
+    BookmarkService.instance.refreshCache().then((_) {
+      debugPrint('🔥 Bookmark cache warmed up on login');
+    }).catchError((e) {
+      debugPrint('⚠️ Failed to warm bookmark cache: $e');
+    });
+
+    // Start listening for notifications
+    NotificationService.instance.startListening().then((_) {
+      debugPrint('🔔 Notification listener started');
+    }).catchError((e) {
+      debugPrint('⚠️ Failed to start notification listener: $e');
+    });
   } catch (e, st) {
     if (kDebugMode) debugPrint('Auth housekeeping failed: $e\n$st');
   }

@@ -21,11 +21,15 @@ class FeedCache {
   final int _maxCacheSize; // Limit cache entries
   final Duration _cacheExpiry; // Default cache expiry duration
 
+  // Background refresh configuration
+  static const Duration _backgroundRefreshThreshold = Duration(minutes: 3);
+
   // Statistics tracking
   int _hits = 0;
   int _misses = 0;
   int _evictions = 0;
   int _expiredItems = 0;
+  int _backgroundRefreshes = 0;
 
   /// Get adaptive cache size based on available memory and device capability
   int get _adaptiveMaxSize {
@@ -72,11 +76,11 @@ class FeedCache {
 
     // General category content can be cached longer
     if (category != null) {
-      return const Duration(minutes: 8);
+      return const Duration(minutes: 10); // Increased from 8 to 10
     }
 
     // Default TTL for uncategorized content
-    return _cacheExpiry;
+    return _cacheExpiry; // 5 minutes
   }
 
   /// Generate cache key from search/filter parameters
@@ -84,6 +88,7 @@ class FeedCache {
     String? category,
     String? goal,
     String? search,
+    String? dateRange,
     int offset = 0,
   }) {
     final parts = <String>[];
@@ -92,21 +97,27 @@ class FeedCache {
     if (search != null && search.isNotEmpty) {
       parts.add('search:${search.toLowerCase()}');
     }
+    if (dateRange != null && dateRange != 'all') {
+      parts.add('date:$dateRange');
+    }
     parts.add('offset:$offset');
     return parts.join('|');
   }
 
   /// Get cached posts if available and not expired
-  List<PostModel>? get({
+  /// Returns cached data even if stale (for instant UI), sets needsRefresh flag
+  CacheResult? get({
     String? category,
     String? goal,
     String? search,
+    String? dateRange,
     int offset = 0,
   }) {
     final key = _generateKey(
       category: category,
       goal: goal,
       search: search,
+      dateRange: dateRange,
       offset: offset,
     );
 
@@ -116,18 +127,30 @@ class FeedCache {
       return null;
     }
 
-    // Check if expired
-    if (DateTime.now().difference(cached.timestamp) >
-        _getSmartTTL(category, search)) {
+    final age = DateTime.now().difference(cached.timestamp);
+    final smartTTL = _getSmartTTL(category, search);
+
+    // Check if needs background refresh (older than 3 minutes)
+    final needsRefresh = age > _backgroundRefreshThreshold;
+
+    // Check if expired (older than smart TTL)
+    final isExpired = age > smartTTL;
+
+    if (isExpired) {
       _misses++;
       _expiredItems++;
       return null; // Don't re-add expired entries
     }
 
-    // Re-add at end for LRU (more efficient than remove + re-add pattern)
+    // Re-add at end for LRU
     _cache[key] = cached;
     _hits++;
-    return cached.posts;
+
+    return CacheResult(
+      posts: cached.posts,
+      needsRefresh: needsRefresh,
+      age: age,
+    );
   }
 
   /// Store posts in cache
@@ -135,6 +158,7 @@ class FeedCache {
     String? category,
     String? goal,
     String? search,
+    String? dateRange,
     int offset = 0,
     required List<PostModel> posts,
   }) {
@@ -142,6 +166,7 @@ class FeedCache {
       category: category,
       goal: goal,
       search: search,
+      dateRange: dateRange,
       offset: offset,
     );
 
@@ -197,6 +222,7 @@ class FeedCache {
     _misses = 0;
     _evictions = 0;
     _expiredItems = 0;
+    _backgroundRefreshes = 0;
   }
 
   /// Get cache statistics
@@ -209,6 +235,7 @@ class FeedCache {
       'misses': _misses,
       'evictions': _evictions,
       'expiredItems': _expiredItems,
+      'backgroundRefreshes': _backgroundRefreshes,
       'hitRate':
           total > 0 ? '${(_hits / total * 100).toStringAsFixed(1)}%' : '0%',
       'memoryEfficiency': total > 0
@@ -218,17 +245,24 @@ class FeedCache {
     };
   }
 
+  /// Mark that a background refresh occurred
+  void markBackgroundRefresh() {
+    _backgroundRefreshes++;
+  }
+
   /// Check if cache contains a specific key
   bool containsKey({
     String? category,
     String? goal,
     String? search,
+    String? dateRange,
     int offset = 0,
   }) {
     final key = _generateKey(
       category: category,
       goal: goal,
       search: search,
+      dateRange: dateRange,
       offset: offset,
     );
     return _cache.containsKey(key);
@@ -248,5 +282,18 @@ class CachedPosts {
   CachedPosts({
     required this.posts,
     required this.timestamp,
+  });
+}
+
+/// Cache result with refresh metadata
+class CacheResult {
+  final List<PostModel> posts;
+  final bool needsRefresh;
+  final Duration age;
+
+  CacheResult({
+    required this.posts,
+    required this.needsRefresh,
+    required this.age,
   });
 }

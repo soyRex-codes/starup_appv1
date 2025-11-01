@@ -12,14 +12,11 @@ class AdminService {
     String? searchQuery,
   }) async {
     try {
-      var query = _client
-          .from('posts')
-          .select('''
+      var query = _client.from('posts').select('''
             *,
             user:users(id, name, email),
             media(*)
-          ''')
-          .order('created_at', ascending: false);
+          ''').order('created_at', ascending: false);
 
       final posts = await query.range(offset, offset + limit - 1);
       return List<Map<String, dynamic>>.from(posts);
@@ -39,7 +36,7 @@ class AdminService {
 
       // Delete associated media first
       await _client.from('media').delete().eq('post_id', postId);
-      
+
       // Delete the post
       await _client.from('posts').delete().eq('id', postId);
     } catch (e) {
@@ -48,7 +45,8 @@ class AdminService {
     }
   }
 
-  static Future<void> updatePost(int postId, Map<String, dynamic> updates) async {
+  static Future<void> updatePost(
+      int postId, Map<String, dynamic> updates) async {
     try {
       await AdminAuthService.logAdminAction('update_post', {
         'post_id': postId,
@@ -123,14 +121,15 @@ class AdminService {
       // Get simple counts using length of returned arrays
       final users = await _client.from('users').select('id');
       final posts = await _client.from('posts').select('id');
-      
+
       // Try to get messages, fallback if table doesn't exist
       int totalMessages = 0;
       try {
         final messages = await _client.from('chat_messages').select('id');
         totalMessages = (messages as List).length;
       } catch (e) {
-        if (kDebugMode) debugPrint('Chat messages table not found, skipping count');
+        if (kDebugMode)
+          debugPrint('Chat messages table not found, skipping count');
       }
 
       // Get recent activity (last 7 days)
@@ -204,9 +203,11 @@ class AdminService {
     try {
       final queryBuilder = _client.from('business_applications').select('*');
 
+      // Filter out DRAFT applications by default - only show submitted applications
       final filteredQuery = status != null && status.isNotEmpty
           ? queryBuilder.eq('status', status)
-          : queryBuilder;
+          : queryBuilder.neq('status',
+              'draft'); // Exclude DRAFT if no specific status selected
 
       final finalQuery = serviceType != null && serviceType.isNotEmpty
           ? filteredQuery.eq('service_type', serviceType)
@@ -223,7 +224,8 @@ class AdminService {
     }
   }
 
-  static Future<void> updateApplicationStatus(int applicationId, String status, String? adminNotes) async {
+  static Future<void> updateApplicationStatus(
+      int applicationId, String status, String? adminNotes) async {
     try {
       await AdminAuthService.logAdminAction('update_application_status', {
         'application_id': applicationId,
@@ -236,14 +238,18 @@ class AdminService {
         updates['admin_notes'] = adminNotes;
       }
 
-      await _client.from('business_applications').update(updates).eq('id', applicationId);
+      await _client
+          .from('business_applications')
+          .update(updates)
+          .eq('id', applicationId);
     } catch (e) {
       if (kDebugMode) debugPrint('Update application status error: $e');
       rethrow;
     }
   }
 
-  static Future<void> assignApplication(int applicationId, String assignedTo) async {
+  static Future<void> assignApplication(
+      int applicationId, String assignedTo) async {
     try {
       await AdminAuthService.logAdminAction('assign_application', {
         'application_id': applicationId,

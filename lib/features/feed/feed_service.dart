@@ -13,26 +13,40 @@ class FeedService {
     String? category,
     String? goal,
     String? search,
+    String? dateRange,
     int limit = 20,
     int offset = 0,
     bool forceRefresh = false,
+    bool silentRefresh = false, // For background refresh
+    Function(bool needsRefresh)? onCacheCheck,
   }) async {
     // Check cache first (unless forcing refresh)
     if (!forceRefresh) {
-      final cached = _cache.get(
+      final cacheResult = _cache.get(
         category: category,
         goal: goal,
         search: search,
+        dateRange: dateRange,
         offset: offset,
       );
-      if (cached != null) {
-        return cached;
+
+      if (cacheResult != null) {
+        // Notify caller if background refresh is needed
+        if (onCacheCheck != null) {
+          onCacheCheck(cacheResult.needsRefresh);
+        }
+
+        // If silentRefresh, continue to fetch but return cached immediately
+        if (!silentRefresh) {
+          return cacheResult.posts;
+        }
+        // For silent refresh, we'll fetch and update cache without returning yet
       }
     }
     // CRITICAL FIX: Use explicit post-media relationship to prevent wrong images
     // First fetch posts without media join to avoid Supabase join issues
     var q = _s.from('posts').select(
-          'id,user_id,name,category,title,description,funding_goal,post_goal,post_goal_description,email,created_at,updated_at,moderation_status,status',
+          'id,user_id,name,category,title,description,funding_goal,post_goal,post_goal_description,email,created_at,updated_at,moderation_status,status,comment_count',
         );
 
     // Apply filters
@@ -49,6 +63,12 @@ class FeedService {
       // Search in title, description, and name fields using ilike for case-insensitive search
       q = q.or(
           'title.ilike.%$searchTerm%,description.ilike.%$searchTerm%,name.ilike.%$searchTerm%');
+    }
+
+    // Apply date range filter
+    if (dateRange != null && dateRange != 'all') {
+      final cutoffDate = _getDateRangeCutoff(dateRange);
+      q = q.gte('created_at', cutoffDate.toIso8601String());
     }
 
     final data = await q
@@ -99,8 +119,9 @@ class FeedService {
 
     final Map<String, AuthorSummary> authors = {};
     if (userIds.isNotEmpty) {
-      final usersQuery =
-          _s.from('users').select('id,name,username,full_name,avatar_url');
+      final usersQuery = _s
+          .from('users')
+          .select('id,name,username,full_name,avatar_url,email_verified');
       dynamic usersResp;
       if (userIds.length == 1) {
         usersResp = await usersQuery.eq('id', userIds.first);
@@ -121,6 +142,7 @@ class FeedService {
           username: u['username'] as String?,
           fullName: u['full_name'] as String?,
           avatarUrl: u['avatar_url'] as String?,
+          emailVerified: u['email_verified'] as bool?,
         );
       }
     }
@@ -135,11 +157,32 @@ class FeedService {
       category: category,
       goal: goal,
       search: search,
+      dateRange: dateRange,
       offset: offset,
       posts: posts,
     );
 
+    // Track background refresh if this was a silent refresh
+    if (silentRefresh) {
+      _cache.markBackgroundRefresh();
+    }
+
     return posts;
+  }
+
+  /// Get cutoff date for date range filter
+  DateTime _getDateRangeCutoff(String dateRange) {
+    final now = DateTime.now();
+    switch (dateRange) {
+      case 'today':
+        return now.subtract(const Duration(hours: 24));
+      case 'week':
+        return now.subtract(const Duration(days: 7));
+      case 'month':
+        return now.subtract(const Duration(days: 30));
+      default:
+        return DateTime(2020); // Far past = all posts
+    }
   }
 
   /// Clear cache when posts are modified
@@ -152,6 +195,7 @@ class FeedService {
     String? category,
     String? goal,
     String? search,
+    String? dateRange,
     int limit = 20,
     int offset = 0,
   }) async {
@@ -159,6 +203,7 @@ class FeedService {
       category: category,
       goal: goal,
       search: search,
+      dateRange: dateRange,
       limit: limit,
       offset: offset,
       forceRefresh: true,

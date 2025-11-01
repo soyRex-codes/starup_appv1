@@ -1,12 +1,63 @@
-import { validateOrigin, createCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import type {} from '../_shared/deno-runtime.d.ts';
 
-// Global Deno declaration for Edge Functions
-declare const Deno: {
-  env: {
-    get(key: string): string | undefined;
+export {};
+
+// CORS Configuration
+const ALLOWED_ORIGINS = [
+  'https://foundervers.com',
+  'https://app.foundervers.com',
+  'https://www.foundervers.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:8080',
+];
+
+const DYNAMIC_ORIGIN_PATTERNS = [
+  /^https:\/\/[a-zA-Z0-9-]+\.foundervers\.com$/,
+  /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/,
+  /^https:\/\/[a-zA-Z0-9-]+\.netlify\.app$/,
+];
+
+function validateOrigin(request: Request): string | null {
+  const origin = request.headers.get('origin');
+  if (!origin) return null;
+  if (ALLOWED_ORIGINS.includes(origin)) return origin;
+  for (const pattern of DYNAMIC_ORIGIN_PATTERNS) {
+    if (pattern.test(origin)) return origin;
+  }
+  return null;
+}
+
+function createCorsHeaders(validatedOrigin: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
+    'Content-Type': 'application/json',
   };
-  serve: (handler: (req: Request) => Response | Promise<Response>) => void;
-};
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin;
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  }
+  return headers;
+}
+
+function handleCorsPreflightRequest(request: Request): Response | null {
+  if (request.method !== 'OPTIONS') return null;
+  const validatedOrigin = validateOrigin(request);
+  if (!validatedOrigin && request.headers.get('origin')) {
+    return new Response(null, {
+      status: 403,
+      statusText: 'Forbidden',
+      headers: { 'Vary': 'Origin' },
+    });
+  }
+  return new Response(null, {
+    status: 204,
+    headers: createCorsHeaders(validatedOrigin),
+  });
+}
 
 interface NotificationRequest {
   applicant_name: string
@@ -55,7 +106,8 @@ Deno.serve(async (req: Request) => {
   const validatedOrigin = validateOrigin(req);
   const corsHeaders = createCorsHeaders(validatedOrigin);
 
-  // Reject unauthorized origins (if origin header is present but not validated)
+  // Only reject if origin is provided but not validated
+  // Database calls won't have origin header, so we allow them
   if (req.headers.get('origin') && !validatedOrigin) {
     return new Response('Forbidden - Origin not allowed', {
       status: 403,
@@ -176,41 +228,50 @@ Deno.serve(async (req: Request) => {
     try {
       console.log('📧 Attempting to send email...')
       
-      // Send via Resend (recommended for production)
-      const resendApiKey = Deno.env.get('RESEND_API_KEY')
+      // Send via SendGrid
+      const sendgridApiKey = Deno.env.get('SENDGRID_API_KEY')
       
-      if (resendApiKey) {
-        console.log('📧 Sending via Resend...')
-        const resendResponse = await fetch('https://api.resend.com/emails', {
+      if (sendgridApiKey) {
+        console.log('📧 Sending via SendGrid...')
+        const sendgridResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
+            'Authorization': `Bearer ${sendgridApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: `FounderVers <noreply@foundervers.com>`,
-            to: [admin_email],
-            subject: subject,
-            html: htmlBody,
-            reply_to: applicant_email,
-            headers: {
-              'X-Application-ID': application_id,
-              'X-Service-Type': service_type
+            personalizations: [{
+              to: [{ email: admin_email }],
+              subject: subject
+            }],
+            from: {
+              email: 'foundervers@gmail.com',
+              name: 'FounderVers'
+            },
+            reply_to: {
+              email: applicant_email,
+              name: applicant_name
+            },
+            content: [{
+              type: 'text/html',
+              value: htmlBody
+            }],
+            custom_args: {
+              application_id: application_id,
+              service_type: service_type
             }
           }),
         })
 
-        if (resendResponse.ok) {
-          const resendResult = await resendResponse.json()
-          console.log('✅ Email sent successfully via Resend!', resendResult)
+        if (sendgridResponse.status === 202) {
+          console.log('✅ Email sent successfully via SendGrid!')
           return new Response(
             JSON.stringify({ 
               success: true, 
-              message: 'Business application notification sent successfully via Resend',
+              message: 'Business application notification sent successfully via SendGrid',
               application_id: application_id,
               admin_email: admin_email,
-              email_sent: true,
-              email_id: resendResult.id
+              email_sent: true
             }),
             { 
               status: 200, 
@@ -218,16 +279,16 @@ Deno.serve(async (req: Request) => {
             }
           )
         } else {
-          const errorText = await resendResponse.text()
-          console.error('❌ Resend error:', errorText)
-          throw new Error(`Resend API failed: ${errorText}`)
+          const errorText = await sendgridResponse.text()
+          console.error('❌ SendGrid error:', errorText)
+          throw new Error(`SendGrid API failed: ${errorText}`)
         }
       } else {
-        console.log('📝 No Resend API key found, email logged but not sent')
+        console.log('📝 No SendGrid API key found, email logged but not sent')
         console.log('🔧 To enable email sending:')
-        console.log('   1. Sign up at https://resend.com')
+        console.log('   1. Sign up at https://sendgrid.com')
         console.log('   2. Get API key')
-        console.log('   3. Add RESEND_API_KEY to Supabase Environment Variables')
+        console.log('   3. Add SENDGRID_API_KEY to Supabase Environment Variables')
       }
       
     } catch (emailError) {

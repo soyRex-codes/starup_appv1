@@ -48,10 +48,10 @@ class _PasswordResetNewPasswordPageState
     if (password.isEmpty) {
       return {'valid': false, 'message': 'Password cannot be empty'};
     }
-    if (password.length < 8) {
+    if (password.length < 12) {
       return {
         'valid': false,
-        'message': 'Password must be at least 8 characters'
+        'message': 'Password must be at least 12 characters'
       };
     }
     if (!password.contains(RegExp(r'[A-Z]'))) {
@@ -84,7 +84,7 @@ class _PasswordResetNewPasswordPageState
   List<Widget> _buildPasswordRequirements() {
     final password = _newPasswordController.text;
     final requirements = [
-      {'text': 'At least 8 characters', 'met': password.length >= 8},
+      {'text': 'At least 12 characters', 'met': password.length >= 12},
       {
         'text': 'One uppercase letter',
         'met': password.contains(RegExp(r'[A-Z]'))

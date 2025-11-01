@@ -41,7 +41,7 @@ class PasswordResetService {
 
       // Determine if we should create user based on purpose
       bool shouldCreateUser = purpose == 'signup';
-      
+
       if (kDebugMode) {
         debugPrint('shouldCreateUser: $shouldCreateUser for purpose: $purpose');
       }
@@ -99,13 +99,14 @@ class PasswordResetService {
     required String email,
     required String otp,
   }) async {
-    final result = await _verifyOTPGeneric(email: email, otp: otp, purpose: 'signup');
-    
+    final result =
+        await _verifyOTPGeneric(email: email, otp: otp, purpose: 'signup');
+
     // If successful, mark email as verified in our users table
     if (result['success'] == true) {
       await _markEmailAsVerified(email);
     }
-    
+
     return result;
   }
 
@@ -120,7 +121,7 @@ class PasswordResetService {
       if (user != null && user.emailConfirmedAt != null) {
         // Email was confirmed via link
         await _markEmailAsVerified(email);
-        
+
         return {
           'success': true,
           'message': 'Email confirmed successfully.',
@@ -128,14 +129,15 @@ class PasswordResetService {
       } else {
         return {
           'success': false,
-          'message': 'Email confirmation not completed. Please check your email and click the confirmation link.',
+          'message':
+              'Email confirmation not completed. Please check your email and click the confirmation link.',
         };
       }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Email link confirmation check failed: $e');
       }
-      
+
       return {
         'success': false,
         'message': 'Unable to verify email confirmation. Please try again.',
@@ -166,6 +168,28 @@ class PasswordResetService {
 
       if (response.session == null) {
         throw Exception('Invalid or expired code');
+      }
+
+      // Check if user is suspended after successful OTP verification
+      if (response.user != null) {
+        final userProfile = await _client
+            .from('users')
+            .select('is_suspended, suspension_reason')
+            .eq('id', response.user!.id)
+            .maybeSingle();
+
+        if (userProfile != null && userProfile['is_suspended'] == true) {
+          // Sign out the suspended user immediately
+          await _client.auth.signOut();
+
+          final reason = userProfile['suspension_reason'] as String? ??
+              'Your account has been suspended. Please contact support.';
+
+          return {
+            'success': false,
+            'message': 'Account suspended: $reason',
+          };
+        }
       }
 
       // For email verification (signup), we need to update the user's email_verified status
@@ -205,7 +229,7 @@ class PasswordResetService {
       await _client.from('users').update({
         'email_verified': true,
       }).eq('email', email);
-      
+
       if (kDebugMode) {
         debugPrint('Email verified status updated for: $email');
       }
@@ -291,10 +315,10 @@ class PasswordResetService {
     if (password.isEmpty) {
       return {'valid': false, 'message': 'Password cannot be empty'};
     }
-    if (password.length < 8) {
+    if (password.length < 12) {
       return {
         'valid': false,
-        'message': 'Password must be at least 8 characters'
+        'message': 'Password must be at least 12 characters'
       };
     }
     if (!password.contains(RegExp(r'[A-Z]'))) {

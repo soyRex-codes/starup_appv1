@@ -5,11 +5,13 @@ import '../../services/suggestion_service.dart';
 class SuggestionForm extends StatefulWidget {
   final int postId;
   final String postTitle;
+  final ScrollController? scrollController;
 
   const SuggestionForm({
     super.key,
     required this.postId,
     required this.postTitle,
+    this.scrollController,
   });
 
   @override
@@ -52,6 +54,7 @@ class _SuggestionFormState extends State<SuggestionForm> {
       );
 
       if (mounted) {
+        FocusManager.instance.primaryFocus?.unfocus();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -99,6 +102,7 @@ class _SuggestionFormState extends State<SuggestionForm> {
             child: Form(
               key: _formKey,
               child: SingleChildScrollView(
+                controller: widget.scrollController,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,

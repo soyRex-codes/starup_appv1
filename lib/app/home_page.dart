@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:foundervers/features/feed/feed_page.dart';
-// Replaced legacy InboxPage with new optimized messaging inbox
-import 'package:foundervers/features/dm/new_inbox_page.dart';
 import 'package:foundervers/features/dm/dm_unread_controller.dart';
-import 'package:foundervers/features/Global_public_chat-for_founders/global_chat_page.dart';
 import 'package:foundervers/features/ecosystem/ecosystem_application_page.dart';
+import 'package:foundervers/features/chat/chat_page_with_tabs.dart';
+import 'package:foundervers/features/business_ai/business_ai_page.dart';
 import 'package:foundervers/app/app_icons.dart';
-import 'package:foundervers/app/theme.dart';
 import 'package:foundervers/core/cache/feed_cache.dart';
 
 import '../features/post_creation/post_creation_page.dart';
@@ -21,6 +19,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _index = 0;
   final GlobalKey<FeedPageState> _feedPageKey = GlobalKey<FeedPageState>();
+  bool _isNavVisible = true; // Auto-hide navigation state
 
   late final List<Widget> _pages;
 
@@ -28,10 +27,17 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _pages = [
-      FeedPage(key: _feedPageKey),
+      FeedPage(
+        key: _feedPageKey,
+        onNavVisibilityChanged: (visible) {
+          if (mounted && _isNavVisible != visible) {
+            setState(() => _isNavVisible = visible);
+          }
+        },
+      ),
       const EcosystemApplicationPage(),
-      const GlobalChatPage(),
-      const NewInboxPage(),
+      const BusinessAIPage(),
+      const ChatPageWithTabs(),
     ];
     // Initialize unread controller once user is available (Firebase auth already initialized earlier in app start)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -43,22 +49,40 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_index],
-      bottomNavigationBar: _NavBar(
-        index: _index,
-        onTap: (i) => setState(() => _index = i),
-        onAdd: () async {
-          if (!mounted) return;
-          final created = await Navigator.of(context).push<bool>(
-            MaterialPageRoute(builder: (_) => const PostCreationPage()),
-          );
-          if (created == true) {
-            // Clear cache and refresh feed to show new post immediately
-            FeedCache.instance.clear();
-            setState(() => _index = 0);
-            // Trigger feed refresh after navigation
-            _feedPageKey.currentState?.refreshAfterPostCreation();
-          }
-        },
+      bottomNavigationBar: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        // Keep nav bar fixed at the bottom. Header inside pages may still hide.
+        height: null,
+        curve: Curves.fastOutSlowIn,
+        child: AnimatedOpacity(
+          // Always show nav bar. We keep opacity constant so it doesn't hide with the feed header.
+          opacity: 1.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubic,
+          child: _NavBar(
+            index: _index,
+            onTap: (i) {
+              setState(() {
+                _index = i;
+                // Reset nav visibility when switching tabs
+                if (i != 0) _isNavVisible = true;
+              });
+            },
+            onAdd: () async {
+              if (!mounted) return;
+              final created = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(builder: (_) => const PostCreationPage()),
+              );
+              if (created == true) {
+                // Clear cache and refresh feed to show new post immediately
+                FeedCache.instance.clear();
+                setState(() => _index = 0);
+                // Trigger feed refresh after navigation
+                _feedPageKey.currentState?.refreshAfterPostCreation();
+              }
+            },
+          ),
+        ),
       ),
     );
   }
@@ -74,80 +98,93 @@ class _NavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.bg, // Use theme background
-        border: Border(
-            top: BorderSide(color: AppColors.border)), // Use theme border
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
+      padding: const EdgeInsets.only(top: 10, bottom: 8, left: 8, right: 8),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 58,
+          height: 68,
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Expanded(
-                  child: _NavBtn(
-                      label: 'Feed',
-                      icon: AppIcons.feed(size: 24),
-                      active: index == 0,
-                      onTap: () => onTap(0))),
-              // Ecosystem now in position 2
-              Expanded(
-                  child: _NavBtn(
-                      label: 'Ecosystem',
-                      icon: Image.asset(
-                        'lib/icons/ecosystem_application.png',
-                        width: 24,
-                        height: 24,
-                        fit: BoxFit.contain,
-                      ),
-                      active: index == 1,
-                      onTap: () => onTap(1))),
-              // Create button in the middle
+              _NavBtn(
+                label: 'Home',
+                icon: AppIcons.feed(size: 24),
+                active: index == 0,
+                onTap: () => onTap(0),
+                iconSize: 24,
+              ),
+              _NavBtn(
+                label: 'Ecosystem',
+                icon: Image.asset(
+                  'lib/icons/ecosystem_application.png',
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
+                ),
+                active: index == 1,
+                onTap: () => onTap(1),
+                iconSize: 24,
+              ),
               _AddNavBtn(onTap: onAdd),
-              // Global Chat tab
-              Expanded(
-                  child: _NavBtn(
-                      label: 'Global',
-                      icon: AppIcons.globalChat(size: 24),
-                      active: index == 2,
-                      onTap: () => onTap(2))),
-              // DMs with unread badge listener now in position 5
-              Expanded(
-                child: ValueListenableBuilder<int>(
-                  valueListenable: DmUnreadController.instance.unread,
-                  builder: (context, unread, _) => _NavBtn(
-                    label: 'DMs',
-                    icon: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        AppIcons.dms(size: 24),
-                        if (unread > 0)
-                          Positioned(
-                            right: -2,
-                            top: -2,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors
-                                    .primary, // Use orange for unread badge
-                                borderRadius: BorderRadius.circular(10),
+              _NavBtn(
+                label: 'Business.AI',
+                icon: Image.asset(
+                  'lib/icons/ai-chatbot.png',
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
+                ),
+                active: index == 2,
+                onTap: () => onTap(2),
+                iconSize: 24,
+              ),
+              ValueListenableBuilder<int>(
+                valueListenable: DmUnreadController.instance.unread,
+                builder: (context, unread, _) => _NavBtn(
+                  label: 'Chat',
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      AppIcons.dms(size: 24),
+                      if (unread > 0)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF6B2C),
+                              borderRadius: BorderRadius.circular(10),
+                              border:
+                                  Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            constraints: const BoxConstraints(minWidth: 18),
+                            child: Text(
+                              unread > 99 ? '99+' : unread.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
                               ),
-                              child: Text(
-                                unread > 99 ? '99+' : unread.toString(),
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w600),
-                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                      ],
-                    ),
-                    active: index == 3,
-                    onTap: () => onTap(3),
+                        ),
+                    ],
                   ),
+                  active: index == 3,
+                  onTap: () => onTap(3),
+                  iconSize: 24,
                 ),
               ),
             ],
@@ -163,26 +200,30 @@ class _AddNavBtn extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: Center(child: AppIcons.post(size: 24))),
-              const SizedBox(height: 0),
-              const Text('Create',
-                  style: TextStyle(
-                      fontSize: 9.0, fontWeight: FontWeight.w600, height: 1.0)),
-            ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 45,
+        height: 45,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFF6B2C), Color(0xFFFF8C42)],
           ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6B2C).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 28,
         ),
       ),
     );
@@ -194,36 +235,59 @@ class _NavBtn extends StatelessWidget {
       {required this.label,
       required this.icon,
       required this.active,
-      required this.onTap});
+      required this.onTap,
+      this.iconSize = 24});
   final String label;
   final Widget icon;
   final bool active;
   final VoidCallback onTap;
+  final double iconSize;
   @override
   Widget build(BuildContext context) {
-    final bg = active
-        ? AppColors.primarySoft
-        : Colors.transparent; // Use orange tint for active state
-    return InkWell(
-      borderRadius: BorderRadius.circular(24),
+    return GestureDetector(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(18),
+                color: active
+                    ? const Color.fromARGB(255, 255, 107, 44).withOpacity(0.15)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
               ),
-              child:
-                  SizedBox(width: 24, height: 24, child: Center(child: icon)),
+              child: SizedBox(
+                width: iconSize,
+                height: iconSize,
+                child: IconTheme(
+                  data: IconThemeData(
+                    color: active
+                        ? const Color(0xFFFF6B2C)
+                        : const Color(0xFF6B7280),
+                    size: iconSize,
+                  ),
+                  child: icon,
+                ),
+              ),
             ),
-            const SizedBox(height: 0),
-            Text(label, style: const TextStyle(fontSize: 8.5, height: 1.0)),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.0,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                color:
+                    active ? const Color(0xFFFF6B2C) : const Color(0xFF6B7280),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),

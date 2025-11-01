@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/core/env.dart';
 import 'package:foundervers/core/visibility.dart';
-import 'package:foundervers/features/profile/public_profile_page.dart';
-import 'package:foundervers/app/app_icons.dart';
+import 'package:foundervers/features/profile/unified_profile_page.dart';
 import 'package:foundervers/services/moderation_service.dart';
+import 'global_chat_cache.dart';
 
 class GlobalChatPage extends StatefulWidget {
   const GlobalChatPage({super.key});
@@ -16,19 +16,65 @@ class GlobalChatPage extends StatefulWidget {
 class _GlobalChatPageState extends State<GlobalChatPage> {
   final _controller = TextEditingController();
   final _supabase = Supabase.instance.client;
+  final _cache = GlobalChatCache.instance;
 
   // Get current user from Supabase
   User? get _currentUser => _supabase.auth.currentUser;
 
-  // Stream messages from chat_messages table
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialMessages();
+  }
+
+  /// Load initial messages with caching
+  Future<void> _loadInitialMessages() async {
+    // Check cache first
+    final cached = _cache.get();
+    if (cached != null) {
+      debugPrint('📦 Global Chat Cache HIT - ${cached.length} messages');
+      return; // Use real-time stream with cached data
+    }
+
+    debugPrint('📭 Global Chat Cache MISS - fetching from database');
+
+    // Fetch from database
+    try {
+      final messages = await _supabase
+          .from('chat_messages')
+          .select('*')
+          .order('created_at', ascending: true)
+          .limit(200);
+
+      final messageList = (messages as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+
+      // Cache the results
+      _cache.put(messageList);
+    } catch (e) {
+      debugPrint('Error loading initial messages: $e');
+    }
+  }
+
+  // Stream messages from chat_messages table with cache integration
   Stream<List<Map<String, dynamic>>> _streamMessages({int limit = 200}) {
     return _supabase
         .from('chat_messages')
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: true)
         .limit(limit)
-        .map((rows) =>
-            rows.map((e) => Map<String, dynamic>.from(e as Map)).toList());
+        .map((rows) {
+          final messages =
+              rows.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+          // Update cache with streamed messages
+          if (messages.isNotEmpty) {
+            _cache.put(messages);
+          }
+
+          return messages;
+        });
   }
 
   // Send message to chat_messages table
@@ -38,13 +84,16 @@ class _GlobalChatPageState extends State<GlobalChatPage> {
     try {
       // Check content moderation before sending
       final moderationService = ModerationService();
-  final moderationResult = await moderationService.moderateText(content: content);
-  final shouldBlock = moderationResult.blocked;
+      final moderationResult =
+          await moderationService.moderateText(content: content);
+      final shouldBlock = moderationResult.blocked;
 
-  if (shouldBlock) {
+      if (shouldBlock) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Message violates community guidelines. Please revise and try again.')),
+            const SnackBar(
+                content: Text(
+                    'Message violates community guidelines. Please revise and try again.')),
           );
         }
         return;
@@ -69,6 +118,8 @@ class _GlobalChatPageState extends State<GlobalChatPage> {
         'user_name': displayName,
         'content': content,
       });
+
+      // Note: Real-time stream will automatically update the UI and cache
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -86,10 +137,7 @@ class _GlobalChatPageState extends State<GlobalChatPage> {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Global Chat'),
-          automaticallyImplyLeading: false, // Remove back button
-        ),
+        backgroundColor: const Color(0xFFF5F5F5),
         body: Column(
           children: [
             Expanded(
@@ -122,56 +170,94 @@ class _GlobalChatPageState extends State<GlobalChatPage> {
                       .toList();
 
                   return ListView.builder(
-                    padding: const EdgeInsets.all(8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     itemCount: visibleMessages.length,
                     itemBuilder: (context, i) {
                       final m = visibleMessages[i];
                       final isMe =
                           (m['user_id'] ?? '') == (_currentUser?.id ?? '');
 
-                      return Align(
-                        alignment:
-                            isMe ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.all(10),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isMe
-                                ? Colors.deepPurple.withValues(alpha: 0.1)
-                                : Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Profile header using feed post pattern
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  _AvatarCircle(
-                                    userId: m['user_id'] as String?,
-                                    userName: m['user_name'] as String?,
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 3),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: isMe
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          children: [
+                            if (!isMe) ...[
+                              // Avatar on left for others
+                              _AvatarCircle(
+                                userId: m['user_id'] as String?,
+                                userName: m['user_name'] as String?,
+                              ),
+                              const SizedBox(width: 6),
+                            ],
+                            // Message bubble
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                constraints: BoxConstraints(
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width * 0.75,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isMe
+                                      ? const Color(
+                                          0xFFE8DCC8) // Light brown for sent messages
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(isMe ? 12 : 4),
+                                    topRight: Radius.circular(isMe ? 4 : 12),
+                                    bottomLeft: const Radius.circular(12),
+                                    bottomRight: const Radius.circular(12),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      m['user_name'] ?? 'User',
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 2,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (!isMe)
+                                      Text(
+                                        m['user_name'] ?? 'User',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFF8B4513),
+                                        ),
+                                      ),
+                                    if (!isMe) const SizedBox(height: 2),
+                                    Text(
+                                      m['content'] ?? '',
                                       style: const TextStyle(
                                         fontSize: 14,
-                                        fontWeight: FontWeight.w600,
                                         color: Colors.black87,
+                                        height: 1.3,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                              const SizedBox(height: 8),
-                              Text(m['content'] ?? ''),
+                            ),
+                            if (isMe) ...[
+                              const SizedBox(width: 6),
+                              // Avatar on right for current user
+                              _AvatarCircle(
+                                userId: m['user_id'] as String?,
+                                userName: m['user_name'] as String?,
+                              ),
                             ],
-                          ),
+                          ],
                         ),
                       );
                     },
@@ -182,51 +268,74 @@ class _GlobalChatPageState extends State<GlobalChatPage> {
             SafeArea(
               top: false,
               child: Container(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
+                  color: Colors.white,
                   border: Border(
-                    top: BorderSide(color: Colors.grey.shade300),
+                    top: BorderSide(color: Colors.grey.shade200),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, -1),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        decoration: const InputDecoration(
-                          hintText: 'Type a message...',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        maxLines: 3,
-                        minLines: 1,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (text) async {
-                          final message = text.trim();
-                          if (message.isEmpty || _currentUser == null) return;
+                        child: TextField(
+                          controller: _controller,
+                          decoration: const InputDecoration(
+                            hintText: 'Type a message...',
+                            hintStyle: TextStyle(fontSize: 14),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                          ),
+                          maxLines: 4,
+                          minLines: 1,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (text) async {
+                            final message = text.trim();
+                            if (message.isEmpty || _currentUser == null) return;
 
-                          _controller.clear();
-                          // Keyboard automatically dismisses on submit
-                          await _sendMessage(message);
-                        },
+                            _controller.clear();
+                            // Keyboard automatically dismisses on submit
+                            await _sendMessage(message);
+                          },
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: AppIcons.send(size: 24),
-                      onPressed: () async {
-                        final text = _controller.text.trim();
-                        if (text.isEmpty || _currentUser == null) return;
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B4513),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.send, size: 18, color: Colors.white),
+                        padding: EdgeInsets.zero,
+                        onPressed: () async {
+                          final text = _controller.text.trim();
+                          if (text.isEmpty || _currentUser == null) return;
 
-                        _controller.clear();
-                        // Dismiss keyboard after sending message
-                        FocusScope.of(context).unfocus();
-                        await _sendMessage(text);
-                      },
+                          _controller.clear();
+                          // Dismiss keyboard after sending message
+                          FocusScope.of(context).unfocus();
+                          await _sendMessage(text);
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -306,7 +415,7 @@ class _AvatarCircleState extends State<_AvatarCircle> {
         if (widget.userId != null && widget.userId!.isNotEmpty) {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => PublicProfilePage(
+              builder: (context) => UnifiedProfilePage(
                 userId: widget.userId!,
                 userName: _displayName,
               ),
@@ -315,7 +424,7 @@ class _AvatarCircleState extends State<_AvatarCircle> {
         }
       },
       child: CircleAvatar(
-        radius: 16,
+        radius: 12, // 24px diameter (compact)
         backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
             ? NetworkImage(_avatarUrl!)
             : null,
@@ -323,7 +432,7 @@ class _AvatarCircleState extends State<_AvatarCircle> {
         child: (_avatarUrl == null || _avatarUrl!.isEmpty)
             ? Text(initial,
                 style:
-                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 11))
             : null,
       ),
     );

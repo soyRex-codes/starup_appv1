@@ -161,31 +161,42 @@ class ThreadRepository {
           unread = 1;
         }
 
-        // Get all participant IDs
-        final allParticipantsQuery = _s
-            .from('conversation_participants')
-            .select('user_id')
-            .eq('conversation_id', conversationId)
-            .isFilter('left_at', null);
+        // Get all participant IDs using SECURITY DEFINER function
+        // (RLS policy only allows seeing own participant record, so we need this function)
+        try {
+          final participantsResult = await _s.rpc(
+            'get_conversation_participants',
+            params: {'conv_id': conversationId},
+          );
+          
+          // The RPC returns a list of objects with 'user_id' field
+          // Extract the actual UUID strings from the result
+          final participantIds = (participantsResult as List)
+              .map((p) => (p as Map<String, dynamic>)['user_id'] as String)
+              .toList();
+          
+          debugPrint('📊 Conversation $conversationId: participantIds = $participantIds');
+          debugPrint('📊 ViewerID = $viewerId');
+        
+          final summary = ThreadSummary.fromData(
+            conversationId: conversationId,
+            viewerId: viewerId,
+            lastMessageId: lastMessage?['id'] as String?,
+            lastMessageAt: lastMessage != null
+                ? DateTime.parse(lastMessage['created_at'] as String)
+                : null,
+            unread: unread,
+            participantIds: participantIds,
+            lastMessageSenderId: lastMessage?['sender_id'] as String?,
+            lastMessagePreview: lastMessage?['content'] as String?,
+          );
 
-        final allParticipants = await allParticipantsQuery;
-        final participantIds =
-            allParticipants.map((p) => p['user_id'] as String).toList();
-
-        final summary = ThreadSummary.fromData(
-          conversationId: conversationId,
-          viewerId: viewerId,
-          lastMessageId: lastMessage?['id'] as String?,
-          lastMessageAt: lastMessage != null
-              ? DateTime.parse(lastMessage['created_at'] as String)
-              : null,
-          unread: unread,
-          participantIds: participantIds,
-          lastMessageSenderId: lastMessage?['sender_id'] as String?,
-          lastMessagePreview: lastMessage?['content'] as String?,
-        );
-
-        summaries.add(summary);
+          summaries.add(summary);
+        } catch (e) {
+          debugPrint('⚠️  Error fetching participants for conversation $conversationId: $e');
+          // Skip this conversation if we can't fetch participants
+          continue;
+        }
       }
 
       // Sort by last message time

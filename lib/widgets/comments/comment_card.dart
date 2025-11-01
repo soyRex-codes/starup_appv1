@@ -5,7 +5,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:foundervers/core/storage_utils.dart';
-import 'package:foundervers/features/profile/public_profile_page.dart';
+import 'package:foundervers/features/profile/unified_profile_page.dart';
 
 /// Widget to display a single comment with author info and actions
 class CommentCard extends StatelessWidget {
@@ -29,10 +29,10 @@ class CommentCard extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.only(
-        left: isReply ? 40.0 : 12.0,
+        left: isReply ? 36.0 : 12.0,
         right: 12.0,
-        top: 12.0,
-        bottom: 12.0,
+        top: 8.0,
+        bottom: 8.0,
       ),
       decoration: BoxDecoration(
         border: isReply
@@ -53,7 +53,7 @@ class CommentCard extends StatelessWidget {
               child: _buildAvatar(),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
 
           // Content
           Expanded(
@@ -83,7 +83,7 @@ class CommentCard extends StatelessWidget {
                     Text(
                       timeago.format(comment.createdAt, locale: 'en_short'),
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -92,11 +92,11 @@ class CommentCard extends StatelessWidget {
 
                 // Category badge (only for root comments)
                 if (!comment.isReply) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   _buildCategoryBadge(),
                 ],
 
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
 
                 // Comment content (selectable for better UX)
                 SelectableText(
@@ -109,7 +109,7 @@ class CommentCard extends StatelessWidget {
                 ),
 
                 if (comment.wasEdited) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   const Text(
                     '(edited)',
                     style: TextStyle(
@@ -120,7 +120,7 @@ class CommentCard extends StatelessWidget {
                   ),
                 ],
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 // Actions row
                 Row(
@@ -130,21 +130,21 @@ class CommentCard extends StatelessWidget {
                       onTap: onReply,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 6,
+                          vertical: 3,
                         ),
                         child: Row(
                           children: [
                             const Icon(
                               Icons.reply_rounded,
-                              size: 16,
+                              size: 15,
                               color: AppColors.textSecondary,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               'Reply',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -156,26 +156,26 @@ class CommentCard extends StatelessWidget {
 
                     // Delete button (only for own comments)
                     if (isOwnComment && onDelete != null) ...[
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       InkWell(
                         onTap: () => _confirmDelete(context),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 6,
+                            vertical: 3,
                           ),
                           child: Row(
                             children: [
                               const Icon(
                                 Icons.delete_outline,
-                                size: 16,
+                                size: 15,
                                 color: AppColors.danger,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 'Delete',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   color: AppColors.danger,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -201,32 +201,33 @@ class CommentCard extends StatelessWidget {
 
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       // Use getMediaUrl if it's a storage path, otherwise use as-is
-      final publicUrl = avatarUrl.startsWith('http') 
-          ? avatarUrl 
+      final publicUrl = avatarUrl.startsWith('http')
+          ? avatarUrl
           : StorageUtils.getMediaUrl(path: avatarUrl, bucket: 'avatars');
-      
+
       return ClipOval(
         child: CachedNetworkImage(
           imageUrl: publicUrl,
-          width: 32,
-          height: 32,
+          width: 26,
+          height: 26,
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(
-            width: 32,
-            height: 32,
+            width: 26,
+            height: 26,
             color: AppColors.primarySoft,
             child: Center(
               child: Text(
                 displayName[0].toUpperCase(),
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
                 ),
               ),
             ),
           ),
-          errorWidget: (context, url, error) => _buildDefaultAvatar(displayName),
+          errorWidget: (context, url, error) =>
+              _buildDefaultAvatar(displayName),
         ),
       );
     }
@@ -236,8 +237,8 @@ class CommentCard extends StatelessWidget {
 
   Widget _buildDefaultAvatar(String displayName) {
     return Container(
-      width: 32,
-      height: 32,
+      width: 26,
+      height: 26,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
@@ -248,7 +249,7 @@ class CommentCard extends StatelessWidget {
         child: Text(
           displayName[0].toUpperCase(),
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
@@ -259,10 +260,10 @@ class CommentCard extends StatelessWidget {
 
   Widget _buildCategoryBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: _getCategoryColor().withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: _getCategoryColor().withValues(alpha: 0.3),
           width: 1,
@@ -271,7 +272,7 @@ class CommentCard extends StatelessWidget {
       child: Text(
         comment.category.displayLabel,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
           color: _getCategoryColor(),
         ),
@@ -297,14 +298,14 @@ class CommentCard extends StatelessWidget {
   void _navigateToProfile(BuildContext context) {
     final authorId = comment.author?.userId;
     final authorName = comment.author?.displayName;
-    
+
     // Don't navigate if no author ID
     if (authorId == null || authorId.isEmpty) return;
-    
+
     // Navigate to public profile page (including own profile)
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => PublicProfilePage(
+        builder: (context) => UnifiedProfilePage(
           userId: authorId,
           userName: authorName,
         ),
