@@ -17,10 +17,29 @@
 -- • Maintains security with proper Row Level Security policies
 -- • Allows smooth user profile upserts without constraint conflicts
 -- 
+CREATE SCHEMA IF NOT EXISTS extensions;
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS http;
 CREATE EXTENSION IF NOT EXISTS pg_net;
+
+DO $$
+DECLARE
+  ext RECORD;
+BEGIN
+  FOR ext IN
+    SELECT extname, extrelocatable
+    FROM pg_extension
+  WHERE extname IN ('pg_trgm', 'pg_net', 'pgcrypto', 'uuid-ossp')
+  LOOP
+    IF ext.extrelocatable THEN
+      EXECUTE format('ALTER EXTENSION %I SET SCHEMA extensions', ext.extname);
+    ELSE
+      RAISE NOTICE 'Extension % is not relocatable; leaving in current schema', ext.extname;
+    END IF;
+  END LOOP;
+END;
+$$;
 
 -- Lightweight migration / cleanup helper:
 --  * Detect legacy users(uid TEXT)
@@ -467,8 +486,30 @@ DROP POLICY IF EXISTS "insert posts" ON posts; CREATE POLICY "insert posts" ON p
 DROP POLICY IF EXISTS "update posts" ON posts; CREATE POLICY "update posts" ON posts FOR UPDATE USING ((select auth.uid()) = user_id);
 DROP POLICY IF EXISTS "delete posts" ON posts; CREATE POLICY "delete posts" ON posts FOR DELETE USING ((select auth.uid()) = user_id);
 DROP POLICY IF EXISTS "view media" ON media; CREATE POLICY "view media" ON media FOR SELECT USING (TRUE);
-DROP POLICY IF EXISTS "manage media" ON media; CREATE POLICY "manage media" ON media FOR ALL USING (
-  EXISTS (SELECT 1 FROM posts WHERE posts.id = media.post_id AND posts.user_id = (select auth.uid()))
+DROP POLICY IF EXISTS "manage media" ON media;
+DROP POLICY IF EXISTS "manage media insert" ON media;
+DROP POLICY IF EXISTS "manage media update" ON media;
+DROP POLICY IF EXISTS "manage media delete" ON media;
+CREATE POLICY "manage media insert" ON media FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM posts WHERE posts.id = media.post_id AND posts.user_id = (select auth.uid())
+  )
+);
+CREATE POLICY "manage media update" ON media FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM posts WHERE posts.id = media.post_id AND posts.user_id = (select auth.uid())
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM posts WHERE posts.id = media.post_id AND posts.user_id = (select auth.uid())
+    )
+  );
+CREATE POLICY "manage media delete" ON media FOR DELETE USING (
+  EXISTS (
+    SELECT 1 FROM posts WHERE posts.id = media.post_id AND posts.user_id = (select auth.uid())
+  )
 );
 
 -- Updated_at trigger -----------------------------------------------------------------------
@@ -502,20 +543,22 @@ DROP TRIGGER IF EXISTS trg_auto_create_user_for_post ON posts;
 CREATE TRIGGER trg_auto_create_user_for_post BEFORE INSERT ON posts FOR EACH ROW EXECUTE FUNCTION auto_create_user_for_post();
 
 -- RPC function for ensuring user exists (used by PostService)
-CREATE OR REPLACE FUNCTION ensure_user_exists(p_uid UUID, p_email TEXT DEFAULT NULL, p_name TEXT DEFAULT NULL)
+CREATE OR REPLACE FUNCTION public.ensure_user_exists(p_uid UUID, p_email TEXT DEFAULT NULL, p_name TEXT DEFAULT NULL)
 RETURNS VOID 
 LANGUAGE plpgsql 
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path TO pg_catalog
 AS $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM users WHERE id = p_uid) THEN
-    INSERT INTO users (id, email, name) VALUES (p_uid, p_email, p_name) ON CONFLICT (id) DO NOTHING;
+  IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = p_uid) THEN
+    INSERT INTO public.users (id, email, name)
+    VALUES (p_uid, p_email, p_name)
+    ON CONFLICT (id) DO NOTHING;
   END IF;
 END; $$;
 
 -- Grant execute permission on the RPC function
-GRANT EXECUTE ON FUNCTION ensure_user_exists(UUID, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.ensure_user_exists(UUID, TEXT, TEXT) TO authenticated;
 
 -- Constraints (categories / post goals) ----------------------------------------------------
 DO $$ BEGIN
@@ -599,18 +642,25 @@ ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can view non-deleted comments
 DROP POLICY IF EXISTS "comments_select" ON comments;
+DROP POLICY IF EXISTS "comments_select_own" ON comments;
 CREATE POLICY "comments_select" ON comments 
-  FOR SELECT USING (deleted_at IS NULL);
+  FOR SELECT USING (
+    deleted_at IS NULL
+    OR author_id = (select auth.uid())
+  );
 
 -- Authenticated users can insert comments
 DROP POLICY IF EXISTS "comments_insert" ON comments;
 CREATE POLICY "comments_insert" ON comments 
-  FOR INSERT WITH CHECK ((select auth.uid()) = author_id AND deleted_at IS NULL);
+  FOR INSERT WITH CHECK ((select auth.uid()) = author_id);
 
 -- Users can update/soft-delete their own comments
+-- Note: No WITH CHECK clause needed for soft deletion (deleted_at timestamp)
 DROP POLICY IF EXISTS "comments_update" ON comments;
 CREATE POLICY "comments_update" ON comments 
-  FOR UPDATE USING ((select auth.uid()) = author_id);
+  FOR UPDATE 
+  USING ((select auth.uid()) = author_id)
+  WITH CHECK ((select auth.uid()) = author_id);
 
 -- DEPRECATED: Use posts.comment_count column instead (eliminates N+1 queries)
 -- This function is kept for backward compatibility but should not be called in loops
@@ -1091,17 +1141,18 @@ $$;
 
 -- Send Applicant Confirmation Email Function
 -- This function sends a confirmation email to the applicant immediately after submission
-CREATE OR REPLACE FUNCTION send_applicant_confirmation_email()
+CREATE OR REPLACE FUNCTION public.send_applicant_confirmation_email()
 RETURNS TRIGGER
 LANGUAGE plpgsql 
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path TO pg_catalog
 AS $$
 DECLARE
   service_type_display TEXT;
   business_name_val TEXT;
   http_response RECORD;
   email_payload JSONB;
+  response_body TEXT;
 BEGIN
   RAISE NOTICE '=== TRIGGER FIRED for application % ===', NEW.id;
   
@@ -1144,25 +1195,23 @@ BEGIN
   -- Call Edge Function to send confirmation email
   BEGIN
     RAISE NOTICE 'Calling Edge Function...';
-    
+
     SELECT * INTO http_response
-    FROM http((
-      'POST',
-      'https://qddhubtyvqoqlbshxfkr.supabase.co/functions/v1/send-application-confirmation',
-      ARRAY[
-        http_header('Content-Type', 'application/json')
-      ],
-      'application/json',
-      email_payload::text
-    )::http_request);
+    FROM net.http_post(
+      url := 'https://qddhubtyvqoqlbshxfkr.supabase.co/functions/v1/send-application-confirmation',
+      headers := jsonb_build_object('Content-Type', 'application/json'),
+      body := email_payload
+    );
 
-    RAISE NOTICE 'HTTP Response Status: %, Content: %', http_response.status, http_response.content;
+    response_body := COALESCE(convert_from(http_response.body, 'utf-8'), '');
 
-    IF http_response.status >= 200 AND http_response.status < 300 THEN
+    RAISE NOTICE 'HTTP Response Status: %, Content: %', http_response.status_code, response_body;
+
+    IF http_response.status_code BETWEEN 200 AND 299 THEN
       RAISE NOTICE 'Confirmation email sent to % for application %', NEW.applicant_email, NEW.id;
     ELSE
       RAISE WARNING 'Failed to send confirmation email to %: HTTP % - %', 
-        NEW.applicant_email, http_response.status, http_response.content;
+        NEW.applicant_email, http_response.status_code, response_body;
     END IF;
   EXCEPTION WHEN OTHERS THEN
     RAISE WARNING 'Error sending confirmation email for application %: % (SQLSTATE: %)', 
@@ -1606,23 +1655,61 @@ CREATE TABLE IF NOT EXISTS business_applications (
 -- Row Level Security (RLS) Policy for business_applications
 ALTER TABLE business_applications ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can only view their own applications
+-- Policy: Users and admins can access applications data efficiently
 DROP POLICY IF EXISTS "Users can view own applications" ON business_applications;
-CREATE POLICY "Users can view own applications" ON business_applications
-    FOR SELECT USING ((select auth.uid()) = applicant_id);
+DROP POLICY IF EXISTS "Admins can view all applications" ON business_applications;
+CREATE POLICY "Users can access applications" ON business_applications
+  FOR SELECT USING (
+    applicant_id = (select auth.uid())
+    OR (
+      (select auth.uid()) IN (
+        SELECT u.id
+        FROM public.users u
+        WHERE u.email = ANY(
+          SELECT unnest(string_to_array(current_setting('app.admin_emails', true), ','))
+        )
+      )
+    )
+  );
 
 -- Policy: Users can insert their own applications
 DROP POLICY IF EXISTS "Users can create applications" ON business_applications;
 CREATE POLICY "Users can create applications" ON business_applications
-    FOR INSERT WITH CHECK ((select auth.uid()) = applicant_id);
+  FOR INSERT WITH CHECK ((select auth.uid()) = applicant_id);
 
--- Policy: Admins can view all applications (you'll need to set up admin roles)
--- For now, we'll create a simple admin policy based on email
-DROP POLICY IF EXISTS "Admins can view all applications" ON business_applications;
-CREATE POLICY "Admins can view all applications" ON business_applications
-    FOR ALL USING (
-        (select auth.jwt()) ->> 'email' IN ('foundervers@gmail.com', 'admin@foundervers.com', 'rajkushwaha0213@gmail.com')
-    );
+-- Admin policies for updates and deletes
+DROP POLICY IF EXISTS "Admins can manage applications" ON business_applications;
+CREATE POLICY "Admins can manage applications" ON business_applications
+  FOR UPDATE USING (
+    (select auth.uid()) IN (
+      SELECT u.id
+      FROM public.users u
+      WHERE u.email = ANY(
+        SELECT unnest(string_to_array(current_setting('app.admin_emails', true), ','))
+      )
+    )
+  )
+  WITH CHECK (
+    (select auth.uid()) IN (
+      SELECT u.id
+      FROM public.users u
+      WHERE u.email = ANY(
+        SELECT unnest(string_to_array(current_setting('app.admin_emails', true), ','))
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can delete applications" ON business_applications;
+CREATE POLICY "Admins can delete applications" ON business_applications
+  FOR DELETE USING (
+    (select auth.uid()) IN (
+      SELECT u.id
+      FROM public.users u
+      WHERE u.email = ANY(
+        SELECT unnest(string_to_array(current_setting('app.admin_emails', true), ','))
+      )
+    )
+  );
 
 -- Trigger to update the updated_at timestamp for business_applications
 CREATE OR REPLACE FUNCTION update_business_applications_updated_at()

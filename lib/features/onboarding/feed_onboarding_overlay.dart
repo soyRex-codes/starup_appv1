@@ -139,9 +139,19 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenHeight < 700;
+
+    // Responsive sizing
+    final titleFontSize = isSmallScreen ? 20.0 : 22.0;
+    final descriptionFontSize = isSmallScreen ? 13.5 : 14.5;
+    final iconSize = isSmallScreen ? 70.0 : 80.0;
+    final horizontalPadding = screenWidth < 360 ? 20.0 : 24.0;
+
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 60),
+      insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 40),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -157,18 +167,23 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Skip button
+            // Skip button (compact)
             Align(
               alignment: Alignment.topRight,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 12, 12, 0),
                 child: TextButton(
                   onPressed: _skipOnboarding,
+                  style: TextButton.styleFrom(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                  ),
                   child: Text(
                     'Skip',
                     style: TextStyle(
                       color: Colors.grey[600],
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -186,43 +201,46 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
                 itemBuilder: (context, index) {
                   final page = _pages[index];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: horizontalPadding),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Icon
+                        // Icon (smaller)
                         Container(
-                          width: 100,
-                          height: 100,
+                          width: iconSize,
+                          height: iconSize,
                           decoration: BoxDecoration(
                             color: page.iconColor.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             page.icon,
-                            size: 50,
+                            size: iconSize * 0.5,
                             color: page.iconColor,
                           ),
                         ),
-                        const SizedBox(height: 32),
-                        // Title
+                        SizedBox(height: isSmallScreen ? 16 : 20),
+                        // Title (optimized)
                         Text(
                           page.title,
-                          style: const TextStyle(
-                            fontSize: 24,
+                          style: TextStyle(
+                            fontSize: titleFontSize,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A1A1A),
+                            color: const Color(0xFF1A1A1A),
+                            height: 1.3,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 16),
-                        // Description
+                        SizedBox(height: isSmallScreen ? 10 : 12),
+                        // Description (optimized)
                         Text(
                           page.description,
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: descriptionFontSize,
                             color: Colors.grey[600],
-                            height: 1.5,
+                            height: 1.4,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -234,30 +252,30 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
             ),
             // Page indicator and button
             Padding(
-              padding: const EdgeInsets.all(32),
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
               child: Column(
                 children: [
-                  // Page dots
+                  // Page dots (compact)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
                       _pages.length,
                       (index) => AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentPage == index ? 32 : 8,
-                        height: 8,
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: _currentPage == index ? 28 : 6,
+                        height: 6,
                         decoration: BoxDecoration(
                           color: _currentPage == index
                               ? const Color(0xFFFF6B2C)
                               : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // Next/Get Started button
+                  SizedBox(height: isSmallScreen ? 14 : 16),
+                  // Next/Get Started button (compact)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -265,7 +283,9 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6B2C),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(
+                          vertical: isSmallScreen ? 12 : 14,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -275,8 +295,8 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
                         _currentPage == _pages.length - 1
                             ? 'Get Started'
                             : 'Next',
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 15 : 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

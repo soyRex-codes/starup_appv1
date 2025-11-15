@@ -4,6 +4,7 @@ import 'dart:collection';
 
 /// Lightweight in-memory profile cache for DM participants.
 import 'package:flutter/foundation.dart';
+import 'package:foundervers/core/storage_utils.dart';
 
 class ProfileModel {
   final String userId;
@@ -39,7 +40,9 @@ class DMProfileCache {
           name: m['name']?.toString() ??
               m['username']?.toString() ??
               m['full_name']?.toString(),
-          avatarUrl: m['avatar_url']?.toString(),
+          avatarUrl: StorageUtils.resolvePublicUrl(
+            m['avatar_url']?.toString(),
+          ),
         );
         _cache[userId] = profile;
         return profile;
@@ -84,7 +87,9 @@ class DMProfileCache {
               name: m['name']?.toString() ??
                   m['username']?.toString() ??
                   m['full_name']?.toString(),
-              avatarUrl: m['avatar_url']?.toString(),
+              avatarUrl: StorageUtils.resolvePublicUrl(
+                m['avatar_url']?.toString(),
+              ),
             );
             _cache[userId] = profile;
             result[userId] = profile;
@@ -151,7 +156,9 @@ class DmProfileCache {
           name: m['full_name']?.toString() ??
               m['name']?.toString() ??
               m['username']?.toString(),
-          avatarUrl: m['avatar_url']?.toString(),
+          avatarUrl: StorageUtils.resolvePublicUrl(
+            m['avatar_url']?.toString(),
+          ),
         );
         if (kDebugMode) {
           debugPrint('[DmProfileCache] Created profile: ${p.name} for $uid');
@@ -194,7 +201,9 @@ class DmProfileCache {
           name: m['full_name']?.toString() ??
               m['name']?.toString() ??
               m['username']?.toString(),
-          avatarUrl: m['avatar_url']?.toString(),
+          avatarUrl: StorageUtils.resolvePublicUrl(
+            m['avatar_url']?.toString(),
+          ),
         );
       }
       for (final u in missing) {

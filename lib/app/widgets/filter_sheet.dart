@@ -35,6 +35,16 @@ class _FilterSheetState extends State<FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = MediaQuery.of(context).size.height < 700;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Responsive sizing
+    final titleFontSize = isSmallScreen ? 18.0 : 20.0;
+    final sectionHeaderFontSize = isSmallScreen ? 12.0 : 14.0;
+    final optionFontSize = isSmallScreen ? 12.0 : 13.0;
+    final dateLabelFontSize = isSmallScreen ? 12.0 : 13.0;
+    final dateChipFontSize = isSmallScreen ? 12.0 : 14.0;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: const BoxDecoration(
@@ -45,7 +55,10 @@ class _FilterSheetState extends State<FilterSheet> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth < 360 ? 16 : 20,
+              vertical: isSmallScreen ? 12 : 16,
+            ),
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
@@ -54,10 +67,10 @@ class _FilterSheetState extends State<FilterSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Filter Posts',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: titleFontSize,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -70,7 +83,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         onTap: _clearFilters,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(16),
@@ -83,13 +96,13 @@ class _FilterSheetState extends State<FilterSheet> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               AppIcons.close(
-                                size: 16,
+                                size: 14,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 3),
                               Text(
                                 'Clear',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.primary,
                                 ),
@@ -98,7 +111,7 @@ class _FilterSheetState extends State<FilterSheet> {
                           ),
                         ),
                       ),
-                    if (_hasActiveFilters()) const SizedBox(width: 12),
+                    if (_hasActiveFilters()) const SizedBox(width: 8),
                     // Close button (X icon)
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
@@ -106,7 +119,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         padding: const EdgeInsets.all(4),
                         child: Icon(
                           Icons.close,
-                          size: 24,
+                          size: 20,
                           color: Colors.grey[700],
                         ),
                       ),
@@ -119,7 +132,8 @@ class _FilterSheetState extends State<FilterSheet> {
           const Divider(height: 1),
 
           // Date Range Row (NEW)
-          _buildDateRangeRow(),
+          _buildDateRangeRow(
+              isSmallScreen, screenWidth, dateLabelFontSize, dateChipFontSize),
 
           // Filter Content
           // Content
@@ -133,17 +147,22 @@ class _FilterSheetState extends State<FilterSheet> {
                     children: [
                       // Section Header
                       Container(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                        padding: EdgeInsets.fromLTRB(
+                          screenWidth < 360 ? 16 : 20,
+                          isSmallScreen ? 10 : 16,
+                          screenWidth < 360 ? 16 : 20,
+                          isSmallScreen ? 8 : 12,
+                        ),
                         child: Row(
                           children: [
                             AppIcons.business(
-                              size: 18,
+                              size: 16,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Text(
                               'Category',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: sectionHeaderFontSize,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.grey[700],
                               ),
@@ -154,26 +173,32 @@ class _FilterSheetState extends State<FilterSheet> {
                       // Options List
                       Expanded(
                         child: ListView(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth < 360 ? 12 : 16,
+                          ),
                           children: [
                             _FilterOption(
                               label: 'All Categories',
                               isSelected: _selectedCategory == null,
                               isCompact: true,
+                              fontSize: optionFontSize,
                               onTap: () {
                                 setState(() {
                                   _selectedCategory = null;
                                 });
                               },
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: isSmallScreen ? 4 : 6),
                             ...AppConstants.industryCategories.map((category) {
                               return Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
+                                padding: EdgeInsets.only(
+                                  bottom: isSmallScreen ? 4 : 6,
+                                ),
                                 child: _FilterOption(
                                   label: _getCategoryDisplayName(category),
                                   isSelected: _selectedCategory == category,
                                   isCompact: true,
+                                  fontSize: optionFontSize,
                                   onTap: () {
                                     setState(() {
                                       _selectedCategory = category;
@@ -193,7 +218,9 @@ class _FilterSheetState extends State<FilterSheet> {
                 Container(
                   width: 1,
                   color: const Color(0xFFE5E7EB),
-                  margin: const EdgeInsets.symmetric(vertical: 16),
+                  margin: EdgeInsets.symmetric(
+                    vertical: isSmallScreen ? 8 : 16,
+                  ),
                 ),
 
                 // Right Side - Goals
@@ -203,17 +230,22 @@ class _FilterSheetState extends State<FilterSheet> {
                     children: [
                       // Section Header
                       Container(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                        padding: EdgeInsets.fromLTRB(
+                          screenWidth < 360 ? 16 : 20,
+                          isSmallScreen ? 10 : 16,
+                          screenWidth < 360 ? 16 : 20,
+                          isSmallScreen ? 8 : 12,
+                        ),
                         child: Row(
                           children: [
                             AppIcons.business(
-                              size: 18,
+                              size: 16,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Text(
                               'Looking For',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: sectionHeaderFontSize,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.grey[700],
                               ),
@@ -224,22 +256,28 @@ class _FilterSheetState extends State<FilterSheet> {
                       // Options List
                       Expanded(
                         child: ListView(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth < 360 ? 12 : 16,
+                          ),
                           children: [
                             _FilterOption(
                               label: 'All Goals',
                               isSelected: _selectedGoal == null,
                               isCompact: true,
+                              fontSize: optionFontSize,
                               onTap: () => setState(() => _selectedGoal = null),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: isSmallScreen ? 4 : 6),
                             ...AppConstants.postGoals.map(
                               (goal) => Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
+                                padding: EdgeInsets.only(
+                                  bottom: isSmallScreen ? 4 : 6,
+                                ),
                                 child: _FilterOption(
                                   label: _getShortGoalLabel(goal),
                                   isSelected: _selectedGoal == goal,
                                   isCompact: true,
+                                  fontSize: optionFontSize,
                                   onTap: () =>
                                       setState(() => _selectedGoal = goal),
                                 ),
@@ -257,7 +295,12 @@ class _FilterSheetState extends State<FilterSheet> {
 
           // Bottom Actions
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            padding: EdgeInsets.fromLTRB(
+              screenWidth < 360 ? 16 : 20,
+              isSmallScreen ? 12 : 16,
+              screenWidth < 360 ? 16 : 20,
+              isSmallScreen ? 14 : 20,
+            ),
             decoration: const BoxDecoration(
               color: Color(0xFFFAFAFA),
               border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
@@ -279,7 +322,9 @@ class _FilterSheetState extends State<FilterSheet> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(
+                          vertical: isSmallScreen ? 12 : 16,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -287,9 +332,9 @@ class _FilterSheetState extends State<FilterSheet> {
                       ),
                       child: Text(
                         _getApplyButtonText(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 15,
+                          fontSize: isSmallScreen ? 13 : 15,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -304,9 +349,15 @@ class _FilterSheetState extends State<FilterSheet> {
     );
   }
 
-  Widget _buildDateRangeRow() {
+  Widget _buildDateRangeRow(bool isSmallScreen, double screenWidth,
+      double dateLabelFontSize, double dateChipFontSize) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      padding: EdgeInsets.fromLTRB(
+        screenWidth < 360 ? 16 : 20,
+        isSmallScreen ? 10 : 16,
+        screenWidth < 360 ? 16 : 20,
+        isSmallScreen ? 10 : 16,
+      ),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         border: Border(
@@ -319,19 +370,19 @@ class _FilterSheetState extends State<FilterSheet> {
           // Label with icon
           Row(
             children: [
-              Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 8),
+              Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+              const SizedBox(width: 6),
               Text(
                 'Date Range',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: dateLabelFontSize,
                   fontWeight: FontWeight.w500,
                   color: Colors.grey[600],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: isSmallScreen ? 8 : 10),
 
           // Segmented chips
           SingleChildScrollView(
@@ -343,13 +394,13 @@ class _FilterSheetState extends State<FilterSheet> {
                 final isLast = entry.key == PostAge.values.length - 1;
 
                 return Padding(
-                  padding: EdgeInsets.only(right: isLast ? 0 : 8),
+                  padding: EdgeInsets.only(right: isLast ? 0 : 6),
                   child: GestureDetector(
                     onTap: () => setState(() => _selectedDateRange = age),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 12 : 16,
+                        vertical: isSmallScreen ? 8 : 10,
                       ),
                       decoration: BoxDecoration(
                         color: isSelected ? AppColors.primary : Colors.white,
@@ -374,7 +425,7 @@ class _FilterSheetState extends State<FilterSheet> {
                       child: Text(
                         age.label,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: dateChipFontSize,
                           fontWeight:
                               isSelected ? FontWeight.w600 : FontWeight.w500,
                           color: isSelected ? Colors.white : Colors.grey[700],
@@ -463,12 +514,14 @@ class _FilterOption extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.isCompact = false,
+    this.fontSize = 13,
   });
 
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
   final bool isCompact;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -477,8 +530,8 @@ class _FilterOption extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: isCompact ? 12 : 16,
-          vertical: isCompact ? 10 : 14,
+          horizontal: isCompact ? 10 : 16,
+          vertical: isCompact ? 8 : 14,
         ),
         decoration: BoxDecoration(
           color: isSelected
@@ -494,18 +547,18 @@ class _FilterOption extends StatelessWidget {
           children: [
             if (isSelected)
               AppIcons.success(
-                size: isCompact ? 16 : 18,
+                size: isCompact ? 14 : 18,
               )
             else
               AppIcons.circle(
-                size: isCompact ? 16 : 18,
+                size: isCompact ? 14 : 18,
               ),
-            SizedBox(width: isCompact ? 8 : 12),
+            SizedBox(width: isCompact ? 6 : 12),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: isCompact ? 13 : 14,
+                  fontSize: fontSize,
                   fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
                   color: isSelected ? AppColors.primary : Colors.grey[800],
                 ),

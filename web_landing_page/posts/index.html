@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="Check out this post on FounderVers">
+    <meta property="og:description" content="Join the conversation on FounderVers - Connect with entrepreneurs worldwide">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>Post on FounderVers</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .message {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .post-preview {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .post-label {
+            color: #667eea;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .post-content {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .download-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .primary-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .ios-btn {
+            background: #000;
+            color: white;
+        }
+
+        .android-btn {
+            background: #3DDC84;
+            color: #1a1a1a;
+        }
+
+        .icon {
+            font-size: 24px;
+        }
+
+        .loading {
+            color: #999;
+            font-size: 14px;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚀</div>
+        <h1>Open in FounderVers</h1>
+        <p class="message">View this post in the FounderVers app for the best experience</p>
+
+        <div class="post-preview" id="post-preview">
+            <div class="post-label">Shared Post</div>
+            <div class="post-content" id="post-content">
+                <div class="loading">
+                    <span class="spinner"></span>
+                    Loading post...
+                </div>
+            </div>
+        </div>
+
+        <div class="download-buttons">
+            <a href="#" class="download-btn primary-btn" id="open-app-btn">
+                <span class="icon">📱</span>
+                <span>Open in App</span>
+            </a>
+            <a href="/download.html" class="download-btn ios-btn">
+                <span class="icon">🍎</span>
+                <span>Download on App Store</span>
+            </a>
+            <a href="/download.html" class="download-btn android-btn">
+                <span class="icon">📱</span>
+                <span>Get it on Google Play</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Extract post ID from URL
+        const postId = window.location.pathname.match(/\/posts\/(\d+)/)?.[1];
+        
+        if (postId) {
+            // Immediately try to open in app
+            const deepLink = `foundervers://posts/${postId}`;
+            const universalLink = `https://foundervers.com/posts/${postId}`;
+            
+            // Set up button to retry opening app
+            const openAppBtn = document.getElementById('open-app-btn');
+            openAppBtn.href = deepLink;
+
+            // Try to open app immediately on page load
+            let attemptedOpen = false;
+            
+            // For iOS, use a hidden iframe approach
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = deepLink;
+                document.body.appendChild(iframe);
+                attemptedOpen = true;
+                
+                // If user is still here after 2 seconds, show download options
+                setTimeout(() => {
+                    if (!document.hidden) {
+                        // Still on page, app not installed
+                        document.getElementById('post-content').innerHTML = 
+                            'Download the FounderVers app to view this post and connect with founders worldwide.';
+                    }
+                }, 2000);
+            }
+            // For Android, direct navigation works better
+            else if (/android/i.test(navigator.userAgent)) {
+                window.location.href = deepLink;
+                attemptedOpen = true;
+                
+                // Fallback after 2 seconds
+                setTimeout(() => {
+                    if (!document.hidden) {
+                        document.getElementById('post-content').innerHTML = 
+                            'Download the FounderVers app to view this post and connect with founders worldwide.';
+                    }
+                }, 2000);
+            }
+            // Desktop
+            else {
+                document.getElementById('post-content').innerHTML = 
+                    'This post is best viewed in the FounderVers mobile app. Scan the QR code on our download page or visit from your mobile device.';
+                openAppBtn.style.display = 'none';
+            }
+
+            // Optional: Fetch post preview from your API
+            // Uncomment when you have an API endpoint
+            /*
+            fetch(`https://your-api.com/posts/${postId}/preview`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('post-content').innerHTML = 
+                        `<strong>${data.author}</strong><br>${data.excerpt}`;
+                })
+                .catch(() => {
+                    document.getElementById('post-content').innerHTML = 
+                        'Download the FounderVers app to view this post.';
+                });
+            */
+        } else {
+            // No post ID found, redirect to download
+            window.location.href = '/download.html';
+        }
+    </script>
+</body>
+</html>

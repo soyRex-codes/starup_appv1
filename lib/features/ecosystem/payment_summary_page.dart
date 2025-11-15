@@ -192,7 +192,7 @@ class PaymentSummaryPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '\$${ApplicationPaymentService.applicationFee.toStringAsFixed(2)}',
+                        '\$${ApplicationPaymentService.baseApplicationFee.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,

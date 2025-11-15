@@ -67,15 +67,15 @@ CREATE POLICY "Users can view their own notifications"
   ON notifications
   FOR SELECT
   TO authenticated
-  USING (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id);
 
 -- Users can mark their own notifications as read
 CREATE POLICY "Users can update their own notifications"
   ON notifications
   FOR UPDATE
   TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id)
+  WITH CHECK ((select auth.uid()) = user_id);
 
 -- Any authenticated user can create notifications (required for cross-user notifications)
 CREATE POLICY "Authenticated users can create notifications"
@@ -89,7 +89,7 @@ CREATE POLICY "Users can delete their own notifications"
   ON notifications
   FOR DELETE
   TO authenticated
-  USING (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id);
 
 -- Helper Functions ----------------------------------------------------
 

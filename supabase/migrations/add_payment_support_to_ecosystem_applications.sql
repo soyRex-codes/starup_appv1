@@ -45,31 +45,54 @@ CREATE INDEX IF NOT EXISTS idx_business_applications_payment_status ON business_
 ALTER TABLE application_payments ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for application_payments
--- Users can view their own payments
+-- Users and admins can access payments efficiently
 CREATE POLICY "Users can view own payments"
   ON application_payments
   FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (
+    user_id = (select auth.uid())
+    OR (
+      (select auth.uid()) IN (
+        SELECT u.id
+        FROM users u
+        WHERE u.email = ANY(
+          SELECT unnest(string_to_array(current_setting('app.admin_emails', true), ','))
+        )
+      )
+    )
+  );
 
 -- Users can insert their own payments
 CREATE POLICY "Users can create own payments"
   ON application_payments
   FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK ((select auth.uid()) = user_id);
 
 -- System can update payment status (for webhooks)
 CREATE POLICY "Service role can update payments"
   ON application_payments
   FOR UPDATE
+  TO service_role
   USING (true); -- Service role bypass RLS
 
--- Admins can view all payments
-CREATE POLICY "Admins can view all payments"
+-- Admin-only update/delete overrides
+CREATE POLICY "Admins can manage payments"
   ON application_payments
-  FOR SELECT
+  FOR UPDATE
   USING (
-    auth.uid() IN (
-      SELECT id FROM users WHERE email = ANY(
+    (select auth.uid()) IN (
+      SELECT u.id
+      FROM users u
+      WHERE u.email = ANY(
+        SELECT unnest(string_to_array(current_setting('app.admin_emails', true), ','))
+      )
+    )
+  )
+  WITH CHECK (
+    (select auth.uid()) IN (
+      SELECT u.id
+      FROM users u
+      WHERE u.email = ANY(
         SELECT unnest(string_to_array(current_setting('app.admin_emails', true), ','))
       )
     )

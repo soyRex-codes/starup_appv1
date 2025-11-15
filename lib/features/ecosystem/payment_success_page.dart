@@ -143,7 +143,7 @@ class PaymentSuccessPage extends StatelessWidget {
                   _buildReceiptRow('Email', applicantEmail),
                   const SizedBox(height: 16),
                   _buildReceiptRow('Amount Paid',
-                      '\$${ApplicationPaymentService.applicationFee.toStringAsFixed(2)}'),
+                      '\$${ApplicationPaymentService.baseApplicationFee.toStringAsFixed(2)}'),
                   const SizedBox(height: 16),
                   _buildReceiptRow('Date', _formatDate(DateTime.now())),
                   const SizedBox(height: 16),

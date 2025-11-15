@@ -9,18 +9,28 @@ import 'package:foundervers/widgets/comments/comment_input.dart';
 /// Bottom sheet for displaying and managing post comments
 class CommentSheet extends StatefulWidget {
   final PostModel post;
+  final ValueChanged<int>? onCountChanged;
 
   const CommentSheet({
     required this.post,
+    this.onCountChanged,
     super.key,
   });
 
-  static Future<void> show(BuildContext context, PostModel post) {
+  static Future<void> show(
+    BuildContext context,
+    PostModel post, {
+    ValueChanged<int>? onCountChanged,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CommentSheet(post: post),
+      builder: (context) => CommentSheet(
+        post: post,
+        onCountChanged: onCountChanged,
+      ),
     );
   }
 
@@ -31,11 +41,32 @@ class CommentSheet extends StatefulWidget {
 class _CommentSheetState extends State<CommentSheet> {
   final CommentService _commentService = CommentService();
   final ScrollController _scrollController = ScrollController();
-  
+
   List<CommentModel> _comments = [];
   bool _isLoading = true;
   String? _error;
   CommentModel? _replyingTo;
+
+  int get _totalVisibleComments {
+    int total = 0;
+    for (final comment in _comments) {
+      total += _countWithReplies(comment);
+    }
+    return total;
+  }
+
+  void _notifyCountChanged() {
+    widget.onCountChanged?.call(_totalVisibleComments);
+  }
+
+  int _countWithReplies(CommentModel comment) {
+    if (comment.replies.isEmpty) return 1;
+    return 1 +
+        comment.replies.fold<int>(
+          0,
+          (sum, reply) => sum + _countWithReplies(reply),
+        );
+  }
 
   @override
   void initState() {
@@ -62,6 +93,7 @@ class _CommentSheetState extends State<CommentSheet> {
           _comments = comments;
           _isLoading = false;
         });
+        _notifyCountChanged();
       }
     } catch (e) {
       if (mounted) {
@@ -73,7 +105,8 @@ class _CommentSheetState extends State<CommentSheet> {
     }
   }
 
-  Future<void> _handleAddComment(String content, CommentCategory? category) async {
+  Future<void> _handleAddComment(
+      String content, CommentCategory? category) async {
     try {
       if (_replyingTo != null) {
         // Add reply
@@ -110,7 +143,8 @@ class _CommentSheetState extends State<CommentSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_replyingTo != null ? 'Reply added!' : 'Comment added!'),
+            content:
+                Text(_replyingTo != null ? 'Reply added!' : 'Comment added!'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -167,7 +201,7 @@ class _CommentSheetState extends State<CommentSheet> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final sheetHeight = screenHeight * 0.85;
+    final sheetHeight = screenHeight; // Full screen height
 
     return AnimatedPadding(
       padding: EdgeInsets.only(bottom: keyboardHeight),
@@ -207,7 +241,7 @@ class _CommentSheetState extends State<CommentSheet> {
 
   Widget _buildHandleBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Center(
         child: Container(
           width: 40,
@@ -223,7 +257,7 @@ class _CommentSheetState extends State<CommentSheet> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: const BoxDecoration(
         border: Border(
           bottom: BorderSide(color: AppColors.border, width: 1),
@@ -245,7 +279,7 @@ class _CommentSheetState extends State<CommentSheet> {
                 ),
                 if (_comments.isNotEmpty)
                   Text(
-                    '${_comments.length} ${_comments.length == 1 ? 'comment' : 'comments'}',
+                    '$_totalVisibleComments ${_totalVisibleComments == 1 ? 'comment' : 'comments'}',
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,

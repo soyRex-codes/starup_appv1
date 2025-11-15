@@ -7,6 +7,7 @@ import 'package:foundervers/features/auth/user_service.dart';
 import 'package:foundervers/widgets/foundervers_logo.dart';
 import 'package:foundervers/services/bookmark_service.dart';
 import 'package:foundervers/services/notification_service.dart';
+import 'package:foundervers/services/premium_subscription_service.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -97,6 +98,13 @@ Future<void> _postAuthHousekeeping(User user, BuildContext context) async {
       debugPrint('🔔 Notification listener started');
     }).catchError((e) {
       debugPrint('⚠️ Failed to start notification listener: $e');
+    });
+
+    // Check and refresh premium subscription status
+    PremiumSubscriptionService().checkPremiumStatus().then((isActive) {
+      debugPrint('💎 Premium status checked: $isActive');
+    }).catchError((e) {
+      debugPrint('⚠️ Failed to check premium status: $e');
     });
   } catch (e, st) {
     if (kDebugMode) debugPrint('Auth housekeeping failed: $e\n$st');

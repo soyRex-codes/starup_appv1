@@ -116,22 +116,12 @@ class HelpSupportPage extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _sendSupportEmail(context),
                     icon: const Icon(Icons.email),
-                    label: const Text('Email Support Team'),
+                    label: const Text(
+                        'Email Support Team at foundervers@gmail.com'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade600,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: Text(
-                    'foundervers@gmail.com',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.blue.shade600,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

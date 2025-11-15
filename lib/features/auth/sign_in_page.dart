@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:foundervers/features/auth/auth_service.dart';
 import 'package:foundervers/features/auth/otp_verification_page.dart';
 import 'package:foundervers/features/auth/forgot_password_page_new.dart';
 import 'package:foundervers/services/password_reset_service.dart';
 import 'package:foundervers/widgets/foundervers_logo.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -23,6 +25,8 @@ class _SignInPageState extends State<SignInPage> {
   String? _error;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _acceptedTerms = false;
+  bool _ageVerified = false; // COPPA compliance: 13+ years old
 
   @override
   void initState() {
@@ -40,26 +44,42 @@ class _SignInPageState extends State<SignInPage> {
 
   Future<void> _submit() async {
     if (!mounted) return;
+
+    // Dismiss keyboard before processing
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _loading = true;
       _error = null;
     });
+
     try {
       final email = _email.text.trim();
       final password = _password.text;
 
-      // Validate email and password
-      if (email.isEmpty || password.isEmpty) {
-        throw Exception('Please fill in all fields');
+      // Validate email format
+      if (email.isEmpty) {
+        throw Exception('Please enter your email address');
+      }
+      if (!email.contains('@') || !email.contains('.')) {
+        throw Exception('Please enter a valid email address');
       }
 
-      // For sign-up, validate password confirmation
+      // Validate password
+      if (password.isEmpty) {
+        throw Exception('Please enter your password');
+      }
+
+      // For sign-up, validate password confirmation and additional fields
       if (!_isLogin) {
         final fullName = _fullName.text.trim();
         final confirmPassword = _confirmPassword.text;
 
         if (fullName.isEmpty) {
           throw Exception('Please enter your full name');
+        }
+        if (fullName.length < 2) {
+          throw Exception('Full name must be at least 2 characters');
         }
         if (confirmPassword.isEmpty) {
           throw Exception('Please confirm your password');
@@ -70,11 +90,35 @@ class _SignInPageState extends State<SignInPage> {
         if (password.length < 12) {
           throw Exception('Password must be at least 12 characters long');
         }
+        if (!_acceptedTerms) {
+          throw Exception(
+              'Please accept the Terms of Service and Privacy Policy');
+        }
+        if (!_ageVerified) {
+          throw Exception(
+              'You must be at least 13 years old to use FounderVers');
+        }
       }
 
       if (_isLogin) {
-        await AuthService.instance
-            .signInWithEmailPassword(email: email, password: password);
+        // Sign-in flow
+        try {
+          await AuthService.instance
+              .signInWithEmailPassword(email: email, password: password);
+        } catch (signInError) {
+          // Handle sign-in specific errors
+          final errorStr = signInError.toString().toLowerCase();
+          if (errorStr.contains('invalid_credentials') ||
+              errorStr.contains('invalid login')) {
+            throw Exception('Invalid email or password. Please try again.');
+          } else if (errorStr.contains('email not confirmed')) {
+            throw Exception(
+                'Please verify your email before signing in. Check your inbox for the verification link.');
+          } else {
+            throw Exception(
+                'Sign in failed. Please check your credentials and try again.');
+          }
+        }
       } else {
         // Handle signup with email confirmation and full name
         final fullName = _fullName.text.trim();
@@ -141,10 +185,11 @@ class _SignInPageState extends State<SignInPage> {
       if (mounted) {
         // Improved error logging for debugging
         if (kDebugMode) {
-          debugPrint('🔥 SIGNUP ERROR DETAILS:');
+          debugPrint('🔥 AUTH ERROR DETAILS:');
           debugPrint('Error type: ${e.runtimeType}');
           debugPrint('Full error: $e');
           debugPrint('Error string: ${e.toString()}');
+          debugPrint('Is login: $_isLogin');
         }
 
         setState(() {
@@ -153,19 +198,35 @@ class _SignInPageState extends State<SignInPage> {
 
           // Check for specific Supabase auth errors first
           if (errorStr.contains('email_address_invalid') ||
-              errorStr.contains('invalid_email')) {
+              errorStr.contains('invalid_email') ||
+              errorStr.contains('invalid email format')) {
             _error = 'Please enter a valid email address.';
-          } else if (errorStr.contains('signup_disabled')) {
+          } else if (errorStr.contains('invalid email or password') ||
+              errorStr.contains('invalid credentials') ||
+              errorStr.contains('invalid login') ||
+              errorStr.contains('invalid_credentials')) {
+            // Sign-in specific error
+            _error = 'Invalid email or password. Please try again.';
+          } else if (errorStr.contains('email not confirmed') ||
+              errorStr.contains('email_not_confirmed')) {
+            _error = 'Please verify your email before signing in.';
+          } else if (errorStr.contains('signup_disabled') ||
+              errorStr.contains('signup disabled')) {
             _error =
                 'Account creation is currently disabled. Please try again later.';
-          } else if (errorStr.contains('password_too_short')) {
+          } else if (errorStr.contains('password_too_short') ||
+              errorStr.contains('password') && errorStr.contains('short')) {
             _error = 'Password must be at least 12 characters long.';
           } else if (errorStr.contains('user_already_registered') ||
-              errorStr.contains('email_address_not_available')) {
+              errorStr.contains('email_address_not_available') ||
+              errorStr.contains('user already registered') ||
+              errorStr.contains('already exists')) {
             _error =
                 'An account with this email already exists. Please sign in instead.';
           } else if (errorStr.contains('over_email_send_rate_limit') ||
               errorStr.contains('rate_limit') ||
+              errorStr.contains('rate limit') ||
+              errorStr.contains('too many') ||
               errorStr.contains('429')) {
             final match = RegExp(r'after (\d+) seconds').firstMatch(errorStr);
             final waitTime = match?.group(1);
@@ -177,18 +238,34 @@ class _SignInPageState extends State<SignInPage> {
                   'Too many requests. Please wait a minute before trying again.';
             }
           } else if (errorStr.contains('socketexception') ||
-              errorStr.contains('failed host lookup')) {
+              errorStr.contains('failed host lookup') ||
+              errorStr.contains('network') && errorStr.contains('error')) {
             _error =
                 'Network connection issue. Please check your internet connection and try again.';
-          } else if (errorStr.contains('timeout')) {
+          } else if (errorStr.contains('timeout') ||
+              errorStr.contains('timed out')) {
             _error =
                 'Connection timeout. Please check your internet connection and try again.';
+          } else if (errorStr.contains('handshake') ||
+              errorStr.contains('certificate') ||
+              errorStr.contains('ssl')) {
+            _error =
+                'Secure connection failed. Please check your network settings and try again.';
+          } else if (errorStr.contains('exception:')) {
+            // Clean up "Exception: " prefix from error messages
+            final cleanError =
+                e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+            _error = cleanError;
           } else {
             // Show the actual error for debugging but in a user-friendly way
             if (kDebugMode) {
-              _error = 'Signup failed: ${e.toString()}';
+              _error = _isLogin
+                  ? 'Sign in failed: ${e.toString()}'
+                  : 'Signup failed: ${e.toString()}';
             } else {
-              _error = 'Unable to create account. Please try again.';
+              _error = _isLogin
+                  ? 'Sign in failed. Please try again.'
+                  : 'Unable to create account. Please try again.';
             }
           }
         });
@@ -325,6 +402,96 @@ class _SignInPageState extends State<SignInPage> {
                 ),
               ),
             ],
+
+            // Age verification and Terms checkboxes (only for signup)
+            if (!_isLogin) ...[
+              const SizedBox(height: 20),
+              // Age verification checkbox (COPPA compliance)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: _ageVerified,
+                    onChanged: (value) {
+                      setState(() {
+                        _ageVerified = value ?? false;
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        'I am at least 13 years old',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Terms and Conditions checkbox
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: _acceptedTerms,
+                    onChanged: (value) {
+                      setState(() {
+                        _acceptedTerms = value ?? false;
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: RichText(
+                        text: TextSpan(
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          children: [
+                            const TextSpan(text: 'I have read and accept the '),
+                            TextSpan(
+                              text: 'Terms of Service',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () async {
+                                  final uri = Uri.parse(
+                                      'https://foundervers.com/legal.html#terms');
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri,
+                                        mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                            ),
+                            const TextSpan(text: ' and '),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () async {
+                                  final uri = Uri.parse(
+                                      'https://foundervers.com/legal.html#privacy');
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri,
+                                        mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 20),
             if (_error != null) ...[
               Container(
@@ -343,7 +510,8 @@ class _SignInPageState extends State<SignInPage> {
               const SizedBox(height: 16),
             ],
             FilledButton(
-              onPressed: _loading ? null : _submit,
+              onPressed:
+                  (_loading || (!_isLogin && !_acceptedTerms)) ? null : _submit,
               child: _loading
                   ? const SizedBox(
                       width: 20,
@@ -384,6 +552,8 @@ class _SignInPageState extends State<SignInPage> {
                         _isPasswordVisible = false; // Reset password visibility
                         _isConfirmPasswordVisible =
                             false; // Reset confirm password visibility
+                        _acceptedTerms = false; // Reset terms acceptance
+                        _ageVerified = false; // Reset age verification
                       });
                     },
               child: Text(_isLogin

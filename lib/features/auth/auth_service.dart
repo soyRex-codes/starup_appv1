@@ -243,16 +243,36 @@ class AuthService {
     final user = currentUser;
     if (user == null) return;
 
-    final payload = {
+    Map<String, dynamic>? existingProfile;
+    try {
+      existingProfile = await _client
+          .from('users')
+          .select('name, username, full_name, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Failed to load existing profile for ${user.id}: $e');
+      }
+    }
+
+    String? _fallbackName() =>
+        displayName ??
+        user.userMetadata?['full_name'] ??
+        user.email?.split('@')[0];
+
+    final payload = <String, dynamic>{
       'id': user.id,
       'email': user.email,
-      'name': displayName ??
-          user.userMetadata?['full_name'] ??
-          user.email?.split('@')[0],
-      'username': user.email?.split('@')[0],
-      'full_name': displayName ?? user.userMetadata?['full_name'],
-      'avatar_url': user.userMetadata?['avatar_url'],
+      'name': existingProfile?['name'] ?? _fallbackName(),
+      'username': existingProfile?['username'] ?? user.email?.split('@')[0],
+      'full_name': existingProfile?['full_name'] ??
+          displayName ??
+          user.userMetadata?['full_name'],
+      'avatar_url':
+          existingProfile?['avatar_url'] ?? user.userMetadata?['avatar_url'],
       'email_verified': isEmailVerified ?? (user.emailConfirmedAt != null),
+      'last_login_at': DateTime.now().toIso8601String(),
     };
 
     try {

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:foundervers/core/storage_utils.dart';
 import 'package:foundervers/features/auth/user_service.dart';
 import 'package:foundervers/features/post_creation/post_service.dart';
 import 'package:foundervers/features/profile/edit_profile_page.dart';
+import 'package:foundervers/features/premium/premium_payment_page.dart';
 import 'package:foundervers/models/post.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -73,25 +75,6 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
         title: Text(
             _isOwnProfile ? 'My Profile' : (widget.userName ?? 'User Profile')),
         centerTitle: true,
-        actions: [
-          // Edit button only for own profile
-          if (_isOwnProfile)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const EditProfilePage(),
-                  ),
-                );
-                if (result == true && mounted) {
-                  setState(() => _refreshKey++);
-                }
-              },
-              tooltip: 'Edit Profile',
-            ),
-        ],
       ),
       body: FutureBuilder<Map<String, dynamic>?>(
         key: ValueKey(_refreshKey),
@@ -189,11 +172,26 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
     final company = profile['company'] as String?;
     final location = profile['location'] as String?;
     final createdAt = profile['created_at'] as String?;
-    final avatarUrl = profile['avatar_url'] as String?;
+    final avatarUrl = StorageUtils.resolvePublicUrl(
+      profile['avatar_url'] as String?,
+    );
     final emailVerified = profile['email_verified'] as bool? ?? false;
+    final isPremium = profile['is_premium'] as bool? ?? false;
+    final premiumExpiresAt = profile['premium_expires_at'] as String?;
     final email = _isOwnProfile
         ? (profile['email'] as String?)
         : null; // Only show email to self
+
+    // Check if premium is still active
+    bool hasActivePremium = isPremium;
+    if (isPremium && premiumExpiresAt != null) {
+      try {
+        final expiryDate = DateTime.parse(premiumExpiresAt);
+        hasActivePremium = expiryDate.isAfter(DateTime.now());
+      } catch (e) {
+        hasActivePremium = false;
+      }
+    }
 
     DateTime? joinDate;
     if (createdAt != null) {
@@ -248,7 +246,16 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (emailVerified)
+                        if (hasActivePremium)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Icon(
+                              Icons.workspace_premium,
+                              size: 16,
+                              color: Colors.amber[600],
+                            ),
+                          )
+                        else if (emailVerified)
                           Padding(
                             padding: const EdgeInsets.only(left: 4),
                             child: Icon(
@@ -400,6 +407,54 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                         const Text('Message', style: TextStyle(fontSize: 14)),
                   ),
           ),
+
+          // Expired premium banner (only for own profile)
+          if (_isOwnProfile && isPremium && !hasActivePremium) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                border: Border.all(color: Colors.orange.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline,
+                      color: Colors.orange.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Your premium subscription has expired',
+                      style: TextStyle(
+                        color: Colors.orange.shade900,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const PremiumPaymentPage(isAnnual: false),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      backgroundColor: Colors.orange.shade700,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Renew', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

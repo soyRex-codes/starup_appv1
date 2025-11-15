@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/core/env.dart';
+import 'package:foundervers/core/storage_utils.dart';
 import 'package:foundervers/core/visibility.dart';
 import 'package:foundervers/features/profile/unified_profile_page.dart';
 import 'package:foundervers/services/moderation_service.dart';
@@ -391,7 +392,9 @@ class _AvatarCircleState extends State<_AvatarCircle> {
               response['username'] ??
               widget.userName ??
               'User';
-          _avatarUrl = response['avatar_url'];
+          _avatarUrl = StorageUtils.resolvePublicUrl(
+            response['avatar_url'] as String?,
+          );
         });
       }
     } catch (e) {

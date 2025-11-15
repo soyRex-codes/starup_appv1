@@ -6,6 +6,9 @@ import 'package:foundervers/features/chat/chat_page_with_tabs.dart';
 import 'package:foundervers/features/business_ai/business_ai_page.dart';
 import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/core/cache/feed_cache.dart';
+import 'package:foundervers/services/premium_subscription_service.dart';
+import 'package:foundervers/widgets/premium_upgrade_dialog.dart';
+import 'package:foundervers/services/deep_link_service.dart';
 
 import '../features/post_creation/post_creation_page.dart';
 
@@ -20,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   int _index = 0;
   final GlobalKey<FeedPageState> _feedPageKey = GlobalKey<FeedPageState>();
   bool _isNavVisible = true; // Auto-hide navigation state
+  bool _deepLinksInitialized = false;
 
   late final List<Widget> _pages;
 
@@ -42,6 +46,10 @@ class _HomePageState extends State<HomePage> {
     // Initialize unread controller once user is available (Firebase auth already initialized earlier in app start)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       DmUnreadController.instance.ensureStarted();
+      if (!_deepLinksInitialized) {
+        DeepLinkService.initialize(context);
+        _deepLinksInitialized = true;
+      }
     });
   }
 
@@ -61,7 +69,25 @@ class _HomePageState extends State<HomePage> {
           curve: Curves.easeInOutCubic,
           child: _NavBar(
             index: _index,
-            onTap: (i) {
+            onTap: (i) async {
+              // Check if trying to access Business.AI (premium feature)
+              if (i == 2) {
+                // Business.AI = 2
+                final isPremium =
+                    await PremiumSubscriptionService().checkPremiumStatus();
+                if (!isPremium && mounted) {
+                  final upgrade = await PremiumUpgradeDialog.show(
+                    context,
+                    featureName: 'Business.AI',
+                  );
+                  if (upgrade == true && mounted) {
+                    // TODO: Navigate to payment page
+                    // Navigator.push(context, MaterialPageRoute(builder: (_) => PremiumPaymentPage()));
+                  }
+                  return; // Don't switch tabs
+                }
+              }
+
               setState(() {
                 _index = i;
                 // Reset nav visibility when switching tabs

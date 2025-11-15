@@ -198,13 +198,9 @@ class CommentCard extends StatelessWidget {
   Widget _buildAvatar() {
     final avatarUrl = comment.author?.avatarUrl;
     final displayName = comment.author?.displayName ?? 'U';
+    final publicUrl = StorageUtils.resolvePublicUrl(avatarUrl);
 
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      // Use getMediaUrl if it's a storage path, otherwise use as-is
-      final publicUrl = avatarUrl.startsWith('http')
-          ? avatarUrl
-          : StorageUtils.getMediaUrl(path: avatarUrl, bucket: 'avatars');
-
+    if (publicUrl != null) {
       return ClipOval(
         child: CachedNetworkImage(
           imageUrl: publicUrl,

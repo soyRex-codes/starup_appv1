@@ -5,6 +5,7 @@ import 'package:foundervers/features/dm/dm_profile_cache.dart';
 import 'package:foundervers/features/dm/thread_view.dart';
 import 'package:foundervers/features/profile/unified_profile_page.dart';
 import 'package:foundervers/features/dm/new_dm_repos.dart';
+import 'package:foundervers/core/storage_utils.dart';
 
 /// Modern inbox powered by new dm_* schema.
 /// Shows threads instantly (in-memory) then allows pull-to-refresh & realtime later.
@@ -198,6 +199,7 @@ class _ParticipantAvatarState extends State<_ParticipantAvatar> {
     final initials = (_p?.name?.trim().isNotEmpty == true
         ? _p!.name!.trim()[0].toUpperCase()
         : widget.uid.substring(0, 1).toUpperCase());
+    final avatarUrl = StorageUtils.resolvePublicUrl(_p?.avatarUrl);
     return GestureDetector(
       behavior: HitTestBehavior.opaque, // Prevent tap from bubbling to parent
       onTap: () {
@@ -215,10 +217,8 @@ class _ParticipantAvatarState extends State<_ParticipantAvatar> {
       child: CircleAvatar(
         backgroundColor:
             widget.highlight ? Colors.deepPurple : Colors.grey.shade300,
-        backgroundImage: (_p?.avatarUrl != null && _p!.avatarUrl!.isNotEmpty)
-            ? NetworkImage(_p!.avatarUrl!)
-            : null,
-        child: (_p?.avatarUrl != null && _p!.avatarUrl!.isNotEmpty)
+        backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+        child: avatarUrl != null
             ? null
             : Text(initials,
                 style: TextStyle(

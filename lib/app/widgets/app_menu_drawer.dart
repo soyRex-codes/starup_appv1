@@ -6,6 +6,8 @@ import 'package:foundervers/features/help_support/help_support_page.dart';
 import 'package:foundervers/features/admin/admin_dashboard.dart';
 import 'package:foundervers/features/admin/services/admin_auth_service.dart';
 import 'package:foundervers/app/app_icons.dart';
+import 'package:foundervers/features/premium/premium_payment_page.dart';
+import 'package:foundervers/services/premium_subscription_service.dart';
 
 /// Main menu drawer - slides in from right side
 /// Provides navigation to all major app sections
@@ -35,6 +37,38 @@ class AppMenuDrawer extends StatelessWidget {
                       );
                     },
                   ),
+
+                  // Premium Subscription
+                  FutureBuilder<bool>(
+                    future: PremiumSubscriptionService().checkPremiumStatus(),
+                    builder: (context, snapshot) {
+                      final isPremium = snapshot.data ?? false;
+                      return _MenuAction(
+                        icon: Icon(
+                          Icons.workspace_premium,
+                          size: 22,
+                          color: isPremium
+                              ? Colors.amber.shade700
+                              : const Color(0xFF8B4513),
+                        ),
+                        label: isPremium
+                            ? 'Premium Member ✓'
+                            : 'Upgrade to Premium',
+                        labelColor: isPremium ? Colors.amber.shade700 : null,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const PremiumPaymentPage(isAnnual: true),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+
+                  const Divider(height: 1),
 
                   // Admin Dashboard - only for admins
                   FutureBuilder<bool>(

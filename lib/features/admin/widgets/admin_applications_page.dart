@@ -17,6 +17,30 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
   String? _selectedServiceType;
   final _searchController = TextEditingController();
 
+  // Valid status values
+  static const List<String> validStatuses = [
+    'pending',
+    'paid',
+    'reviewed',
+    'assigned',
+    'completed',
+  ];
+
+  // Get validated status value for dropdown
+  String? get _validatedStatus {
+    if (_selectedStatus == null) return null;
+    return validStatuses.contains(_selectedStatus) ? _selectedStatus : null;
+  }
+
+  // Get validated service type value for dropdown
+  String? get _validatedServiceType {
+    if (_selectedServiceType == null) return null;
+    return BusinessApplicationService.serviceTypeNames
+            .containsKey(_selectedServiceType)
+        ? _selectedServiceType
+        : null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +85,9 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
     switch (status) {
       case 'pending':
         statusColor = Colors.orange;
+        break;
+      case 'paid':
+        statusColor = Colors.green;
         break;
       case 'reviewed':
         statusColor = Colors.blue;
@@ -196,12 +223,14 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
                           labelText: 'Status',
                           border: OutlineInputBorder(),
                         ),
-                        value: _selectedStatus,
+                        value: _validatedStatus,
                         items: [
                           const DropdownMenuItem(
                               value: null, child: Text('All Statuses')),
                           const DropdownMenuItem(
                               value: 'pending', child: Text('Pending')),
+                          const DropdownMenuItem(
+                              value: 'paid', child: Text('Paid')),
                           const DropdownMenuItem(
                               value: 'reviewed', child: Text('Reviewed')),
                           const DropdownMenuItem(
@@ -222,7 +251,7 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
                           labelText: 'Service Type',
                           border: OutlineInputBorder(),
                         ),
-                        value: _selectedServiceType,
+                        value: _validatedServiceType,
                         items: [
                           const DropdownMenuItem(
                               value: null, child: Text('All Services')),

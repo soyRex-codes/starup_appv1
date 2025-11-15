@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'deep_link_service.dart';
+
 /// Advanced sharing service for viral growth and user acquisition
 class ShareService {
-  static const String _baseUrl =
-      'https://startupnest-a3jdnswbja-uc.a.run.app'; // Your actual deployed URL
-
   /// Share post with native OS share sheet and deep links
-  /// 
+  ///
   /// IMPORTANT iOS Requirements:
   /// - iOS doesn't support the 'subject' parameter (removed to fix silent failure)
   /// - iOS/iPadOS requires sharePositionOrigin for popover positioning
-  /// 
+  ///
   /// [sharePositionOrigin] - Required for iPad to position the share sheet popover.
   /// Pass a Rect relative to the button that triggered the share.
   static Future<void> sharePost({
@@ -22,18 +21,19 @@ class ShareService {
     Rect? sharePositionOrigin,
   }) async {
     try {
-      final shareUrl = _generateShareUrl(postId);
+      final shareUrl = DeepLinkService.generatePostLink(postId);
       final shareText = _buildShareText(title, description, shareUrl);
-      
+
       // iOS FIX: Provide sharePositionOrigin for iPad popover positioning
       // If not provided, use center of screen as fallback
-      final result = await Share.shareWithResult(
+      final result = await Share.share(
         shareText,
-        sharePositionOrigin: sharePositionOrigin ?? const Rect.fromLTWH(0, 0, 100, 100),
+        sharePositionOrigin:
+            sharePositionOrigin ?? const Rect.fromLTWH(0, 0, 100, 100),
       );
 
       debugPrint('Share result status: ${result.status}');
-      
+
       // Don't show snackbar for dismissed shares - that's normal user behavior
       if (result.status == ShareResultStatus.success) {
         debugPrint('✅ Share completed successfully');
@@ -42,20 +42,13 @@ class ShareService {
       } else if (result.status == ShareResultStatus.unavailable) {
         debugPrint('⚠️ Share unavailable on this platform');
       }
-      
+
       _trackShareAttempt(postId);
     } catch (e) {
       debugPrint('❌ Share error: $e');
       // Only show error if there's an actual failure, not dismissal
       rethrow;
     }
-  }
-
-  /// Generate deep link URL for post (simplified version without API call)
-  static String _generateShareUrl(int postId) {
-    // For now, generate a simple deep link URL
-    // Later, you can enhance this to call your backend API for tracking
-    return '$_baseUrl/posts/$postId?utm_source=app&utm_medium=share';
   }
 
   /// Build engaging share text
@@ -82,6 +75,9 @@ class ShareService {
     buffer.writeln();
     buffer.writeln('👆 Tap to join the discussion');
     buffer.writeln(shareUrl);
+    buffer.writeln();
+    buffer.writeln(
+        'No app yet? Download FounderVers: ${DeepLinkService.fallbackDownloadUrl}');
     buffer.writeln();
     buffer.writeln('#startups #entrepreneurship #FounderVers');
 

@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:foundervers/core/storage_utils.dart';
 
 /// Category types for structured comments
 enum CommentCategory {
@@ -56,7 +57,9 @@ class CommentAuthor {
         name: json['name'] as String?,
         username: json['username'] as String?,
         fullName: json['full_name'] as String?,
-        avatarUrl: json['avatar_url'] as String?,
+        avatarUrl: StorageUtils.resolvePublicUrl(
+          json['avatar_url'] as String?,
+        ),
       );
 }
 
@@ -101,7 +104,8 @@ class CommentModel {
       postId: _asInt(json['post_id']) ?? 0,
       authorId: json['author_id']?.toString() ?? '',
       content: json['content']?.toString() ?? '',
-      category: CommentCategory.fromString(json['category']?.toString() ?? 'general'),
+      category:
+          CommentCategory.fromString(json['category']?.toString() ?? 'general'),
       parentCommentId: json['parent_comment_id']?.toString(),
       createdAt: _asDate(json['created_at']) ?? DateTime.now(),
       updatedAt: _asDate(json['updated_at']),

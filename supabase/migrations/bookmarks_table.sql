@@ -31,19 +31,19 @@ ALTER TABLE public.bookmarks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own bookmarks"
   ON public.bookmarks
   FOR SELECT
-  USING (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id);
 
 -- Policy: Users can create their own bookmarks
 CREATE POLICY "Users can create own bookmarks"
   ON public.bookmarks
   FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK ((select auth.uid()) = user_id);
 
 -- Policy: Users can delete their own bookmarks
 CREATE POLICY "Users can delete own bookmarks"
   ON public.bookmarks
   FOR DELETE
-  USING (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id);
 
 -- Grant necessary permissions
 GRANT SELECT, INSERT, DELETE ON public.bookmarks TO authenticated;

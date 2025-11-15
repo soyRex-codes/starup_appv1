@@ -2,14 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:foundervers/models/payment_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:foundervers/services/premium_subscription_service.dart';
 
 /// Application Payment Service
 /// Handles payment processing for ecosystem applications
-/// Uses $20 fixed application fee
+/// Base fee: $20.00 (Premium users get 70% discount = $6.00)
 class ApplicationPaymentService {
   static final _supabase = Supabase.instance.client;
-  static const double applicationFee = 20.00;
+  static const double baseApplicationFee = 20.00;
   static const String currency = 'USD';
+
+  /// Get application fee (with premium discount if applicable)
+  static Future<double> getApplicationFee() async {
+    final premiumService = PremiumSubscriptionService();
+    return await premiumService.calculateApplicationFee(baseApplicationFee);
+  }
 
   /// Create a payment record for an application
   static Future<Map<String, dynamic>> createPayment({
@@ -18,6 +25,9 @@ class ApplicationPaymentService {
     String paymentMethod = 'stripe',
   }) async {
     try {
+      final applicationFee =
+          await getApplicationFee(); // Get fee with premium discount
+
       final result = await _supabase
           .from('application_payments')
           .insert({
@@ -63,6 +73,9 @@ class ApplicationPaymentService {
     required Map<String, dynamic> paymentDetails,
   }) async {
     try {
+      final applicationFee =
+          await getApplicationFee(); // Get fee with premium discount
+
       // Step 1: Call Edge Function to create Stripe PaymentIntent
       print('🔵 Calling create-payment-intent Edge Function...');
       print('📧 Email: $email');

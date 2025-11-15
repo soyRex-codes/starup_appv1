@@ -1,3 +1,6 @@
+import 'dart:developer';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart' as dotenv;
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -5,6 +8,7 @@ import 'package:foundervers/app/auth_gate.dart';
 import 'package:foundervers/app/theme.dart';
 import 'package:foundervers/services/screenshot_permission_service.dart';
 import 'package:foundervers/services/network_service.dart';
+import 'package:foundervers/services/iap_service.dart';
 import 'package:flutter/foundation.dart';
 
 Future<void> _bootstrap() async {
@@ -24,18 +28,41 @@ Future<void> _bootstrap() async {
           const String.fromEnvironment('STRIPE_PUBLISHABLE_KEY');
 
   // Initialize Stripe (mobile only - not supported on web)
+  // Stripe is used for business services (tax help, legal, etc.) on both iOS and Android
+  // This is compliant with Apple guidelines 3.1.3(b) for real-world services
   if (!kIsWeb && stripePublishableKey.isNotEmpty) {
     try {
       Stripe.publishableKey = stripePublishableKey;
+
+      // Configure Stripe
       await Stripe.instance.applySettings();
-      print('✅ Stripe initialized successfully');
+
+      log('✅ Stripe initialized successfully');
+      log('🔑 Using publishable key: ${stripePublishableKey.substring(0, 15)}...');
     } catch (e) {
-      print('⚠️ Warning: Stripe initialization failed: $e');
+      log('⚠️ Warning: Stripe initialization failed: $e');
+      log('Stack trace: ${StackTrace.current}');
     }
   } else if (kIsWeb) {
-    print('ℹ️ Stripe skipped on web platform');
+    log('ℹ️ Stripe skipped on web platform');
   } else {
-    print('⚠️ Warning: Stripe publishable key not found');
+    log('⚠️ Warning: Stripe publishable key not found');
+  }
+
+  // Initialize Apple In-App Purchase on iOS for premium subscriptions only
+  if (!kIsWeb && Platform.isIOS) {
+    try {
+      final iapService = IAPService();
+      final isAvailable = await iapService.initialize();
+
+      if (isAvailable) {
+        log('✅ Apple In-App Purchase initialized successfully');
+      } else {
+        log('⚠️ Apple In-App Purchase not available');
+      }
+    } catch (e) {
+      log('⚠️ Warning: IAP initialization failed: $e');
+    }
   }
 
   if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
@@ -46,13 +73,12 @@ Future<void> _bootstrap() async {
     );
 
     if (!success) {
-      print(
-          '⚠️ Warning: Supabase initialization failed. App may not function properly.');
+      log('⚠️ Warning: Supabase initialization failed. App may not function properly.');
     } else {
-      print('✅ Supabase initialized successfully');
+      log('✅ Supabase initialized successfully');
     }
   } else {
-    print('❌ Error: Missing Supabase URL or Anon Key');
+    log('❌ Error: Missing Supabase URL or Anon Key');
   }
 }
 
@@ -72,7 +98,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FounderVers',
+      title: 'Foundervers',
+      debugShowCheckedModeBanner: false, // Remove DEBUG banner for App Store
       theme: buildAppTheme(),
       home: kIsWeb
           ? Center(

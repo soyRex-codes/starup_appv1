@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:foundervers/core/storage_utils.dart';
 
 @immutable
 class PostMedia {
@@ -42,6 +43,8 @@ class AuthorSummary {
   final String? fullName;
   final String? avatarUrl;
   final bool? emailVerified; // For blue verification badge
+  final bool? isPremium; // For golden premium badge
+  final DateTime? premiumExpiresAt; // When premium expires
 
   const AuthorSummary({
     required this.userId,
@@ -50,7 +53,16 @@ class AuthorSummary {
     this.fullName,
     this.avatarUrl,
     this.emailVerified,
+    this.isPremium,
+    this.premiumExpiresAt,
   });
+
+  /// Check if user has active premium subscription
+  bool get hasActivePremium {
+    if (isPremium != true) return false;
+    if (premiumExpiresAt == null) return true; // Lifetime premium
+    return premiumExpiresAt!.isAfter(DateTime.now());
+  }
 
   /// Get display name prioritizing full name over name over username
   String get displayName {
@@ -108,6 +120,7 @@ class PostModel {
   final String? status; // published/draft etc.
   final int
       commentCount; // Denormalized count from database (eliminates N+1 queries)
+  final int views; // View count for social proof
   final List<PostMedia> media;
   final AuthorSummary? author; // hydrated separately
 
@@ -127,6 +140,7 @@ class PostModel {
     this.moderationStatus,
     this.status,
     this.commentCount = 0, // Default to 0 if not provided
+    this.views = 0, // Default to 0 if not provided
     this.media = const [],
     this.author,
   });
@@ -147,6 +161,7 @@ class PostModel {
         moderationStatus: moderationStatus,
         status: status,
         commentCount: commentCount, // Include in copyWith
+        views: views, // Include in copyWith
         media: media,
         author: author ?? this.author,
       );
@@ -168,6 +183,7 @@ class PostModel {
         status: json['status'] as String?,
         commentCount: _asInt(json['comment_count']) ??
             0, // Parse comment_count from database
+        views: _asInt(json['views']) ?? 0, // Parse views from database
         media: (json['media'] as List<dynamic>?)
                 ?.map((m) => PostMedia.fromJson(m as Map<String, dynamic>))
                 .where((media) {
@@ -212,14 +228,21 @@ AuthorSummary? _authorFromJson(dynamic value) {
     final rawId = map['userId'] ?? map['id'] ?? map['user_id'];
     final userId = rawId?.toString() ?? '';
     if (userId.isEmpty) return null;
+    final resolvedAvatar = StorageUtils.resolvePublicUrl(
+      map['avatarUrl'] as String? ?? map['avatar_url'] as String?,
+    );
+
     return AuthorSummary(
       userId: userId,
       name: map['name'] as String?,
       username: map['username'] as String?,
       fullName: map['fullName'] as String? ?? map['full_name'] as String?,
-      avatarUrl: map['avatarUrl'] as String? ?? map['avatar_url'] as String?,
+      avatarUrl: resolvedAvatar,
       emailVerified:
           map['emailVerified'] as bool? ?? map['email_verified'] as bool?,
+      isPremium: map['isPremium'] as bool? ?? map['is_premium'] as bool?,
+      premiumExpiresAt:
+          _asDate(map['premiumExpiresAt'] ?? map['premium_expires_at']),
     );
   }
 

@@ -79,19 +79,27 @@ class SuggestionService {
       final user = _supabase.auth.currentUser;
       if (user == null) return false;
 
-      // First verify the suggestion exists and user owns the related post
-      final suggestionCheck = await _supabase
+      // Get the suggestion with its post_id
+      final suggestion = await _supabase
           .from('suggestions')
-          .select('id, post!inner(user_id)')
+          .select('id, post_id')
           .eq('id', suggestionId)
-          .eq('post.user_id', user.id)
           .maybeSingle();
 
-      if (suggestionCheck == null) {
-        return false; // Suggestion not found or user doesn't own the post
+      if (suggestion == null) return false;
+
+      // Check if user owns the post
+      final post = await _supabase
+          .from('posts')
+          .select('user_id')
+          .eq('id', suggestion['post_id'])
+          .maybeSingle();
+
+      if (post == null || post['user_id'] != user.id) {
+        return false; // User doesn't own the post
       }
 
-      // Update the suggestion as read with authorization check
+      // Update the suggestion as read
       final updateResult = await _supabase
           .from('suggestions')
           .update({'is_read': true})
@@ -101,6 +109,7 @@ class SuggestionService {
       // Return true only if the update affected at least one row
       return updateResult.isNotEmpty;
     } catch (e) {
+      print('Error marking suggestion as read: $e');
       return false;
     }
   }
@@ -111,19 +120,27 @@ class SuggestionService {
       final user = _supabase.auth.currentUser;
       if (user == null) return false;
 
-      // First verify the suggestion exists and user owns the related post
-      final suggestionCheck = await _supabase
+      // Get the suggestion with its post_id
+      final suggestion = await _supabase
           .from('suggestions')
-          .select('id, post!inner(user_id)')
+          .select('id, post_id')
           .eq('id', suggestionId)
-          .eq('post.user_id', user.id)
           .maybeSingle();
 
-      if (suggestionCheck == null) {
-        return false; // Suggestion not found or user doesn't own the post
+      if (suggestion == null) return false;
+
+      // Check if user owns the post
+      final post = await _supabase
+          .from('posts')
+          .select('user_id')
+          .eq('id', suggestion['post_id'])
+          .maybeSingle();
+
+      if (post == null || post['user_id'] != user.id) {
+        return false; // User doesn't own the post
       }
 
-      // Update the suggestion as unread with authorization check
+      // Update the suggestion as unread
       final updateResult = await _supabase
           .from('suggestions')
           .update({'is_read': false})
@@ -133,6 +150,7 @@ class SuggestionService {
       // Return true only if the update affected at least one row
       return updateResult.isNotEmpty;
     } catch (e) {
+      print('Error marking suggestion as unread: $e');
       return false;
     }
   }

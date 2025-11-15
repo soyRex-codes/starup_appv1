@@ -317,7 +317,7 @@ class _MessageComposeBottomSheetState extends State<MessageComposeBottomSheet> {
                       child: FilledButton(
                         onPressed: _sending ? null : _sendMessage,
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
+                          backgroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: _sending

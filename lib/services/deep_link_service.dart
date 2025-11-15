@@ -3,8 +3,15 @@ import 'package:app_links/app_links.dart';
 
 /// Service for handling deep links and app-to-app navigation
 class DeepLinkService {
+  static const String _primaryHost = 'foundervers.com';
+  static const String _legacyHost = 'startupnest-a3jdnswbja-uc.a.run.app';
+  static const String _downloadUrl = 'https://foundervers.com/download';
+
   static late AppLinks _appLinks;
   static BuildContext? _context;
+
+  /// Public fallback URL in case the app is not installed.
+  static String get fallbackDownloadUrl => _downloadUrl;
 
   /// Initialize deep link service
   static Future<void> initialize(BuildContext context) async {
@@ -37,30 +44,34 @@ class DeepLinkService {
   static Future<void> handleIncomingLink(Uri link) async {
     if (_context == null) return;
 
+    if (!_isSupportedLink(link)) {
+      debugPrint('Ignored unsupported link: ${link.toString()}');
+      return;
+    }
+
     debugPrint('🔗 Handling incoming link: ${link.toString()}');
 
     try {
-      // Parse the URL structure: https://foundervers.com/posts/123
-      final pathSegments = link.pathSegments;
+      final normalizedSegments = _normalizeSegments(link);
 
-      if (pathSegments.isEmpty) {
+      if (normalizedSegments.isEmpty) {
         // Base URL - go to home
         _navigateToHome();
         return;
       }
 
-      switch (pathSegments[0]) {
+      switch (normalizedSegments[0]) {
         case 'posts':
-          await _handlePostLink(pathSegments);
+          await _handlePostLink(normalizedSegments);
           break;
         case 'profile':
-          await _handleProfileLink(pathSegments);
+          await _handleProfileLink(normalizedSegments);
           break;
         case 'feed':
           _navigateToFeed();
           break;
         default:
-          debugPrint('Unknown deep link path: ${pathSegments[0]}');
+          debugPrint('Unknown deep link path: ${normalizedSegments[0]}');
           _navigateToHome();
       }
     } catch (e) {
@@ -139,11 +150,7 @@ class DeepLinkService {
       'utm_campaign': 'viral_growth',
     });
 
-    final uri = Uri.https(
-      'startupnest-a3jdnswbja-uc.a.run.app', // Your actual deployed domain
-      '/posts/$postId',
-      queryParams,
-    );
+    final uri = Uri.https(_primaryHost, '/posts/$postId', queryParams);
 
     return uri.toString();
   }
@@ -159,13 +166,32 @@ class DeepLinkService {
       queryParams['ref'] = referrerId;
     }
 
-    final uri = Uri.https(
-      'startupnest-a3jdnswbja-uc.a.run.app', // Your actual deployed domain
-      '/profile/$userId',
-      queryParams,
-    );
+    final uri = Uri.https(_primaryHost, '/profile/$userId', queryParams);
 
     return uri.toString();
+  }
+
+  static bool _isSupportedLink(Uri link) {
+    if (link.scheme == 'foundervers') {
+      return true;
+    }
+
+    if (link.scheme == 'https') {
+      return link.host == _primaryHost || link.host == _legacyHost;
+    }
+
+    return false;
+  }
+
+  static List<String> _normalizeSegments(Uri link) {
+    final segments = <String>[];
+
+    if (link.scheme == 'foundervers' && link.host.isNotEmpty) {
+      segments.add(link.host);
+    }
+
+    segments.addAll(link.pathSegments);
+    return segments;
   }
 
   /// Test deep link functionality (development only)

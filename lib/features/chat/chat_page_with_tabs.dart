@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:foundervers/features/dm/new_inbox_page.dart';
 import 'package:foundervers/features/Global_public_chat-for_founders/global_chat_page.dart';
 import 'package:foundervers/features/suggestions/suggestions_inbox.dart';
+import 'package:foundervers/services/premium_subscription_service.dart';
+import 'package:foundervers/widgets/premium_upgrade_dialog.dart';
 
 /// Chat Page with Tabs for Inbox and Global Chat
 class ChatPageWithTabs extends StatefulWidget {
@@ -20,6 +22,29 @@ class _ChatPageWithTabsState extends State<ChatPageWithTabs>
     super.initState();
     // Initialize with 3 tabs, starting at index 0 (Inbox)
     _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
+
+    // Add listener to check premium status when switching to Global Chat
+    _tabController.addListener(() {
+      _handleTabChange();
+    });
+  }
+
+  Future<void> _handleTabChange() async {
+    // Check if trying to access Global Chat (index 2)
+    if (_tabController.index == 2) {
+      final isPremium = await PremiumSubscriptionService().checkPremiumStatus();
+      if (!isPremium && mounted) {
+        // Switch back to previous tab
+        final previousIndex = _tabController.previousIndex;
+        _tabController.animateTo(previousIndex);
+
+        // Show premium dialog
+        await PremiumUpgradeDialog.show(
+          context,
+          featureName: 'Global Chat',
+        );
+      }
+    }
   }
 
   @override
@@ -101,10 +126,12 @@ class _ChatPageWithTabsState extends State<ChatPageWithTabs>
                 ],
               ),
             ),
-            // Content area
+            // Content area - Disable swiping to prevent bypassing premium check
             Expanded(
               child: TabBarView(
                 controller: _tabController,
+                physics:
+                    const NeverScrollableScrollPhysics(), // Disable swiping
                 children: const [
                   // Inbox Tab - Personal DMs
                   NewInboxPage(),

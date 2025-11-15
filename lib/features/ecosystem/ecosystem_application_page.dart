@@ -176,8 +176,7 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
   Widget _buildStatsSection(BuildContext context, double screenWidth) {
     return Row(
       children: [
-        Expanded(
-            child: _buildStatCard('500+', 'Founders Helped', Icons.people)),
+        Expanded(child: _buildStatCard('--', 'Helping Founders', Icons.people)),
         const SizedBox(width: 12),
         Expanded(
             child: _buildStatCard('24hrs', 'Response Time', Icons.access_time)),

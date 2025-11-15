@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:foundervers/core/env.dart';
 import 'package:foundervers/models/post.dart';
 import 'package:foundervers/features/post_creation/post_creation_page.dart';
@@ -14,6 +15,7 @@ import 'package:foundervers/features/messaging/message_compose_sheet.dart';
 import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/widgets/video_player_widget.dart';
 import 'package:foundervers/widgets/comments/comment_sheet.dart';
+import 'package:foundervers/services/comment_service.dart';
 import 'package:foundervers/core/utils/time_formatter.dart';
 import 'package:foundervers/services/bookmark_service.dart';
 
@@ -46,11 +48,20 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   final ThreadRepository _threadRepo = ThreadRepository();
   final MessageRepository _msgRepo = MessageRepository();
   final _me = Supabase.instance.client.auth.currentUser;
+  final CommentService _commentService = CommentService();
+
+  // View tracking state
+  bool _hasViewBeenCounted = false;
+  int _localViewCount = 0;
+  int _pendingViewIncrements = 0;
+  late int _commentCount;
 
   @override
   void initState() {
     super.initState();
-    // No longer need to load comment count - it's in widget.post.commentCount!
+    _localViewCount = widget.post.views; // Initialize with DB value
+    _commentCount = widget.post.commentCount;
+    // Comment count will be refreshed after the sheet closes.
     _checkBookmarkStatus();
   }
 
@@ -91,20 +102,60 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
     }
   }
 
-  // Truncate description to approximately 10-15 words (about 2 lines)
+  // View tracking logic
+  void _handleVisibilityChanged(VisibilityInfo info) {
+    // Count view if post is 50%+ visible and hasn't been counted yet
+    if (info.visibleFraction >= 0.5 && !_hasViewBeenCounted) {
+      _hasViewBeenCounted = true;
+      _incrementViewCount();
+    }
+  }
+
+  Future<void> _incrementViewCount() async {
+    // Update UI immediately
+    setState(() {
+      _localViewCount++;
+      _pendingViewIncrements++;
+    });
+
+    // Batch save every 5 views to reduce DB calls
+    if (_pendingViewIncrements >= 5) {
+      await _saveViewsToDB();
+    }
+  }
+
+  Future<void> _saveViewsToDB() async {
+    if (_pendingViewIncrements == 0) return;
+
+    try {
+      final client = Supabase.instance.client;
+      await client.from('posts').update({
+        'views': _localViewCount,
+      }).eq('id', widget.post.id);
+
+      setState(() {
+        _pendingViewIncrements = 0;
+      });
+    } catch (e) {
+      // Silent fail - views are not critical
+      debugPrint('Failed to update view count: $e');
+    }
+  }
+
+  // Truncate description to approximately 35-40 words (about 3-4 lines)
   String get _truncatedDescription {
     final description = (widget.post.description ?? '').trim();
     if (description.isEmpty) return '';
 
     final words = description.split(' ');
-    if (words.length <= 15) return description;
+    if (words.length <= 30) return description;
 
-    return '${words.take(15).join(' ')}...';
+    return '${words.take(30).join(' ')}...';
   }
 
   bool get _shouldShowSeeMore {
     final description = (widget.post.description ?? '').trim();
-    return description.split(' ').length > 15;
+    return description.split(' ').length > 30;
   }
 
   Future<void> _handleActionButton(String actionType) async {
@@ -237,551 +288,644 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final hasImage = widget.post.media.isNotEmpty;
 
-    return _PressScale(
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12, left: 0, right: 0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Multi-Image Carousel Section
-              if (hasImage)
-                _MediaCarousel(
-                  key: ValueKey('carousel_${widget.post.id}'),
-                  post: widget.post,
-                  onTap: () async {
-                    final changed = await Navigator.of(context).push<bool>(
-                      MaterialPageRoute(
-                          builder: (_) => PostDetailPage(post: widget.post)),
-                    );
-                    if (changed == true) widget.onEdited();
-                  },
-                )
-              else
-                GestureDetector(
-                  onTap: () async {
-                    final changed = await Navigator.of(context).push<bool>(
-                      MaterialPageRoute(
-                          builder: (_) => PostDetailPage(post: widget.post)),
-                    );
-                    if (changed == true) widget.onEdited();
-                  },
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Container(
-                      decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFFFF6B2C).withOpacity(0.1),
-                          const Color(0xFFFF6B2C).withOpacity(0.05),
-                        ],
-                      )),
-                      child: Center(
-                        child: Icon(Icons.lightbulb_outline,
-                            size: 56,
-                            color: const Color(0xFFFF6B2C).withOpacity(0.3)),
+    return VisibilityDetector(
+      key: Key('post_${widget.post.id}'),
+      onVisibilityChanged: _handleVisibilityChanged,
+      child: _PressScale(
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12, left: 0, right: 0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Multi-Image Carousel Section
+                if (hasImage)
+                  _MediaCarousel(
+                    key: ValueKey('carousel_${widget.post.id}'),
+                    post: widget.post,
+                    onTap: () async {
+                      final changed = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                            builder: (_) => PostDetailPage(post: widget.post)),
+                      );
+                      if (changed == true) widget.onEdited();
+                    },
+                  )
+                else
+                  GestureDetector(
+                    onTap: () async {
+                      final changed = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                            builder: (_) => PostDetailPage(post: widget.post)),
+                      );
+                      if (changed == true) widget.onEdited();
+                    },
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Container(
+                        decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFFFF6B2C).withOpacity(0.1),
+                            const Color(0xFFFF6B2C).withOpacity(0.05),
+                          ],
+                        )),
+                        child: Center(
+                          child: Icon(Icons.lightbulb_outline,
+                              size: 56,
+                              color: const Color(0xFFFF6B2C).withOpacity(0.3)),
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-              // Content Section - Full width optimization
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Moderation banner (only if not approved and viewer is author/admin)
-                      Builder(builder: (context) {
-                        final mod = widget.post.moderationStatus ?? 'approved';
-                        final currentUser =
-                            Supabase.instance.client.auth.currentUser;
-                        final isAuthor = currentUser?.id == widget.post.userId;
-                        // Lightweight admin detection using AppEnv.adminEmails if available (safe fallback)
-                        bool isAdmin = false;
-                        try {
-                          // ignore: avoid_dynamic_calls
-                          isAdmin = (AppEnv.adminEmails)
-                              .map((e) => e.toLowerCase())
-                              .contains(currentUser?.email?.toLowerCase());
-                        } catch (_) {}
-                        if (mod == 'approved' || (!isAuthor && !isAdmin)) {
-                          return const SizedBox.shrink();
-                        }
-                        Color bg;
-                        Color fg;
-                        IconData icon;
-                        String label;
-                        if (mod == 'pending') {
-                          bg = const Color(0xFFFFF4E5);
-                          fg = const Color(0xFF8A5800);
-                          icon = Icons.hourglass_top_rounded;
-                          label =
-                              'This post is under review and only visible to you.';
-                        } else if (mod == 'blocked') {
-                          bg = const Color(0xFFFFE9E9);
-                          fg = const Color(0xFF8A1A1A);
-                          icon = Icons.block_rounded;
-                          label =
-                              'Blocked: Only you can see this. Edit or delete to resubmit.';
-                        } else {
-                          return const SizedBox.shrink();
-                        }
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: bg,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                // Content Section - Full width optimization
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Moderation banner (only if not approved and viewer is author/admin)
+                        Builder(builder: (context) {
+                          final mod =
+                              widget.post.moderationStatus ?? 'approved';
+                          final currentUser =
+                              Supabase.instance.client.auth.currentUser;
+                          final isAuthor =
+                              currentUser?.id == widget.post.userId;
+                          // Lightweight admin detection using AppEnv.adminEmails if available (safe fallback)
+                          bool isAdmin = false;
+                          try {
+                            // ignore: avoid_dynamic_calls
+                            isAdmin = (AppEnv.adminEmails)
+                                .map((e) => e.toLowerCase())
+                                .contains(currentUser?.email?.toLowerCase());
+                          } catch (_) {}
+                          if (mod == 'approved' || (!isAuthor && !isAdmin)) {
+                            return const SizedBox.shrink();
+                          }
+                          Color bg;
+                          Color fg;
+                          IconData icon;
+                          String label;
+                          if (mod == 'pending') {
+                            bg = const Color(0xFFFFF4E5);
+                            fg = const Color(0xFF8A5800);
+                            icon = Icons.hourglass_top_rounded;
+                            label =
+                                'This post is under review and only visible to you.';
+                          } else if (mod == 'blocked') {
+                            bg = const Color(0xFFFFE9E9);
+                            fg = const Color(0xFF8A1A1A);
+                            icon = Icons.block_rounded;
+                            label =
+                                'Blocked: Only you can see this. Edit or delete to resubmit.';
+                          } else {
+                            return const SizedBox.shrink();
+                          }
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 8, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: bg,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(icon, size: 18, color: fg),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(label,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        height: 1.25,
+                                        color: fg,
+                                        fontWeight: FontWeight.w500,
+                                      )),
+                                ),
+                                if (mod == 'blocked')
+                                  TextButton(
+                                    onPressed: () async {
+                                      // Quick edit shortcut
+                                      final saved = await Navigator.of(context)
+                                          .push<bool>(
+                                        MaterialPageRoute(
+                                          builder: (_) => PostCreationPage(
+                                              existing: widget.post),
+                                        ),
+                                      );
+                                      if (saved == true) widget.onEdited();
+                                    },
+                                    style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8)),
+                                    child: Text('Edit',
+                                        style: TextStyle(
+                                            color: fg,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14)),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                        // Header Row
+                        Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Icon(icon, size: 18, color: fg),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(label,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      height: 1.25,
-                                      color: fg,
-                                      fontWeight: FontWeight.w500,
-                                    )),
+                              _AvatarCircle(
+                                url: widget.post.author?.avatarUrl,
+                                name: widget.post.author?.displayName,
+                                userId: widget.post.author?.userId,
+                                onTap: () {
+                                  // Allow viewing anyone's profile, including your own
+                                  if (widget.post.author?.userId != null &&
+                                      widget.post.author!.userId.isNotEmpty) {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            UnifiedProfilePage(
+                                          userId: widget.post.author!.userId,
+                                          userName:
+                                              widget.post.author?.displayName,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
-                              if (mod == 'blocked')
-                                TextButton(
-                                  onPressed: () async {
-                                    // Quick edit shortcut
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // User's full name as primary text (bold) - LinkedIn style with verification badge
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            widget.post.author?.displayName ??
+                                                'Unknown User',
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              height: 1.2,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        // Premium badge (golden ticket) for premium users
+                                        if (widget.post.author
+                                                ?.hasActivePremium ==
+                                            true)
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(left: 4),
+                                            child: Icon(
+                                              Icons.workspace_premium,
+                                              size: 18,
+                                              color: Colors.amber[600],
+                                            ),
+                                          )
+                                        // Blue verified badge for email-verified non-premium users
+                                        else if (widget
+                                                .post.author?.emailVerified ==
+                                            true)
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(left: 4),
+                                            child: Icon(
+                                              Icons.verified,
+                                              size: 18,
+                                              color: Colors.blue[700],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    // Time posted - accurate from database
+                                    if (widget.post.createdAt != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          TimeFormatter.formatTimeAgo(
+                                              widget.post.createdAt!),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ),
+                                    // Removed username line for cleaner, more professional look
+                                  ],
+                                ),
+                              ),
+                              // Bookmark Button - Clean icon-only button
+                              _BookmarkButton(
+                                isBookmarked: _isBookmarked,
+                                isLoading: _isTogglingBookmark,
+                                onToggle: _toggleBookmark,
+                              ),
+                              const SizedBox(width: 4),
+                              // Menu with Share + Edit/Delete options
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert, size: 20),
+                                onSelected: (val) async {
+                                  if (val == 'share') {
+                                    final messenger =
+                                        ScaffoldMessenger.of(context);
+
+                                    // Get the position of the button for iOS share sheet positioning
+                                    final RenderBox? box = context
+                                        .findRenderObject() as RenderBox?;
+                                    final Rect? sharePositionOrigin =
+                                        box != null
+                                            ? box.localToGlobal(Offset.zero) &
+                                                box.size
+                                            : null;
+
+                                    await ShareService.sharePost(
+                                      postId: widget.post.id,
+                                      title: widget.post.title,
+                                      description: widget.post.description,
+                                      sharePositionOrigin: sharePositionOrigin,
+                                    );
+                                    if (mounted) {
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Post shared successfully!')),
+                                      );
+                                    }
+                                  } else if (val == 'edit') {
                                     final saved =
                                         await Navigator.of(context).push<bool>(
                                       MaterialPageRoute(
-                                        builder: (_) => PostCreationPage(
-                                            existing: widget.post),
-                                      ),
+                                          builder: (_) => PostCreationPage(
+                                              existing: widget.post)),
                                     );
                                     if (saved == true) widget.onEdited();
-                                  },
-                                  style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8)),
-                                  child: Text('Edit',
-                                      style: TextStyle(
-                                          color: fg,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14)),
-                                ),
-                            ],
-                          ),
-                        );
-                      }),
-                      // Header Row
-                      Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            _AvatarCircle(
-                              url: widget.post.author?.avatarUrl,
-                              name: widget.post.author?.displayName,
-                              userId: widget.post.author?.userId,
-                              onTap: () {
-                                // Allow viewing anyone's profile, including your own
-                                if (widget.post.author?.userId != null &&
-                                    widget.post.author!.userId.isNotEmpty) {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => UnifiedProfilePage(
-                                        userId: widget.post.author!.userId,
-                                        userName:
-                                            widget.post.author?.displayName,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // User's full name as primary text (bold) - LinkedIn style with verification badge
-                                  Row(
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          widget.post.author?.displayName ??
-                                              'Unknown User',
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700,
-                                            height: 1.2,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      // Blue verified badge for verified users
-                                      if (widget.post.author?.emailVerified ==
-                                          true)
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(left: 4),
-                                          child: Icon(
-                                            Icons.verified,
-                                            size: 18,
-                                            color: Colors.blue[700],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  // Time posted - accurate from database
-                                  if (widget.post.createdAt != null)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 2),
-                                      child: Text(
-                                        TimeFormatter.formatTimeAgo(
-                                            widget.post.createdAt!),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                          height: 1.2,
-                                        ),
-                                      ),
-                                    ),
-                                  // Removed username line for cleaner, more professional look
-                                ],
-                              ),
-                            ),
-                            // Bookmark Button - Clean icon-only button
-                            _BookmarkButton(
-                              isBookmarked: _isBookmarked,
-                              isLoading: _isTogglingBookmark,
-                              onToggle: _toggleBookmark,
-                            ),
-                            const SizedBox(width: 4),
-                            // Menu with Share + Edit/Delete options
-                            PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert, size: 20),
-                              onSelected: (val) async {
-                                if (val == 'share') {
-                                  final messenger =
-                                      ScaffoldMessenger.of(context);
-
-                                  // Get the position of the button for iOS share sheet positioning
-                                  final RenderBox? box =
-                                      context.findRenderObject() as RenderBox?;
-                                  final Rect? sharePositionOrigin = box != null
-                                      ? box.localToGlobal(Offset.zero) &
-                                          box.size
-                                      : null;
-
-                                  await ShareService.sharePost(
-                                    postId: widget.post.id,
-                                    title: widget.post.title,
-                                    description: widget.post.description,
-                                    sharePositionOrigin: sharePositionOrigin,
-                                  );
-                                  if (mounted) {
-                                    messenger.showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Post shared successfully!')),
-                                    );
-                                  }
-                                } else if (val == 'edit') {
-                                  final saved =
-                                      await Navigator.of(context).push<bool>(
-                                    MaterialPageRoute(
-                                        builder: (_) => PostCreationPage(
-                                            existing: widget.post)),
-                                  );
-                                  if (saved == true) widget.onEdited();
-                                } else if (val == 'delete') {
-                                  final ok = await showDialog<bool>(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Delete Post?'),
-                                      content:
-                                          const Text('This cannot be undone.'),
-                                      actions: [
-                                        TextButton(
+                                  } else if (val == 'delete') {
+                                    final ok = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Delete Post?'),
+                                        content: const Text(
+                                            'This cannot be undone.'),
+                                        actions: [
+                                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, false),
+                                              child: const Text('Cancel')),
+                                          FilledButton(
+                                            style: FilledButton.styleFrom(
+                                                backgroundColor: Colors.red),
                                             onPressed: () =>
-                                                Navigator.pop(ctx, false),
-                                            child: const Text('Cancel')),
-                                        FilledButton(
-                                          style: FilledButton.styleFrom(
-                                              backgroundColor: Colors.red),
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, true),
-                                          child: const Text('Delete'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (ok == true) {
-                                    try {
-                                      await FeedService()
-                                          .deletePost(id: widget.post.id);
-                                      widget.onDeleted();
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(SnackBar(
-                                                content:
-                                                    Text('Delete failed: $e')));
+                                                Navigator.pop(ctx, true),
+                                            child: const Text('Delete'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (ok == true) {
+                                      try {
+                                        await FeedService()
+                                            .deletePost(id: widget.post.id);
+                                        widget.onDeleted();
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(SnackBar(
+                                                  content: Text(
+                                                      'Delete failed: $e')));
+                                        }
                                       }
                                     }
                                   }
-                                }
-                              },
-                              itemBuilder: (ctx) => [
-                                const PopupMenuItem(
-                                    value: 'share',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.share_outlined, size: 18),
-                                        SizedBox(width: 8),
-                                        Text('Share'),
-                                      ],
-                                    )),
-                                // Show edit/delete only for own posts
-                                if (widget.meUid == widget.post.userId) ...[
+                                },
+                                itemBuilder: (ctx) => [
                                   const PopupMenuItem(
-                                      value: 'edit',
+                                      value: 'share',
                                       child: Row(
                                         children: [
-                                          Icon(Icons.edit_outlined, size: 18),
+                                          Icon(Icons.share_outlined, size: 18),
                                           SizedBox(width: 8),
-                                          Text('Edit'),
+                                          Text('Share'),
                                         ],
                                       )),
-                                  const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete_outline,
-                                              size: 18, color: Colors.red),
-                                          SizedBox(width: 8),
-                                          Text('Delete',
-                                              style:
-                                                  TextStyle(color: Colors.red)),
-                                        ],
-                                      )),
+                                  // Show edit/delete only for own posts
+                                  if (widget.meUid == widget.post.userId) ...[
+                                    const PopupMenuItem(
+                                        value: 'edit',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.edit_outlined, size: 18),
+                                            SizedBox(width: 8),
+                                            Text('Edit'),
+                                          ],
+                                        )),
+                                    const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.delete_outline,
+                                                size: 18, color: Colors.red),
+                                            SizedBox(width: 8),
+                                            Text('Delete',
+                                                style: TextStyle(
+                                                    color: Colors.red)),
+                                          ],
+                                        )),
+                                  ],
+                                ],
+                              ),
+                            ]),
+
+                        // Post Title Section - Tighter spacing for better hierarchy
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () async {
+                            final changed =
+                                await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      PostDetailPage(post: widget.post)),
+                            );
+                            if (changed == true) widget.onEdited();
+                          },
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                // "Startup:" label with subtle styling
+                                TextSpan(
+                                  text: 'Startup: ',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color.fromARGB(255, 0, 0, 0),
+                                    height: 1.2,
+                                  ),
+                                ),
+                                // Startup with enhanced styling
+                                TextSpan(
+                                  text: widget.post.title,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color.fromARGB(255, 235, 128, 13),
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Combined Tags and Goals Row - keep chips on a single line and allow horizontal scroll on overflow
+                        if (widget.subtitle.isNotEmpty ||
+                            widget.goalLabel != null) ...[
+                          const SizedBox(height: 6),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              children: [
+                                if (widget.subtitle.isNotEmpty) ...[
+                                  _CompactChip(
+                                    text: widget.subtitle,
+                                    color: const Color(0xFFF8FAFC), // Slate-50
+                                    borderColor: Colors.white, // Slate-300
+                                    textColor:
+                                        const Color(0xFF475569), // Slate-600
+                                  ),
+                                  const SizedBox(width: 0),
+                                ],
+                                if (widget.goalLabel != null) ...[
+                                  _CompactChip(
+                                    text: widget.goalLabel!,
+                                    color: const Color(
+                                        0xFFF8FAFC), // Light blue-50
+                                    borderColor: Colors.white, // Blue-200
+                                    textColor:
+                                        const Color(0xFF16A34A), // Blue-700
+                                  ),
+                                  const SizedBox(width: 0),
+                                ],
+                                if (widget.post.fundingGoal != null) ...[
+                                  _CompactChip(
+                                    text: 'Goal: \$${widget.post.fundingGoal}',
+                                    color:
+                                        const Color(0xFFF8FAFC), // Emerald-50
+                                    borderColor: Colors.white, // Black border
+                                    textColor:
+                                        const Color(0xFFA16207), // Emerald-700
+                                  ),
                                 ],
                               ],
                             ),
-                          ]),
+                          ),
+                        ],
 
-                      // Post Title Section - Tighter spacing for better hierarchy
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: () async {
-                          final changed =
-                              await Navigator.of(context).push<bool>(
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                    PostDetailPage(post: widget.post)),
-                          );
-                          if (changed == true) widget.onEdited();
-                        },
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              // "Startup:" label with subtle styling
-                              TextSpan(
-                                text: 'Startup: ',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color.fromARGB(255, 0, 0, 0),
-                                  height: 1.2,
-                                ),
-                              ),
-                              // Startup with enhanced styling
-                              TextSpan(
-                                text: widget.post.title,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color.fromARGB(255, 235, 128, 13),
-                                  height: 1.2,
+                        const SizedBox(height: 8),
+
+                        // Expandable Description
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isDescriptionExpanded
+                                  ? (widget.post.description ?? '').trim()
+                                  : _truncatedDescription,
+                              style:
+                                  const TextStyle(fontSize: 14, height: 1.35),
+                            ),
+                            if (_shouldShowSeeMore) ...[
+                              const SizedBox(height: 4),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _isDescriptionExpanded =
+                                        !_isDescriptionExpanded;
+                                  });
+                                },
+                                child: Text(
+                                  _isDescriptionExpanded
+                                      ? 'See less'
+                                      : 'See more',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
-                          ),
+                          ],
                         ),
-                      ),
 
-                      // Combined Tags and Goals Row - keep chips on a single line and allow horizontal scroll on overflow
-                      if (widget.subtitle.isNotEmpty ||
-                          widget.goalLabel != null) ...[
-                        const SizedBox(height: 6),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          child: Row(
-                            children: [
-                              if (widget.subtitle.isNotEmpty) ...[
-                                _CompactChip(
-                                  text: widget.subtitle,
-                                  color: const Color(0xFFF8FAFC), // Slate-50
-                                  borderColor: Colors.white, // Slate-300
-                                  textColor:
-                                      const Color(0xFF475569), // Slate-600
+                        // Action Buttons Row - Modern Instagram/LinkedIn Style
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            // Show Invest, Collab, Suggest only if not own post
+                            if (widget.meUid != widget.post.userId) ...[
+                              Flexible(
+                                fit: FlexFit.loose,
+                                child: _ModernActionButton(
+                                  label: 'Invest',
+                                  icon: AppIcons.money(size: 16),
+                                  variant: ActionButtonVariant.primary,
+                                  onPressed: () =>
+                                      _handleActionButton('invest'),
                                 ),
-                                const SizedBox(width: 0),
-                              ],
-                              if (widget.goalLabel != null) ...[
-                                _CompactChip(
-                                  text: widget.goalLabel!,
-                                  color:
-                                      const Color(0xFFF8FAFC), // Light blue-50
-                                  borderColor: Colors.white, // Blue-200
-                                  textColor:
-                                      const Color(0xFF16A34A), // Blue-700
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                fit: FlexFit.loose,
+                                child: _ModernActionButton(
+                                  label: 'Collab',
+                                  icon: AppIcons.collab(size: 16),
+                                  variant: ActionButtonVariant.secondary,
+                                  onPressed: () =>
+                                      _handleActionButton('collab'),
                                 ),
-                                const SizedBox(width: 0),
-                              ],
-                              if (widget.post.fundingGoal != null) ...[
-                                _CompactChip(
-                                  text: 'Goal: \$${widget.post.fundingGoal}',
-                                  color: const Color(0xFFF8FAFC), // Emerald-50
-                                  borderColor: Colors.white, // Black border
-                                  textColor:
-                                      const Color(0xFFA16207), // Emerald-700
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                fit: FlexFit.loose,
+                                child: _ModernActionButton(
+                                  label: 'Suggest',
+                                  icon: const SizedBox
+                                      .shrink(), // No icon for Suggest button
+                                  variant: ActionButtonVariant.tertiary,
+                                  onPressed: () =>
+                                      _handleActionButton('suggest'),
                                 ),
-                              ],
+                              ),
+                              const SizedBox(width: 8),
                             ],
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(height: 8),
-
-                      // Expandable Description
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _isDescriptionExpanded
-                                ? (widget.post.description ?? '').trim()
-                                : _truncatedDescription,
-                            style: const TextStyle(fontSize: 14, height: 1.35),
-                          ),
-                          if (_shouldShowSeeMore) ...[
-                            const SizedBox(height: 4),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _isDescriptionExpanded =
-                                      !_isDescriptionExpanded;
-                                });
-                              },
-                              child: Text(
-                                _isDescriptionExpanded
-                                    ? 'See less'
-                                    : 'See more',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Theme.of(context).primaryColor,
-                                  fontWeight: FontWeight.w600,
+                            // Comment Button - Always visible with badge (just show count number)
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: _ModernActionButton(
+                                label:
+                                    _commentCount > 0 ? '$_commentCount' : '',
+                                icon: Image.asset(
+                                  'lib/icons/comment-alt-dots.png',
+                                  width: 16,
+                                  height: 16,
+                                  color: Colors.black,
+                                ),
+                                variant: ActionButtonVariant.outlined,
+                                onPressed: _openComments,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // View Counter - Only visible to post owner
+                            if (_localViewCount > 0 &&
+                                widget.post.userId == widget.meUid)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.grey[300]!,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.visibility_outlined,
+                                        size: 14, color: Colors.grey[600]),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '$_localViewCount',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
                           ],
-                        ],
-                      ),
-
-                      // Action Buttons Row - Modern Instagram/LinkedIn Style
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          // Show Invest, Collab, Suggest only if not own post
-                          if (widget.meUid != widget.post.userId) ...[
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: _ModernActionButton(
-                                label: 'Invest',
-                                icon: AppIcons.money(size: 16),
-                                variant: ActionButtonVariant.primary,
-                                onPressed: () => _handleActionButton('invest'),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: _ModernActionButton(
-                                label: 'Collab',
-                                icon: AppIcons.collab(size: 16),
-                                variant: ActionButtonVariant.secondary,
-                                onPressed: () => _handleActionButton('collab'),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: _ModernActionButton(
-                                label: 'Suggest',
-                                icon: AppIcons.suggest(size: 16),
-                                variant: ActionButtonVariant.tertiary,
-                                onPressed: () => _handleActionButton('suggest'),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          // Comment Button - Always visible with badge (just show count number)
-                          Flexible(
-                            fit: FlexFit.loose,
-                            child: _ModernActionButton(
-                              label: widget.post.commentCount > 0
-                                  ? '${widget.post.commentCount}'
-                                  : '',
-                              icon: Image.asset(
-                                'lib/icons/comment-alt-dots.png',
-                                width: 16,
-                                height: 16,
-                                color: Colors.black,
-                              ),
-                              variant: ActionButtonVariant.outlined,
-                              onPressed: _openComments,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ]),
-              ),
-            ]),
+                        ),
+                      ]),
+                ),
+              ]),
+        ),
       ),
     );
   }
 
   Future<void> _openComments() async {
-    await CommentSheet.show(context, widget.post);
-    // Comment count will auto-update via trigger - no need to reload!
+    final initialCount = _commentCount;
+    int? latestFromSheet;
+    await CommentSheet.show(
+      context,
+      widget.post,
+      onCountChanged: (count) {
+        latestFromSheet = count;
+        if (mounted) {
+          setState(() {
+            _commentCount = count;
+          });
+        }
+      },
+    );
+
+    if (latestFromSheet == null) {
+      try {
+        final latestCount =
+            await _commentService.getCommentCount(widget.post.id);
+        if (mounted) {
+          setState(() {
+            _commentCount = latestCount;
+          });
+        }
+        // Update the final count
+        latestFromSheet = latestCount;
+      } catch (_) {
+        // Ignore failures silently; existing count will remain until next refresh.
+      }
+    }
+
+    // If comment count changed, notify parent to refresh the post
+    if (latestFromSheet != null && latestFromSheet != initialCount) {
+      widget.onEdited(); // Triggers parent to reload posts with updated counts
+    }
   }
 }
 
@@ -839,7 +983,7 @@ class _ModernActionButtonState extends State<_ModernActionButton>
     // Define colors based on variant - Modern, professional color system
     Color backgroundColor;
     Color foregroundColor;
-    Color? borderColor;
+    Color borderColor;
     double elevation;
 
     switch (widget.variant) {
@@ -889,9 +1033,7 @@ class _ModernActionButtonState extends State<_ModernActionButton>
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(12),
-            border: borderColor != null
-                ? Border.all(color: borderColor, width: 1.5)
-                : null,
+            border: Border.all(color: borderColor, width: 1.5),
             boxShadow: elevation > 0
                 ? [
                     BoxShadow(
@@ -905,13 +1047,16 @@ class _ModernActionButtonState extends State<_ModernActionButton>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 18,
-                height: 18,
-                child: widget.icon,
-              ),
-              if (widget.label.isNotEmpty) ...[
-                const SizedBox(width: 6),
+              if (widget.icon is! SizedBox ||
+                  (widget.icon as SizedBox).width != 0) ...[
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: widget.icon,
+                ),
+                if (widget.label.isNotEmpty) const SizedBox(width: 6),
+              ],
+              if (widget.label.isNotEmpty)
                 Flexible(
                   child: Text(
                     widget.label,
@@ -926,7 +1071,6 @@ class _ModernActionButtonState extends State<_ModernActionButton>
                     textAlign: TextAlign.center,
                   ),
                 ),
-              ],
             ],
           ),
         ),
@@ -1204,14 +1348,14 @@ class _AvatarCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedUrl = StorageUtils.resolvePublicUrl(url);
     return GestureDetector(
       onTap: onTap,
       child: CircleAvatar(
         radius: 20,
-        backgroundImage:
-            (url != null && url!.isNotEmpty) ? NetworkImage(url!) : null,
+        backgroundImage: resolvedUrl != null ? NetworkImage(resolvedUrl) : null,
         backgroundColor: Colors.blue[300],
-        child: (url == null || url!.isEmpty)
+        child: (resolvedUrl == null)
             ? Text(initial, style: const TextStyle(fontWeight: FontWeight.w600))
             : null,
       ),

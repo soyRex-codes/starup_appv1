@@ -28,6 +28,22 @@ class StorageUtils {
     return '${AppEnv.supabaseUrl}/storage/v1/object/public/$bucket/$path';
   }
 
+  /// Normalize avatar/media paths to full public URLs.
+  /// Accepts absolute URLs, storage paths, or file names and ensures
+  /// callers always receive a browser-ready URL.
+  static String? resolvePublicUrl(
+    String? path, {
+    String? bucket,
+  }) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+
+    final resolvedBucket = bucket ?? AppEnv.startupbuilderBucket;
+    return getMediaUrl(path: path, bucket: resolvedBucket);
+  }
+
   /// Check if a file extension is supported for upload
   static bool isSupportedFileType(String filename) {
     final ext = filename.toLowerCase().split('.').last;

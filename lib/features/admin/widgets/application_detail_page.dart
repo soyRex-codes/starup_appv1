@@ -17,6 +17,14 @@ class ApplicationDetailPage extends StatefulWidget {
 }
 
 class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
+  static const List<String> _statusOptions = [
+    'pending',
+    'paid',
+    'reviewed',
+    'assigned',
+    'completed',
+  ];
+
   late String _currentStatus;
   final _adminNotesController = TextEditingController();
   bool _updating = false;
@@ -24,7 +32,9 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
   @override
   void initState() {
     super.initState();
-    _currentStatus = widget.application['status'] as String;
+    final initialStatus = widget.application['status']?.toString() ?? 'pending';
+    _currentStatus =
+        _statusOptions.contains(initialStatus) ? initialStatus : 'pending';
     _adminNotesController.text =
         widget.application['admin_notes']?.toString() ?? '';
   }
@@ -39,6 +49,8 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
     switch (status) {
       case 'pending':
         return Colors.orange;
+      case 'paid':
+        return Colors.green;
       case 'reviewed':
         return Colors.blue;
       case 'assigned':
@@ -322,7 +334,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
                           contentPadding:
                               EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
-                        items: ['pending', 'reviewed', 'assigned', 'completed']
+                        items: _statusOptions
                             .map((status) => DropdownMenuItem(
                                   value: status,
                                   child: Text(status.toUpperCase()),

@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FounderVers - Connect, Build, and Grow with Founders Worldwide. Join a community of entrepreneurs and innovators.">
+    <title>FounderVers - Connect, Build, and Grow with Founders Worldwide</title>
+    <style>
+        /* ===== RESET & BASE STYLES (Apple-inspired) ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: #ffffff;
+            color: #1d1d1f;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ===== NAVIGATION BAR (Apple Style) ===== */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            z-index: 9999;
+            transition: all 0.3s ease;
+        }
+
+        nav.scrolled {
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 44px;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #1d1d1f;
+            font-weight: 600;
+            font-size: 21px;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-logo:hover {
+            opacity: 0.7;
+        }
+
+        .nav-logo img {
+            height: 32px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #1d1d1f;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 400;
+            transition: opacity 0.3s ease;
+            letter-spacing: -0.01em;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.7;
+        }
+
+        /* ===== HERO SECTION (Apple Style Landing) ===== */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 100px 20px 80px;
+            background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+            overflow: hidden;
+        }
+
+        /* Floating background elements */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -40%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(118, 75, 162, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            50% { transform: translateY(-30px) translateX(20px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 980px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-logo {
+            margin-bottom: 20px;
+            animation: fadeIn 1.2s ease-out 0.2s backwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .hero-logo img {
+            height: 120px;
+            width: auto;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 600;
+            letter-spacing: -0.015em;
+            line-height: 1.07;
+            color: #1d1d1f;
+            margin-bottom: 16px;
+            animation: fadeInUp 1s ease-out 0.3s backwards;
+        }
+
+        .hero-tagline {
+            font-size: 28px;
+            font-weight: 400;
+            line-height: 1.14;
+            letter-spacing: 0.007em;
+            color: #86868b;
+            margin-bottom: 32px;
+            animation: fadeInUp 1s ease-out 0.4s backwards;
+        }
+
+        .hero-description {
+            font-size: 21px;
+            line-height: 1.38;
+            font-weight: 400;
+            letter-spacing: 0.011em;
+            color: #1d1d1f;
+            max-width: 700px;
+            margin: 0 auto 48px;
+            animation: fadeInUp 1s ease-out 0.5s backwards;
+        }
+
+        /* ===== DOWNLOAD BUTTONS (Apple Style) ===== */
+        .download-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease-out 0.6s backwards;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            background: #1d1d1f;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 980px;
+            font-size: 17px;
+            font-weight: 400;
+            letter-spacing: -0.022em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .download-btn:hover::before {
+            left: 100%;
+        }
+
+        .download-btn:hover {
+            background: #424245;
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+        }
+
+        .download-btn:active {
+            transform: scale(0.98);
+        }
+
+        .download-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+        }
+
+        .download-btn.primary:hover {
+            background: linear-gradient(135deg, #7689ef 0%, #8557b3 100%);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35);
+        }
+
+        .btn-icon {
+            font-size: 20px;
+        }
+
+        /* ===== FEATURES SECTION ===== */
+        .features {
+            padding: 100px 20px;
+            background: #ffffff;
+            position: relative;
+        }
+
+        .features-container {
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 40px 20px;
+            background: #fafafa;
+            border-radius: 18px;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+            background: #f5f5f7;
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .feature-card h3 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.009em;
+            color: #1d1d1f;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            font-size: 17px;
+            line-height: 1.47;
+            letter-spacing: -0.022em;
+            color: #86868b;
+        }
+
+        /* ===== PRIVACY POLICY SECTION ===== */
+        .privacy-section {
+            padding: 100px 20px;
+            background: #fafafa;
+        }
+
+        .privacy-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 60px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .privacy-header {
+            text-align: center;
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid #d2d2d7;
+        }
+
+        .privacy-header h2 {
+            font-size: 48px;
+            font-weight: 600;
+            letter-spacing: -0.003em;
+            color: #1d1d1f;
+            margin-bottom: 12px;
+        }
+
+        .privacy-updated {
+            font-size: 14px;
+            color: #86868b;
+            font-weight: 400;
+        }
+
+        .privacy-content h3 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.009em;
+            color: #1d1d1f;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        .privacy-content h4 {
+            font-size: 21px;
+            font-weight: 600;
+            letter-spacing: 0.011em;
+            color: #1d1d1f;
+            margin-top: 28px;
+            margin-bottom: 12px;
+        }
+
+        .privacy-content p {
+            font-size: 17px;
+            line-height: 1.47;
+            letter-spacing: -0.022em;
+            color: #1d1d1f;
+            margin-bottom: 16px;
+        }
+
+        .privacy-content ul {
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        .privacy-content li {
+            font-size: 17px;
+            line-height: 1.47;
+            letter-spacing: -0.022em;
+            color: #1d1d1f;
+            margin-bottom: 12px;
+        }
+
+        .privacy-content a {
+            color: #667eea;
+            text-decoration: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .privacy-content a:hover {
+            opacity: 0.7;
+            text-decoration: underline;
+        }
+
+        .privacy-highlight {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            padding: 24px;
+            border-radius: 12px;
+            margin: 28px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        /* ===== BACK TO TOP BUTTON ===== */
+        .back-to-top {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            width: 48px;
+            height: 48px;
+            background: #1d1d1f;
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .back-to-top:hover {
+            background: #424245;
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .back-to-top.visible {
+            display: flex;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            background: #f5f5f7;
+            padding: 60px 20px 40px;
+            border-top: 1px solid #d2d2d7;
+        }
+
+        .footer-container {
+            max-width: 980px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+        }
+
+        .footer-links a {
+            color: #424245;
+            text-decoration: none;
+            font-size: 12px;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            opacity: 0.7;
+        }
+
+        .footer-info {
+            color: #86868b;
+            font-size: 12px;
+            line-height: 1.33;
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .nav-container {
+                padding: 0 16px;
+            }
+
+            .nav-links {
+                gap: 20px;
+            }
+
+            .hero {
+                padding: 80px 20px 60px;
+            }
+
+            .hero h1 {
+                font-size: 40px;
+            }
+
+            .hero-tagline {
+                font-size: 21px;
+            }
+
+            .hero-description {
+                font-size: 17px;
+            }
+
+            .hero-logo img {
+                height: 80px;
+            }
+
+            .download-buttons {
+                flex-direction: column;
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+
+            .download-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .features {
+                padding: 60px 20px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .privacy-container {
+                padding: 32px 24px;
+                border-radius: 0;
+            }
+
+            .privacy-header h2 {
+                font-size: 32px;
+            }
+
+            .privacy-content h3 {
+                font-size: 24px;
+            }
+
+            .back-to-top {
+                bottom: 20px;
+                right: 20px;
+                width: 44px;
+                height: 44px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-logo {
+                font-size: 18px;
+            }
+
+            .nav-logo img {
+                height: 28px;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero-tagline {
+                font-size: 19px;
+            }
+
+            .hero-description {
+                font-size: 15px;
+            }
+        }
+
+        /* ===== ACCESSIBILITY ===== */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Focus styles for keyboard navigation */
+        a:focus,
+        button:focus {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation with Logo -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <img src="foundervers.png" alt="FounderVers Logo">
+                <span>FounderVers</span>
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#privacy">Privacy</a>
+                <a href="#download">Download</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section with Large Logo -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-logo">
+                <img src="foundervers.png" alt="FounderVers Logo">
+            </div>
+            <h1>Connect, Build, and Grow<br>with Founders Worldwide</h1>
+            <p class="hero-tagline">Join a community where innovation meets opportunity</p>
+            <p class="hero-description">The premier social platform designed exclusively for founders, entrepreneurs, and innovators. Share your journey, build meaningful connections, and unlock limitless possibilities.</p>
+            
+            <div class="download-buttons">
+                <a href="https://apps.apple.com/app/foundervers/id6738901234" class="download-btn primary" target="_blank">
+                    <span class="btn-icon">📱</span>
+                    <span>Download on App Store</span>
+                </a>
+                <a href="https://play.google.com/store/apps/details?id=com.foundervers.mobile" class="download-btn" target="_blank">
+                    <span class="btn-icon">🤖</span>
+                    <span>Get it on Google Play</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="features-container">
+            <h2 style="font-size: 48px; font-weight: 600; text-align: center; color: #1d1d1f; margin-bottom: 16px; letter-spacing: -0.003em;">Built for Founders</h2>
+            <p style="font-size: 21px; text-align: center; color: #86868b; max-width: 600px; margin: 0 auto 0;">Everything you need to connect, collaborate, and grow your venture in one powerful platform.</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🤝</div>
+                    <h3>Connect</h3>
+                    <p>Network with thousands of like-minded founders and entrepreneurs. Build meaningful relationships that drive your business forward.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🛠️</div>
+                    <h3>Build</h3>
+                    <p>Collaborate using powerful tools designed for founders. Share ideas, get feedback, and turn concepts into reality together.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <h3>Grow</h3>
+                    <p>Access exclusive resources, mentorship opportunities, and growth strategies. Scale your business with community support.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>Share</h3>
+                    <p>Post updates, share media, and engage in real-time conversations. Keep your network informed throughout your journey.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure</h3>
+                    <p>Your data is protected with enterprise-grade security. We prioritize your privacy and keep your information safe.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🌍</div>
+                    <h3>Global Reach</h3>
+                    <p>Join a worldwide community of entrepreneurs. Connect across borders and explore international opportunities.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy Policy Section -->
+    <section class="privacy-section" id="privacy">
+        <div class="privacy-container">
+            <div class="privacy-header">
+                <h2>Privacy Policy</h2>
+                <p class="privacy-updated">Last Updated: January 14, 2025</p>
+            </div>
+            
+            <div class="privacy-content">
+                <p>Welcome to FounderVers ("we," "our," or "us"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and services.</p>
+
+                <h3>1. Information We Collect</h3>
+                
+                <h4>1.1 Information You Provide</h4>
+                <p>When you create an account and use FounderVers, we collect information you voluntarily provide, including:</p>
+                <ul>
+                    <li>Profile information (name, email address, profile photo, bio)</li>
+                    <li>Content you post (text, images, videos, comments)</li>
+                    <li>Messages and communications with other users</li>
+                    <li>Business information (company name, role, industry)</li>
+                    <li>Payment information (processed securely through third-party providers)</li>
+                </ul>
+
+                <h4>1.2 Automatically Collected Information</h4>
+                <p>We automatically collect certain information when you use our services:</p>
+                <ul>
+                    <li>Device information (device type, operating system, unique identifiers)</li>
+                    <li>Usage data (features used, time spent, interactions)</li>
+                    <li>Location data (with your permission)</li>
+                    <li>Log data (IP address, browser type, access times)</li>
+                </ul>
+
+                <h3>2. How We Use Your Information</h3>
+                <p>We use the collected information for the following purposes:</p>
+                <ul>
+                    <li>Provide, maintain, and improve our services</li>
+                    <li>Personalize your experience and content recommendations</li>
+                    <li>Process transactions and send related information</li>
+                    <li>Send administrative information, updates, and security alerts</li>
+                    <li>Respond to your comments, questions, and customer service requests</li>
+                    <li>Monitor and analyze trends, usage, and activities</li>
+                    <li>Detect, prevent, and address technical issues and fraudulent activity</li>
+                    <li>Comply with legal obligations and enforce our terms</li>
+                </ul>
+
+                <div class="privacy-highlight">
+                    <h4>Your Privacy Matters</h4>
+                    <p>We will never sell your personal information to third parties. Your data is yours, and we are committed to keeping it secure and private.</p>
+                </div>
+
+                <h3>3. Information Sharing and Disclosure</h3>
+                <p>We may share your information in the following circumstances:</p>
+                <ul>
+                    <li><strong>With Other Users:</strong> Your profile information and content you post are visible to other FounderVers users according to your privacy settings.</li>
+                    <li><strong>With Service Providers:</strong> We share information with third-party service providers who perform services on our behalf (hosting, analytics, payment processing, customer support).</li>
+                    <li><strong>For Legal Reasons:</strong> We may disclose information if required by law, legal process, or governmental request, or to protect rights, property, and safety.</li>
+                    <li><strong>With Your Consent:</strong> We may share information with third parties when you give us explicit consent to do so.</li>
+                </ul>
+
+                <h3>4. Data Security</h3>
+                <p>We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. These measures include:</p>
+                <ul>
+                    <li>Encryption of data in transit and at rest</li>
+                    <li>Regular security assessments and updates</li>
+                    <li>Access controls and authentication requirements</li>
+                    <li>Employee training on data protection</li>
+                </ul>
+                <p>However, no method of transmission over the internet or electronic storage is 100% secure. While we strive to protect your information, we cannot guarantee absolute security.</p>
+
+                <h3>5. Your Rights and Choices</h3>
+                <p>You have the following rights regarding your personal information:</p>
+                <ul>
+                    <li><strong>Access and Update:</strong> You can access and update your profile information through your account settings.</li>
+                    <li><strong>Delete:</strong> You can request deletion of your account and personal information by contacting us at privacy@foundervers.com.</li>
+                    <li><strong>Opt-Out:</strong> You can opt out of receiving promotional communications by following the unsubscribe instructions in those messages.</li>
+                    <li><strong>Data Portability:</strong> You can request a copy of your personal information in a structured, commonly used format.</li>
+                </ul>
+
+                <h3>6. Data Retention</h3>
+                <p>We retain your personal information for as long as necessary to provide our services and fulfill the purposes outlined in this Privacy Policy. When you delete your account, we will delete or anonymize your personal information, except where we are required to retain it for legal or regulatory purposes.</p>
+
+                <h3>7. Children's Privacy</h3>
+                <p>FounderVers is not intended for users under the age of 13. We do not knowingly collect personal information from children under 13. If we become aware that a child under 13 has provided us with personal information, we will take steps to delete such information.</p>
+
+                <h3>8. International Data Transfers</h3>
+                <p>Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. By using FounderVers, you consent to the transfer of your information to these countries.</p>
+
+                <h3>9. Changes to This Privacy Policy</h3>
+                <p>We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new Privacy Policy on this page and updating the "Last Updated" date. Your continued use of FounderVers after such changes constitutes acceptance of the updated policy.</p>
+
+                <h3>10. Contact Us</h3>
+                <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy practices, please contact us at:</p>
+                <p style="margin-left: 24px;">
+                    <strong>Email:</strong> <a href="mailto:privacy@foundervers.com">privacy@foundervers.com</a><br>
+                    <strong>Support:</strong> <a href="mailto:support@foundervers.com">support@foundervers.com</a>
+                </p>
+
+                <div class="privacy-highlight">
+                    <p><strong>Your trust is important to us.</strong> We are committed to transparency in our data practices and to protecting your privacy as you connect and grow with the FounderVers community.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top">↑</button>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-links">
+                <a href="#features">Features</a>
+                <a href="#privacy">Privacy Policy</a>
+                <a href="legal.html">Terms of Service</a>
+                <a href="mailto:support@foundervers.com">Support</a>
+            </div>
+            <div class="footer-info">
+                <p>© 2025 FounderVers. All rights reserved.</p>
+                <p>Connecting founders worldwide. Available on iOS and Android.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for Smooth Interactions -->
+    <script>
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Back to top button
+        const backToTopButton = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 500) {
+                backToTopButton.classList.add('visible');
+            } else {
+                backToTopButton.classList.remove('visible');
+            }
+        });
+
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href !== '#') {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        const navHeight = navbar.offsetHeight;
+                        const targetPosition = target.offsetTop - navHeight;
+                        window.scrollTo({
+                            top: targetPosition,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Parallax effect for hero
+        const hero = document.querySelector('.hero');
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            if (hero) {
+                hero.style.transform = `translateY(${scrolled * 0.3}px)`;
+            }
+        });
+
+        // Feature cards animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe feature cards
+        document.querySelectorAll('.feature-card').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = `all 0.6s ease ${index * 0.1}s`;
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>

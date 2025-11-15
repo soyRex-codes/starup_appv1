@@ -37,12 +37,13 @@ dependencies:
 
   # Runtime dependencies for Supabase-only app
   supabase_flutter: ^2.5.6 # Supabase client for Flutter
-  flutter_stripe: ^10.0.0  # Stripe payment processing
+  flutter_stripe: ^10.0.0  # Stripe payment processing (Android only)
+  in_app_purchase: ^3.2.3  # Apple In-App Purchase (iOS only)
   flutter_dotenv: ^5.1.0
   image_picker: ^1.0.8
   meta: ^1.11.0
   intl: ^0.19.0
-  share_plus: ^7.2.1
+  share_plus: ^10.1.2
   app_links: ^6.3.2
   url_launcher: ^6.2.2
   crypto: ^3.0.3  # For secure OTP hashing
@@ -56,6 +57,7 @@ dependencies:
   uuid: ^4.5.1  # For generating unique IDs
   timeago: ^3.7.0  # For relative time formatting
   flutter_local_notifications: ^17.2.3  # Local notifications support
+  visibility_detector: ^0.4.0+2  # For detecting post visibility in feed
   
   # Media compression dependencies
   flutter_image_compress: ^2.3.0  # Efficient image compression

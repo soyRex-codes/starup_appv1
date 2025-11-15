@@ -216,7 +216,7 @@ class _SuggestionFormState extends State<SuggestionForm> {
                       child: FilledButton(
                         onPressed: _isSubmitting ? null : _submitSuggestion,
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
+                          backgroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: _isSubmitting

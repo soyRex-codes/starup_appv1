@@ -119,9 +119,8 @@ class FeedService {
 
     final Map<String, AuthorSummary> authors = {};
     if (userIds.isNotEmpty) {
-      final usersQuery = _s
-          .from('users')
-          .select('id,name,username,full_name,avatar_url,email_verified');
+      final usersQuery = _s.from('users').select(
+          'id,name,username,full_name,avatar_url,email_verified,is_premium,premium_expires_at');
       dynamic usersResp;
       if (userIds.length == 1) {
         usersResp = await usersQuery.eq('id', userIds.first);

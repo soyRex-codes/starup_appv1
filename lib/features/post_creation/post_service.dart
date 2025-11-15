@@ -340,7 +340,8 @@ class PostService {
       try {
         final usersResp = await _s
             .from('users')
-            .select('id,name,username,full_name,avatar_url,email_verified')
+            .select(
+                'id,name,username,full_name,avatar_url,email_verified,is_premium,premium_expires_at')
             .filter(
               'id',
               'in',

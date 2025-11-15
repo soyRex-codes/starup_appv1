@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="View Profile on FounderVers">
+    <meta property="og:description" content="Connect with entrepreneurs on FounderVers">
+    <meta property="og:type" content="profile">
+    <meta name="twitter:card" content="summary">
+    <title>Profile on FounderVers</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .message {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .profile-preview {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+        }
+
+        .profile-label {
+            color: #667eea;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .profile-content {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .download-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .primary-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .ios-btn {
+            background: #000;
+            color: white;
+        }
+
+        .android-btn {
+            background: #3DDC84;
+            color: #1a1a1a;
+        }
+
+        .icon {
+            font-size: 24px;
+        }
+
+        .loading {
+            color: #999;
+            font-size: 14px;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">👤</div>
+        <h1>Open in FounderVers</h1>
+        <p class="message">View this profile in the FounderVers app</p>
+
+        <div class="profile-preview" id="profile-preview">
+            <div class="profile-avatar">👤</div>
+            <div class="profile-label">Founder Profile</div>
+            <div class="profile-content" id="profile-content">
+                <div class="loading">
+                    <span class="spinner"></span>
+                    Loading profile...
+                </div>
+            </div>
+        </div>
+
+        <div class="download-buttons">
+            <a href="#" class="download-btn primary-btn" id="open-app-btn">
+                <span class="icon">📱</span>
+                <span>Open in App</span>
+            </a>
+            <a href="/download.html" class="download-btn ios-btn">
+                <span class="icon">🍎</span>
+                <span>Download on App Store</span>
+            </a>
+            <a href="/download.html" class="download-btn android-btn">
+                <span class="icon">📱</span>
+                <span>Get it on Google Play</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Extract profile ID from URL
+        const profileId = window.location.pathname.match(/\/profile\/([^\/]+)/)?.[1];
+        
+        if (profileId) {
+            // Immediately try to open in app
+            const deepLink = `foundervers://profile/${profileId}`;
+            const universalLink = `https://foundervers.com/profile/${profileId}`;
+            
+            // Set up button to retry opening app
+            const openAppBtn = document.getElementById('open-app-btn');
+            openAppBtn.href = deepLink;
+
+            // Try to open app immediately on page load
+            let attemptedOpen = false;
+            
+            // For iOS, use a hidden iframe approach
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = deepLink;
+                document.body.appendChild(iframe);
+                attemptedOpen = true;
+                
+                // If user is still here after 2 seconds, show download options
+                setTimeout(() => {
+                    if (!document.hidden) {
+                        // Still on page, app not installed
+                        document.getElementById('profile-content').innerHTML = 
+                            'Download the FounderVers app to view this profile and connect with founders worldwide.';
+                    }
+                }, 2000);
+            }
+            // For Android, direct navigation works better
+            else if (/android/i.test(navigator.userAgent)) {
+                window.location.href = deepLink;
+                attemptedOpen = true;
+                
+                // Fallback after 2 seconds
+                setTimeout(() => {
+                    if (!document.hidden) {
+                        document.getElementById('profile-content').innerHTML = 
+                            'Download the FounderVers app to view this profile and connect with founders worldwide.';
+                    }
+                }, 2000);
+            }
+            // Desktop
+            else {
+                document.getElementById('profile-content').innerHTML = 
+                    'This profile is best viewed in the FounderVers mobile app. Visit from your mobile device or download the app.';
+                openAppBtn.style.display = 'none';
+            }
+
+            // Optional: Fetch profile preview from your API
+            // Uncomment when you have an API endpoint
+            /*
+            fetch(`https://your-api.com/profiles/${profileId}/preview`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('profile-content').innerHTML = 
+                        `<strong>${data.name}</strong><br>${data.bio}`;
+                    if (data.avatar) {
+                        document.querySelector('.profile-avatar').innerHTML = 
+                            `<img src="${data.avatar}" alt="${data.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('profile-content').innerHTML = 
+                        'Download the FounderVers app to view this profile.';
+                });
+            */
+        } else {
+            // No profile ID found, redirect to download
+            window.location.href = '/download.html';
+        }
+    </script>
+</body>
+</html>

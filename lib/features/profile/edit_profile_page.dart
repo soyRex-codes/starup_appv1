@@ -267,6 +267,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedCurrentAvatar = StorageUtils.resolvePublicUrl(
+      _currentAvatarUrl,
+    );
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
@@ -307,11 +310,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                     ? NetworkImage(_newAvatarFile!.path)
                                     : FileImage(File(_newAvatarFile!.path))
                                         as ImageProvider)
-                                : (_currentAvatarUrl != null
-                                    ? NetworkImage(_currentAvatarUrl!)
+                                : (resolvedCurrentAvatar != null
+                                    ? NetworkImage(resolvedCurrentAvatar)
                                     : null),
                             child: (_newAvatarFile == null &&
-                                    _currentAvatarUrl == null)
+                                    resolvedCurrentAvatar == null)
                                 ? Icon(Icons.person,
                                     size: 60, color: Colors.grey[600])
                                 : null,

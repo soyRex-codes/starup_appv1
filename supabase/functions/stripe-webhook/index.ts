@@ -97,6 +97,14 @@ async function handlePaymentIntentSucceeded(
   paymentIntent: Stripe.PaymentIntent
 ): Promise<Response> {
   try {
+    const productType = paymentIntent.metadata?.productType;
+    
+    // Check if this is a premium subscription payment
+    if (productType === 'premium_subscription') {
+      return await handlePremiumSubscriptionSuccess(paymentIntent);
+    }
+    
+    // Otherwise, handle as ecosystem application payment
     const applicationId = paymentIntent.metadata?.applicationId;
 
     if (!applicationId) {
@@ -158,13 +166,143 @@ async function handlePaymentIntentSucceeded(
   }
 }
 
+// Handle premium subscription payment success
+async function handlePremiumSubscriptionSuccess(
+  paymentIntent: Stripe.PaymentIntent
+): Promise<Response> {
+  try {
+    const userId = paymentIntent.metadata?.userId;
+    const subscriptionType = paymentIntent.metadata?.subscriptionType;
+
+    if (!userId || !subscriptionType) {
+      console.error('Missing premium subscription metadata:', paymentIntent.id);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Missing userId or subscriptionType in metadata',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Update payment status to completed
+    const { error: paymentError } = await supabase
+      .from('premium_payments')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('payment_intent_id', paymentIntent.id);
+
+    if (paymentError) {
+      console.error('Failed to update premium payment:', paymentError);
+      throw paymentError;
+    }
+
+    // Calculate expiration date
+    const expiresAt = new Date();
+    if (subscriptionType === 'annual') {
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    } else {
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+    }
+
+    // Activate premium subscription
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        is_premium: true,
+        premium_expires_at: expiresAt.toISOString(),
+        premium_subscription_type: subscriptionType,
+      })
+      .eq('id', userId);
+
+    if (userError) {
+      console.error('Failed to activate premium:', userError);
+      throw userError;
+    }
+
+    console.log(
+      `✅ Premium subscription activated for user ${userId} until ${expiresAt.toISOString()}`
+    );
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'Premium subscription activated',
+        userId,
+        subscriptionType,
+        expiresAt: expiresAt.toISOString(),
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  } catch (error) {
+    console.error('Error handling premium subscription success:', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to activate premium subscription',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+}
+
 // Handle payment failure
 async function handlePaymentIntentFailed(
   paymentIntent: Stripe.PaymentIntent
 ): Promise<Response> {
   try {
-    const applicationId = paymentIntent.metadata?.applicationId;
+    const productType = paymentIntent.metadata?.productType;
     const errorMessage = paymentIntent.last_payment_error?.message || 'Payment failed';
+    
+    // Check if this is a premium subscription payment
+    if (productType === 'premium_subscription') {
+      const userId = paymentIntent.metadata?.userId;
+      
+      if (!userId) {
+        console.error('No userId in metadata:', paymentIntent.id);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing userId' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Update premium payment status
+      const { error: updateError } = await supabase
+        .from('premium_payments')
+        .update({
+          status: 'failed',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('payment_intent_id', paymentIntent.id);
+
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        throw updateError;
+      }
+
+      console.log(`Premium payment failed for user ${userId}, PaymentIntent: ${paymentIntent.id}`);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Premium payment failure recorded',
+          userId,
+          error: errorMessage,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Handle ecosystem application payment failure
+    const applicationId = paymentIntent.metadata?.applicationId;
 
     if (!applicationId) {
       console.error('No applicationId in metadata:', paymentIntent.id);
@@ -232,7 +370,58 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<Response> {
   try {
     const paymentIntentId = charge.payment_intent as string;
 
-    // Find the payment record by payment_intent_id
+    // Try to find premium payment first
+    const { data: premiumPayment, error: premiumQueryError } = await supabase
+      .from('premium_payments')
+      .select('id, user_id')
+      .eq('payment_intent_id', paymentIntentId)
+      .maybeSingle();
+
+    // If found, handle premium subscription refund
+    if (premiumPayment && !premiumQueryError) {
+      const { error: updateError } = await supabase
+        .from('premium_payments')
+        .update({
+          status: 'refunded',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', premiumPayment.id);
+
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        throw updateError;
+      }
+
+      // Deactivate premium subscription
+      const { error: userError } = await supabase
+        .from('users')
+        .update({
+          is_premium: false,
+          premium_expires_at: null,
+          premium_subscription_type: null,
+        })
+        .eq('id', premiumPayment.user_id);
+
+      if (userError) {
+        console.error('Failed to deactivate premium:', userError);
+        throw userError;
+      }
+
+      console.log(
+        `Premium refund processed for user ${premiumPayment.user_id}, PaymentIntent: ${paymentIntentId}`
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Premium refund recorded and subscription deactivated',
+          userId: premiumPayment.user_id,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Otherwise, try to find application payment
     const { data: paymentData, error: queryError } = await supabase
       .from('application_payments')
       .select('id, application_id')

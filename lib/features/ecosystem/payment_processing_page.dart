@@ -205,7 +205,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
                     ),
                   ),
                   Text(
-                    '\$${ApplicationPaymentService.applicationFee.toStringAsFixed(2)}',
+                    '\$${ApplicationPaymentService.baseApplicationFee.toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
