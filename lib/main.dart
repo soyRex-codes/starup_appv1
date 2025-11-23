@@ -101,6 +101,8 @@ class MyApp extends StatelessWidget {
       title: 'Foundervers',
       debugShowCheckedModeBanner: false, // Remove DEBUG banner for App Store
       theme: buildAppTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: ThemeMode.system, // Auto-follow device theme
       home: kIsWeb
           ? Center(
               child: ConstrainedBox(

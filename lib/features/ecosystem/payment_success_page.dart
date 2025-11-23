@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:foundervers/services/application_payment_service.dart';
 import 'package:foundervers/services/business_application_service.dart';
 import 'package:foundervers/app/home_page.dart';
+import 'package:foundervers/features/ecosystem/my_applications_page.dart';
 
 /// Payment Success Page
 /// Shows confirmation and receipt after successful payment
@@ -236,10 +237,9 @@ class PaymentSuccessPage extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      // TODO: Navigate to application status/tracking page
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Application tracking coming soon'),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const MyApplicationsPage(),
                         ),
                       );
                     },

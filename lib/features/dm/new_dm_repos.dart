@@ -64,6 +64,8 @@ class ChatMessage {
   final String senderId;
   final String content;
   final DateTime createdAt;
+  final String messageType;
+  final Map<String, dynamic> metadata;
 
   const ChatMessage({
     required this.id,
@@ -71,6 +73,8 @@ class ChatMessage {
     required this.senderId,
     required this.content,
     required this.createdAt,
+    this.messageType = 'text',
+    this.metadata = const {},
   });
 
   // Getter for backward compatibility
@@ -84,6 +88,10 @@ class ChatMessage {
       senderId: json['sender_id'].toString(),
       content: json['content']?.toString() ?? '',
       createdAt: DateTime.parse(json['created_at'].toString()),
+      messageType: json['message_type']?.toString() ?? 'text',
+      metadata: json['metadata'] != null
+          ? Map<String, dynamic>.from(json['metadata'] as Map)
+          : const {},
     );
   }
 }
@@ -256,7 +264,8 @@ class MessageRepository {
       {required String threadId,
       required String senderId,
       required String body,
-      String bodyType = 'text',
+      String messageType = 'text',
+      Map<String, dynamic> metadata = const {},
       int? replyTo}) async {
     final result = await _s
         .from('messages')
@@ -264,6 +273,8 @@ class MessageRepository {
           'conversation_id': threadId,
           'sender_id': senderId,
           'content': body,
+          'message_type': messageType,
+          'metadata': metadata,
         })
         .select()
         .single();

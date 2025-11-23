@@ -1,5 +1,6 @@
 //Debug script to check conversation participants in the database
 //Run with: dart test/debug_dm_participants.dart
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -13,12 +14,18 @@ void main() async {
   final currentUser = client.auth.currentUser;
   
   if (currentUser == null) {
-    print('❌ No user logged in');
+    if (kDebugMode) {
+      print('❌ No user logged in');
+    }
     return;
   }
   
-  print('✅ Current user: ${currentUser.id}');
-  print('\n🔍 Checking conversations...\n');
+  if (kDebugMode) {
+    print('✅ Current user: ${currentUser.id}');
+  }
+  if (kDebugMode) {
+    print('\n🔍 Checking conversations...\n');
+  }
   
   // Get conversations where user is a participant
   final participants = await client
@@ -27,11 +34,15 @@ void main() async {
       .eq('user_id', currentUser.id)
       .isFilter('left_at', null);
   
-  print('Found ${participants.length} conversations');
+  if (kDebugMode) {
+    print('Found ${participants.length} conversations');
+  }
   
   for (final p in participants) {
     final convId = p['conversation_id'] as String;
-    print('\n📧 Conversation: $convId');
+    if (kDebugMode) {
+      print('\n📧 Conversation: $convId');
+    }
     
     // Get all participants for this conversation
     final allParticipants = await client
@@ -40,18 +51,26 @@ void main() async {
         .eq('conversation_id', convId)
         .isFilter('left_at', null);
     
-    print('   Participants:');
+    if (kDebugMode) {
+      print('   Participants:');
+    }
     for (final participant in allParticipants) {
       final uid = participant['user_id'] as String;
       final isSelf = uid == currentUser.id;
-      print('   - $uid ${isSelf ? "(YOU)" : ""}');
+      if (kDebugMode) {
+        print('   - $uid ${isSelf ? "(YOU)" : ""}');
+      }
     }
     
     // Get participant count
-    print('   Total: ${allParticipants.length} participants');
+    if (kDebugMode) {
+      print('   Total: ${allParticipants.length} participants');
+    }
     
     if (allParticipants.length != 2) {
-      print('   ⚠️  WARNING: Expected 2 participants for direct conversation!');
+      if (kDebugMode) {
+        print('   ⚠️  WARNING: Expected 2 participants for direct conversation!');
+      }
     }
   }
 }

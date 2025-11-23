@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/services/supa.dart';
@@ -412,6 +411,45 @@ class PostService {
       return dist;
     } catch (_) {
       return {};
+    }
+  }
+  /// Fetch a single post by ID
+  Future<PostModel?> getPostById(int id) async {
+    try {
+      final _supabase = Supabase.instance.client;
+      final response = await _supabase
+          .from('posts')
+          .select('''
+            *,
+            media (*),
+            users:user_id (
+              id,
+              name,
+              username,
+              avatar_url,
+              bio
+            )
+          ''')
+          .eq('id', id)
+          .maybeSingle();
+
+      if (response == null) return null;
+
+      // Parse user
+      final userJson = response['users'] as Map<String, dynamic>;
+      final author = AuthorSummary(
+        userId: userJson['id'] ?? '',
+        name: userJson['name'],
+        username: userJson['username'],
+        avatarUrl: userJson['avatar_url'],
+        // Add other fields if available in the query
+      );
+
+      final post = PostModel.fromJson(response);
+      return post.copyWith(author: author);
+    } catch (e) {
+      debugPrint('Error fetching post by ID: $e');
+      return null;
     }
   }
 }

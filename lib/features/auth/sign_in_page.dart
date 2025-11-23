@@ -129,53 +129,27 @@ class _SignInPageState extends State<SignInPage> {
         );
 
         if (response.user != null) {
-          // Always require email verification for new signups
-          // Send verification email using the correct method
-          final result =
-              await PasswordResetService.instance.requestEmailVerification(
-            email: email,
-          );
+          // Signup successful!
+          // Supabase automatically sends the confirmation email (OTP) on signup.
+          // We don't need to send another one immediately, as that triggers rate limits.
+          
+          if (mounted) {
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Account created! Please verify your email.'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 4),
+              ),
+            );
 
-          if (result['success'] == true) {
-            if (mounted) {
-              // Success - navigate to OTP page
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) =>
-                      OtpVerificationPage.emailVerification(email),
-                ),
-              );
-            }
-          } else {
-            // Handle different error cases
-            if (result['message']?.contains('rate') == true ||
-                result['message']?.contains('wait') == true) {
-              if (mounted) {
-                // Rate limited - navigate to OTP page with helpful message
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        OtpVerificationPage.emailVerification(email),
-                  ),
-                );
-                // Show informative message after navigation
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                            'Account created! You can request a new verification code on the next page if needed.'),
-                        backgroundColor: Colors.blue,
-                        duration: const Duration(seconds: 4),
-                      ),
-                    );
-                  }
-                });
-              }
-            } else {
-              throw Exception(
-                  result['message'] ?? 'Failed to send verification email');
-            }
+            // Navigate to OTP page
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) =>
+                    OtpVerificationPage.emailVerification(email),
+              ),
+            );
           }
         } else {
           throw Exception('Failed to create account');

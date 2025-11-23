@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:foundervers/features/ecosystem/my_applications_page.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:foundervers/features/profile/unified_profile_page.dart';
 import 'package:foundervers/features/about/about_us_page.dart';
 import 'package:foundervers/features/settings/settings_page.dart';
@@ -38,35 +41,49 @@ class AppMenuDrawer extends StatelessWidget {
                     },
                   ),
 
-                  // Premium Subscription
-                  FutureBuilder<bool>(
-                    future: PremiumSubscriptionService().checkPremiumStatus(),
-                    builder: (context, snapshot) {
-                      final isPremium = snapshot.data ?? false;
-                      return _MenuAction(
-                        icon: Icon(
-                          Icons.workspace_premium,
-                          size: 22,
-                          color: isPremium
-                              ? Colors.amber.shade700
-                              : const Color(0xFF8B4513),
+                  _MenuAction(
+                    icon: const Icon(Icons.business_center_outlined, size: 22),
+                    label: 'My Business Applications',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const MyApplicationsPage(),
                         ),
-                        label: isPremium
-                            ? 'Premium Member ✓'
-                            : 'Upgrade to Premium',
-                        labelColor: isPremium ? Colors.amber.shade700 : null,
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const PremiumPaymentPage(isAnnual: true),
-                            ),
-                          );
-                        },
                       );
                     },
                   ),
+
+                  // Premium Subscription (Hidden on iOS, visible on Web and Android)
+                  if (kIsWeb || !Platform.isIOS)
+                    FutureBuilder<bool>(
+                      future: PremiumSubscriptionService().checkPremiumStatus(),
+                      builder: (context, snapshot) {
+                        final isPremium = snapshot.data ?? false;
+                        return _MenuAction(
+                          icon: Icon(
+                            Icons.workspace_premium,
+                            size: 22,
+                            color: isPremium
+                                ? Colors.amber.shade700
+                                : const Color(0xFF8B4513),
+                          ),
+                          label: isPremium
+                              ? 'Premium Member ✓'
+                              : 'Upgrade to Premium',
+                          labelColor: isPremium ? Colors.amber.shade700 : null,
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const PremiumPaymentPage(isAnnual: true),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
 
                   const Divider(height: 1),
 
@@ -110,7 +127,7 @@ class AppMenuDrawer extends StatelessWidget {
                       Navigator.pop(context);
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const AboutUsPage(),
+                          builder: (_) => AboutUsPage(),
                         ),
                       );
                     },

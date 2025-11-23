@@ -1,6 +1,7 @@
 /// Local moderation filters - first layer of content screening
 /// Checks content against inappropriate words/patterns before calling expensive AI APIs
 /// This saves costs and improves response time by catching obvious violations early
+library;
 
 /// Severity levels for moderation decisions
 enum ModerationSeverity {

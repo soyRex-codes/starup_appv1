@@ -328,7 +328,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _currentStatus,
+                        initialValue: _currentStatus,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           contentPadding:
@@ -547,7 +547,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
@@ -633,8 +633,9 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
       return Icons.image;
     }
     if (type.contains('doc') || type.contains('word')) return Icons.description;
-    if (type.contains('sheet') || type.contains('excel'))
+    if (type.contains('sheet') || type.contains('excel')) {
       return Icons.table_chart;
+    }
     if (type.contains('zip') || type.contains('rar')) return Icons.folder_zip;
     return Icons.insert_drive_file;
   }

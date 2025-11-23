@@ -117,6 +117,35 @@ class DMService {
     }
   }
 
+  /// Get a single conversation by ID
+  Future<Conversation?> getConversationById(String id) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return null;
+
+      final response = await _supabase
+          .from('conversations')
+          .select('''
+            *,
+            participants:conversation_participants(
+              user:users(id, name, username, avatar_url),
+              role,
+              joined_at,
+              last_read_at
+            )
+          ''')
+          .eq('id', id)
+          .maybeSingle();
+
+      if (response == null) return null;
+
+      return Conversation.fromJson(response);
+    } catch (e) {
+      debugPrint('Error fetching conversation by ID: $e');
+      return null;
+    }
+  }
+
   /// Get or create a direct conversation with another user
   Future<Conversation?> getOrCreateDirectConversation(
       String otherUserId) async {

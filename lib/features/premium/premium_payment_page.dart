@@ -45,7 +45,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
     });
 
     try {
-      print('🚀 Starting premium payment process...');
+      debugPrint('🚀 Starting premium payment process...');
 
       final userId = Supabase.instance.client.auth.currentUser?.id;
       final userEmail = Supabase.instance.client.auth.currentUser?.email;
@@ -54,8 +54,8 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
         throw Exception('User not authenticated');
       }
 
-      print('👤 User ID: $userId');
-      print('📧 User Email: $userEmail');
+      debugPrint('👤 User ID: $userId');
+      debugPrint('📧 User Email: $userEmail');
 
       // Use IAP on iOS, Stripe on Android
       if (Platform.isIOS) {
@@ -64,7 +64,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
         await _processStripePayment(userId, userEmail);
       }
     } catch (e) {
-      print('💥 Premium payment processing exception: $e');
+      debugPrint('💥 Premium payment processing exception: $e');
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         _isProcessing = false;
@@ -83,7 +83,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
 
   /// Process payment using Apple In-App Purchase (iOS only)
   Future<void> _processAppleIAPPayment(String userId) async {
-    print('🍎 Using Apple In-App Purchase');
+    debugPrint('🍎 Using Apple In-App Purchase');
 
     final iapService = IAPService();
 
@@ -104,8 +104,8 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
       throw Exception(result['message']);
     }
 
-    print('✅ IAP purchase initiated');
-    print('⏳ Waiting for Apple payment sheet...');
+    debugPrint('✅ IAP purchase initiated');
+    debugPrint('⏳ Waiting for Apple payment sheet...');
 
     // Purchase is now pending, Apple payment sheet will be shown
     // Result will be handled by IAP service's purchase stream
@@ -123,7 +123,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
     final isPremium = await _premiumService.checkPremiumStatus();
 
     if (isPremium) {
-      print('🎉 Premium activated via IAP!');
+      debugPrint('🎉 Premium activated via IAP!');
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -149,10 +149,10 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
 
   /// Process payment using Stripe (Android only)
   Future<void> _processStripePayment(String userId, String userEmail) async {
-    print('💳 Using Stripe payment');
+    debugPrint('💳 Using Stripe payment');
 
     // Step 1: Create payment record
-    print('📝 Step 1: Creating payment record...');
+    debugPrint('📝 Step 1: Creating payment record...');
     final paymentResult = await _premiumService.createPayment(
       isAnnual: _isAnnualPlan,
       userId: userId,
@@ -165,10 +165,10 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
 
     final payment = paymentResult['payment'] as PremiumPaymentModel;
     final paymentId = payment.id;
-    print('✅ Payment record created: $paymentId');
+    debugPrint('✅ Payment record created: $paymentId');
 
     // Step 2: Process payment with Stripe Payment Sheet
-    print('💳 Step 2: Processing payment with Stripe...');
+    debugPrint('💳 Step 2: Processing payment with Stripe...');
     final processResult = await _premiumService.processPayment(
       paymentId: paymentId,
       isAnnual: _isAnnualPlan,
@@ -179,7 +179,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
     if (!processResult['success']) {
       // Check if user cancelled
       if (processResult['cancelled'] == true) {
-        print('ℹ️ Payment cancelled by user');
+        debugPrint('ℹ️ Payment cancelled by user');
         setState(() {
           _errorMessage = 'Payment was cancelled';
           _isProcessing = false;
@@ -187,7 +187,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
         return;
       }
 
-      print('❌ Payment failed: ${processResult['message']}');
+      debugPrint('❌ Payment failed: ${processResult['message']}');
       print('🔍 Error details: ${processResult['error']}');
 
       // Show user-friendly error message
@@ -398,14 +398,40 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
         foregroundColor: const Color(0xFF1A1A1A),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(bodyPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Premium Badge
-            Container(
-              padding: EdgeInsets.all(containerPadding),
+      body: Platform.isIOS
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.info_outline, size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Not Available on iOS',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Premium subscriptions are currently not available for purchase on the iOS app.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(bodyPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Premium Badge
+                  Container(
+                    padding: EdgeInsets.all(containerPadding),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Colors.amber[700]!, Colors.amber[400]!],
@@ -747,8 +773,71 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
                 color: Colors.grey.shade600,
               ),
             ),
+
+            const SizedBox(height: 32),
+
+            // IAP Diagnostics (Debug Only)
+            if (Platform.isIOS) _buildIAPDiagnostics(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildIAPDiagnostics() {
+    final iap = IAPService();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '🛠️ IAP Diagnostics',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Text('Available: ${iap.isAvailable}',
+              style: const TextStyle(fontSize: 10)),
+          Text('Initialized: ${iap.isInitialized}',
+              style: const TextStyle(fontSize: 10)),
+          Text('Products Loaded: ${iap.products.length}',
+              style: const TextStyle(fontSize: 10)),
+          if (iap.notFoundIds.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              '⚠️ Not Found IDs:\n${iap.notFoundIds.join("\n")}',
+              style: TextStyle(fontSize: 10, color: Colors.red.shade700),
+            ),
+          ],
+          if (iap.lastError != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              '❌ Error: ${iap.lastError}',
+              style: TextStyle(fontSize: 10, color: Colors.red.shade700),
+            ),
+          ],
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              onPressed: () async {
+                await iap.initialize();
+                setState(() {});
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey.shade300,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: const Text('Refresh IAP', style: TextStyle(fontSize: 10)),
+            ),
+          ),
+        ],
       ),
     );
   }

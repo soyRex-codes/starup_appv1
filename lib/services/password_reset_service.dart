@@ -47,11 +47,21 @@ class PasswordResetService {
       }
 
       // Use Supabase's OTP system
-      // Note: This sends an email OTP, not a recovery OTP
-      await _client.auth.signInWithOtp(
-        email: email,
-        shouldCreateUser: shouldCreateUser,
-      );
+      if (purpose == 'signup') {
+        // For signup, use resend with OtpType.signup to trigger the "Confirm Signup" template
+        // This avoids using the "Magic Link" template which might be customized for Password Reset
+        await _client.auth.resend(
+          type: OtpType.signup,
+          email: email,
+        );
+      } else {
+        // For password reset, use signInWithOtp (Magic Link template)
+        // This sends an email OTP, not a recovery OTP
+        await _client.auth.signInWithOtp(
+          email: email,
+          shouldCreateUser: shouldCreateUser,
+        );
+      }
 
       if (kDebugMode) {
         debugPrint('$purpose OTP sent to: $email');
@@ -159,9 +169,11 @@ class PasswordResetService {
       }
 
       // Verify OTP with Supabase Auth
-      // Using email type since signInWithOtp sends email OTPs
+      // Use OtpType.signup for signup verification, OtpType.email for password reset (Magic Link)
+      final otpType = purpose == 'signup' ? OtpType.signup : OtpType.email;
+      
       final response = await _client.auth.verifyOTP(
-        type: OtpType.email,
+        type: otpType,
         token: otp,
         email: email,
       );

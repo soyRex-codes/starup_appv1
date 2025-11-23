@@ -7,6 +7,7 @@ import 'widgets/admin_users_page.dart';
 import 'widgets/admin_analytics_page.dart';
 import 'widgets/admin_chat_moderation_page.dart';
 import 'widgets/admin_applications_page.dart';
+import 'widgets/admin_reports_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -74,6 +75,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         elevation: 2,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadAdminData,
+            tooltip: 'Refresh Data',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -279,13 +287,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             _buildActionCard(
-              'Analytics',
-              'Detailed system analytics',
-              Icons.analytics,
-              Colors.purple,
+              'Manage Reports',
+              'Review user reports',
+              Icons.flag,
+              Colors.orange,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AdminAnalyticsPage()),
+                MaterialPageRoute(builder: (context) => const AdminReportsPage()),
               ),
             ),
             _buildActionCard(
@@ -299,11 +307,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             _buildActionCard(
-              'Refresh Data',
-              'Reload dashboard data',
-              Icons.refresh,
-              Colors.grey,
-              () => _loadAdminData(),
+              'Analytics',
+              'Detailed system analytics',
+              Icons.analytics,
+              Colors.purple,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AdminAnalyticsPage()),
+              ),
             ),
           ],
         ),

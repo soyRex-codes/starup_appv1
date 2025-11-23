@@ -89,11 +89,34 @@ class BusinessApplicationService {
           .select()
           .single();
 
+      // 2. Trigger confirmation email explicitly (Client-Side Orchestration)
+      // We do this here instead of DB trigger for better reliability and debugging
+      /* 
+      // Email notification temporarily disabled by user request (2025-11-23)
+      // Relying on in-app "My Applications" page for status tracking.
+      try {
+        await _supabase.functions.invoke(
+          'send-application-confirmation',
+          body: {
+            'applicant_name': applicantName,
+            'applicant_email': applicantEmail,
+            'service_type': serviceType,
+            'service_type_display': getServiceTypeName(serviceType),
+            'application_id': result['id'],
+            'business_name': formData['business_name'],
+          },
+        );
+      } catch (emailError) {
+        // Log but don't fail the submission if email fails
+        print('⚠️ Failed to send confirmation email: $emailError');
+      }
+      */
+
       return {
         'success': true,
         'application_id': result['id'],
         'message':
-            'Application submitted successfully! Check your email ($applicantEmail) for confirmation and next steps.',
+            'Application submitted successfully! You can track it in "My Business Applications".',
         'data': result,
       };
     } on PostgrestException catch (e) {

@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/services/supa.dart';
+import 'package:flutter/foundation.dart';
 import 'package:foundervers/models/comment.dart';
 import 'package:foundervers/services/notification_service.dart';
 
@@ -35,7 +36,7 @@ class CommentService {
       // Organize into threads: parent comments with nested replies
       return _organizeThreads(comments);
     } catch (e) {
-      print('Error fetching comments: $e');
+      debugPrint('Error fetching comments: $e');
       rethrow;
     }
   }
@@ -58,7 +59,7 @@ class CommentService {
             .count(CountOption.exact);
         return response.count;
       } catch (e2) {
-        print('Error getting comment count: $e2');
+        debugPrint('Error getting comment count: $e2');
         return 0;
       }
     }
@@ -104,7 +105,7 @@ class CommentService {
 
       return comment;
     } catch (e) {
-      print('Error adding comment: $e');
+      debugPrint('Error adding comment: $e');
       rethrow;
     }
   }
@@ -150,7 +151,7 @@ class CommentService {
 
       return reply;
     } catch (e) {
-      print('Error adding reply: $e');
+      debugPrint('Error adding reply: $e');
       rethrow;
     }
   }
@@ -167,7 +168,7 @@ class CommentService {
           .eq('id', commentId)
           .eq('author_id', userId); // RLS ensures only author can delete
     } catch (e) {
-      print('Error deleting comment: $e');
+      debugPrint('Error deleting comment: $e');
       rethrow;
     }
   }
@@ -244,7 +245,7 @@ class CommentService {
         commenterId: comment.authorId,
       );
     } catch (e) {
-      print('Error creating comment notification: $e');
+      debugPrint('Error creating comment notification: $e');
       // Don't throw - notification is non-critical
     }
   }
@@ -274,7 +275,7 @@ class CommentService {
         replierId: reply.authorId,
       );
     } catch (e) {
-      print('Error creating reply notification: $e');
+      debugPrint('Error creating reply notification: $e');
       // Don't throw - notification is non-critical
     }
   }

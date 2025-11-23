@@ -4,10 +4,13 @@ import 'package:foundervers/models/post.dart';
 import 'package:foundervers/features/post_creation/post_service.dart';
 import 'package:foundervers/core/cache/feed_cache.dart';
 
+import 'package:foundervers/services/user_blocking_service.dart';
+
 class FeedService {
   final SupabaseClient _s = Supa.client;
   final PostService _postService = PostService();
   final FeedCache _cache = FeedCache.instance;
+  final UserBlockingService _blockingService = UserBlockingService();
 
   Future<List<PostModel>> fetchPosts({
     String? category,
@@ -43,11 +46,22 @@ class FeedService {
         // For silent refresh, we'll fetch and update cache without returning yet
       }
     }
+
+    // Get blocked users first
+    final blockedUserIds = await _blockingService.getBlockedUserIds();
+
     // CRITICAL FIX: Use explicit post-media relationship to prevent wrong images
     // First fetch posts without media join to avoid Supabase join issues
     var q = _s.from('posts').select(
           'id,user_id,name,category,title,description,funding_goal,post_goal,post_goal_description,email,created_at,updated_at,moderation_status,status,comment_count',
         );
+    
+    // Filter out blocked users
+    if (blockedUserIds.isNotEmpty) {
+      // Format for PostgREST: (id1,id2,id3)
+      final blockedFilter = '(${blockedUserIds.map((id) => '"$id"').join(',')})';
+      q = q.filter('user_id', 'not.in', blockedFilter);
+    }
 
     // Apply filters
     if (category != null && category.isNotEmpty) {

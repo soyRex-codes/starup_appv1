@@ -247,10 +247,10 @@ class PremiumSubscriptionService {
       final subscriptionType = isAnnual ? 'annual' : 'monthly';
 
       // Step 1: Call Edge Function to create Stripe PaymentIntent
-      print('🔵 Calling create-premium-subscription Edge Function...');
-      print('📧 Email: $email');
-      print('💰 Amount: \$${amount.toStringAsFixed(2)}');
-      print('📅 Type: $subscriptionType');
+      debugPrint('🔵 Calling create-premium-subscription Edge Function...');
+      debugPrint('📧 Email: $email');
+      debugPrint('💰 Amount: \$${amount.toStringAsFixed(2)}');
+      debugPrint('📅 Type: $subscriptionType');
 
       final response = await _supabase.functions.invoke(
         'create-premium-subscription',
@@ -262,14 +262,14 @@ class PremiumSubscriptionService {
         },
       );
 
-      print('📡 Edge Function response status: ${response.status}');
-      print('📦 Edge Function response data: ${response.data}');
+      debugPrint('📡 Edge Function response status: ${response.status}');
+      debugPrint('📦 Edge Function response data: ${response.data}');
 
       if (response.status != 200) {
         final errorDetails = response.data is Map
             ? response.data['details'] ?? response.data['error']
             : response.data.toString();
-        print('❌ Edge Function error: $errorDetails');
+        debugPrint('❌ Edge Function error: $errorDetails');
         throw Exception('Failed to create payment intent: $errorDetails');
       }
 
@@ -278,8 +278,8 @@ class PremiumSubscriptionService {
 
       // Step 2: Initialize Stripe Payment Sheet
       try {
-        print('🔧 Initializing Stripe Payment Sheet...');
-        print('🔑 Client Secret: ${clientSecret.substring(0, 20)}...');
+        debugPrint('🔧 Initializing Stripe Payment Sheet...');
+        debugPrint('🔑 Client Secret: ${clientSecret.substring(0, 20)}...');
 
         await Stripe.instance.initPaymentSheet(
           paymentSheetParameters: SetupPaymentSheetParameters(
@@ -305,13 +305,13 @@ class PremiumSubscriptionService {
           ),
         );
 
-        print('✅ Payment sheet initialized successfully');
+        debugPrint('✅ Payment sheet initialized successfully');
 
         // Step 3: Present Stripe Payment Sheet to user
-        print('📱 Presenting payment sheet...');
+        debugPrint('📱 Presenting payment sheet...');
         await Stripe.instance.presentPaymentSheet();
 
-        print('✅ Payment sheet completed successfully');
+        debugPrint('✅ Payment sheet completed successfully');
 
         // Step 4: Update payment record with payment intent ID
         final updateResult = await _supabase
@@ -340,7 +340,7 @@ class PremiumSubscriptionService {
           errorMessage = 'Payment failed: ${e.error.localizedMessage}';
         }
 
-        print('❌ Stripe error: $errorMessage');
+        debugPrint('❌ Stripe error: $errorMessage');
         return {
           'success': false,
           'message': errorMessage,
@@ -349,7 +349,7 @@ class PremiumSubscriptionService {
         };
       }
     } catch (e) {
-      print('💥 Premium payment processing exception: $e');
+      debugPrint('💥 Premium payment processing exception: $e');
       return {
         'success': false,
         'message': 'Payment processing failed',

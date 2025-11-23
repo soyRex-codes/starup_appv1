@@ -17,6 +17,7 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
+        // Handle initial loading
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
             body: Center(
@@ -27,6 +28,55 @@ class AuthGate extends StatelessWidget {
                   const SizedBox(height: 24),
                   const CircularProgressIndicator(),
                 ],
+              ),
+            ),
+          );
+        }
+
+        // Handle connection error - show offline page
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.wifi_off,
+                      size: 100,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      'No Internet Connection',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Please connect to the internet and try again.',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 48),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        // Force re-render to retry connection
+                        (context as Element).markNeedsBuild();
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try Again'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );

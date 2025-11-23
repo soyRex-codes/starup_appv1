@@ -71,15 +71,17 @@ class ApplicationPaymentService {
     required String email,
     required String applicantName,
     required Map<String, dynamic> paymentDetails,
+    String? couponCode,
   }) async {
     try {
       final applicationFee =
           await getApplicationFee(); // Get fee with premium discount
 
       // Step 1: Call Edge Function to create Stripe PaymentIntent
-      print('🔵 Calling create-payment-intent Edge Function...');
-      print('📧 Email: $email');
-      print('💰 Amount: \$${applicationFee.toStringAsFixed(2)}');
+      debugPrint('🔵 Calling create-payment-intent Edge Function...');
+      debugPrint('📧 Email: $email');
+      debugPrint('💰 Amount: \$${applicationFee.toStringAsFixed(2)}');
+      if (couponCode != null) debugPrint('🎟️ Coupon: $couponCode');
 
       final response = await _supabase.functions.invoke(
         'create-payment-intent',
@@ -89,18 +91,45 @@ class ApplicationPaymentService {
           'userId': userId,
           'email': email,
           'applicant_name': applicantName,
+          'couponCode': couponCode,
         },
       );
 
-      print('📡 Edge Function response status: ${response.status}');
-      print('📦 Edge Function response data: ${response.data}');
+      debugPrint('📡 Edge Function response status: ${response.status}');
+      debugPrint('📦 Edge Function response data: ${response.data}');
 
       if (response.status != 200) {
         final errorDetails = response.data is Map
             ? response.data['details'] ?? response.data['error']
             : response.data.toString();
-        print('❌ Edge Function error: $errorDetails');
+        debugPrint('❌ Edge Function error: $errorDetails');
         throw Exception('Failed to create payment intent: $errorDetails');
+      }
+
+      // Check for Free Transaction (100% off coupon)
+      if (response.data['isFree'] == true) {
+        debugPrint('🎉 Transaction is free! Skipping Stripe Payment Sheet.');
+        
+        // Update payment record to 'succeeded' immediately
+        final updateResult = await _supabase
+            .from('application_payments')
+            .update({
+              'status': 'succeeded',
+              'payment_method': 'coupon',
+              'payment_intent_id': 'free_${DateTime.now().millisecondsSinceEpoch}',
+              'metadata': {'coupon_code': couponCode, 'is_free': true},
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', paymentId)
+            .select()
+            .single();
+
+        return {
+          'success': true,
+          'payment': PaymentModel.fromJson(updateResult),
+          'message': 'Coupon applied! Payment complete.',
+          'paymentIntentId': 'free',
+        };
       }
 
       final clientSecret = response.data['clientSecret'] as String;
@@ -183,8 +212,8 @@ class ApplicationPaymentService {
       };
     } catch (e) {
       // Edge function or general error
-      print('❌ Payment processing error: $e');
-      print('📋 Error type: ${e.runtimeType}');
+      debugPrint('❌ Payment processing error: $e');
+      debugPrint('📋 Error type: ${e.runtimeType}');
 
       await _supabase.from('application_payments').update({
         'status': 'failed',

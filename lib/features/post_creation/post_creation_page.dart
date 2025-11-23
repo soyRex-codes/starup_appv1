@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:foundervers/core/env.dart';
+import 'package:foundervers/core/permissions_helper.dart';
 import 'package:foundervers/core/constants.dart';
 import 'package:foundervers/core/storage_utils.dart';
 import 'package:foundervers/models/post.dart';
@@ -42,6 +43,15 @@ class _PostCreationPageState extends State<PostCreationPage> {
     if (_saving) return;
     try {
       setState(() => _error = null);
+      
+      // Request photo permission before accessing media
+      if (!kIsWeb) {
+        final hasPermission = await PermissionsHelper.requestPhotoPermission(context);
+        if (!hasPermission) {
+          setState(() => _error = 'Photo permission is required to select media.');
+          return;
+        }
+      }
 
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
@@ -102,6 +112,15 @@ class _PostCreationPageState extends State<PostCreationPage> {
   void _removeFile(int i) {
     if (_saving) return;
     setState(() => _files.removeAt(i));
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _description.dispose();
+    _fundingGoalCtrl.dispose();
+    _goalOtherCtrl.dispose();
+    super.dispose();
   }
 
   @override

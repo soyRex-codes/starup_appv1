@@ -106,7 +106,7 @@ class _AppHeaderState extends State<AppHeader> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).scaffoldBackgroundColor,
         border:
             Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
         boxShadow: [
@@ -205,10 +205,9 @@ class _AppHeaderState extends State<AppHeader> {
             minHeight: 36,
           ),
           padding: const EdgeInsets.all(4),
-          icon: Icon(
+          icon: const Icon(
             Icons.search,
             size: 24,
-            color: Colors.grey[700],
           ),
         ),
 
@@ -224,14 +223,12 @@ class _AppHeaderState extends State<AppHeader> {
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
-                ColorFiltered(
-                  colorFilter: ColorFilter.mode(
-                    widget.hasActiveFilters
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey[700]!,
-                    BlendMode.srcIn,
-                  ),
-                  child: AppIcons.filter(size: 22),
+                Icon(
+                  Icons.filter_alt,
+                  size: 24,
+                  color: widget.hasActiveFilters
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
                 ),
                 if (widget.hasActiveFilters)
                   Positioned(
@@ -255,13 +252,18 @@ class _AppHeaderState extends State<AppHeader> {
           ),
 
         // Menu button
-        GestureDetector(
-          onTap: () {
+        IconButton(
+          onPressed: () {
             Scaffold.of(context).openEndDrawer();
           },
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: AppIcons.menu(size: 22),
+          constraints: const BoxConstraints(
+            minWidth: 36,
+            minHeight: 36,
+          ),
+          padding: const EdgeInsets.all(4),
+          icon: const Icon(
+            Icons.menu,
+            size: 24,
           ),
         ),
 
@@ -282,11 +284,9 @@ class _AppHeaderState extends State<AppHeader> {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Image.asset(
-                      'lib/icons/notification.png',
-                      width: 22,
-                      height: 22,
-                      fit: BoxFit.contain,
+                    const Icon(
+                      Icons.notifications_outlined,
+                      size: 24,
                     ),
                     if (unreadCount > 0)
                       Positioned(

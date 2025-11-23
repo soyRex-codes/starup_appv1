@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -9,7 +10,9 @@ void main() async {
 
   final supabase = Supabase.instance.client;
 
-  print('🔍 Checking users table...');
+  if (kDebugMode) {
+    print('🔍 Checking users table...');
+  }
 
   try {
     // Get all users to see the data structure
@@ -18,17 +21,31 @@ void main() async {
         .select('id, username, full_name, email')
         .limit(5);
 
-    print('📊 Users data:');
+    if (kDebugMode) {
+      print('📊 Users data:');
+    }
     for (var user in response) {
-      print('  ID: ${user['id']}');
-      print('  Username: ${user['username']}');
-      print('  Full Name: ${user['full_name']}');
-      print('  Email: ${user['email']}');
-      print('  ---');
+      if (kDebugMode) {
+        print('  ID: ${user['id']}');
+      }
+      if (kDebugMode) {
+        print('  Username: ${user['username']}');
+      }
+      if (kDebugMode) {
+        print('  Full Name: ${user['full_name']}');
+      }
+      if (kDebugMode) {
+        print('  Email: ${user['email']}');
+      }
+      if (kDebugMode) {
+        print('  ---');
+      }
     }
 
     // Check conversations and participants
-    print('🔍 Checking conversations...');
+    if (kDebugMode) {
+      print('🔍 Checking conversations...');
+    }
     final convResponse = await supabase.from('conversations').select('''
           id,
           participants:conversation_participants(
@@ -37,21 +54,41 @@ void main() async {
           )
         ''').limit(3);
 
-    print('📊 Conversations data:');
+    if (kDebugMode) {
+      print('📊 Conversations data:');
+    }
     for (var conv in convResponse) {
-      print('  Conversation ID: ${conv['id']}');
-      print('  Participants:');
+      if (kDebugMode) {
+        print('  Conversation ID: ${conv['id']}');
+      }
+      if (kDebugMode) {
+        print('  Participants:');
+      }
       for (var participant in (conv['participants'] as List)) {
         final profile = participant['user_profile'];
-        print('    User ID: ${participant['user_id']}');
-        print('    Username: ${profile?['username']}');
-        print('    Full Name: ${profile?['full_name']}');
-        print('    Profile: $profile');
-        print('    ----');
+        if (kDebugMode) {
+          print('    User ID: ${participant['user_id']}');
+        }
+        if (kDebugMode) {
+          print('    Username: ${profile?['username']}');
+        }
+        if (kDebugMode) {
+          print('    Full Name: ${profile?['full_name']}');
+        }
+        if (kDebugMode) {
+          print('    Profile: $profile');
+        }
+        if (kDebugMode) {
+          print('    ----');
+        }
       }
-      print('  ---');
+      if (kDebugMode) {
+        print('  ---');
+      }
     }
   } catch (e) {
-    print('❌ Error: $e');
+    if (kDebugMode) {
+      print('❌ Error: $e');
+    }
   }
 }

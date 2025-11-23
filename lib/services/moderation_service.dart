@@ -180,7 +180,7 @@ class ModerationService {
     final lower = text.toLowerCase();
     final localHits = <String>[];
 
-    bool _matchWholeWord(String kw) {
+    bool matchWholeWord(String kw) {
       // if keyword has space treat as phrase search; else enforce word boundary
       if (kw.contains(' ')) return lower.contains(kw);
       final re = RegExp(r'(?<![a-z0-9])' + RegExp.escape(kw) + r'(?![a-z0-9])');
@@ -189,7 +189,7 @@ class ModerationService {
 
     // 1. Check high-risk
     for (final kw in _highRiskKeywords) {
-      if (_matchWholeWord(kw)) {
+      if (matchWholeWord(kw)) {
         localHits.add(kw);
       }
     }
@@ -207,7 +207,7 @@ class ModerationService {
     // 2. Check soft-risk
     final softHits = <String>[];
     for (final kw in _softRiskKeywords) {
-      if (_matchWholeWord(kw)) softHits.add(kw);
+      if (matchWholeWord(kw)) softHits.add(kw);
     }
 
     final needsApi = softHits.isNotEmpty ||
@@ -215,7 +215,7 @@ class ModerationService {
 
     // 3. Cache lookup (by SHA1 of text and presence of soft hits)
     final orchestratorKey =
-        'orc:' + _hash('v1|' + softHits.join('|') + '|' + text);
+        'orc:${_hash('v1|${softHits.join('|')}|$text')}';
     final cached = _orchestratorCache[orchestratorKey];
     if (cached != null) {
       if (kDebugMode) debugPrint('🗂️ Orchestrator cache hit');
@@ -332,9 +332,9 @@ class ModerationService {
           final score = (v is num) ? v.toDouble() : 0.0;
           // Reuse thresholds from earlier logic
           double? threshold;
-          if (k.contains('sexual/minors'))
+          if (k.contains('sexual/minors')) {
             threshold = 0.20;
-          else if (k.contains('self-harm'))
+          } else if (k.contains('self-harm'))
             threshold = 0.45;
           else if (k.contains('hate'))
             threshold = 0.60;
@@ -436,17 +436,9 @@ class ModerationService {
         debugPrint(
             '🚫 LAYER 1 BLOCKED: ${localFilterResult.categories.join(", ")} '
             '(matched: ${localFilterResult.matchedTerms.take(3).join(", ")})');
-      }
-      return ModerationResult.blockedResult(
-        [userMessage],
-        raw: jsonEncode({
-          'layer': 'local_filter',
-          'categories': localFilterResult.categories,
-          'severity': localFilterResult.severity,
-          'matched_terms_count': localFilterResult.matchedTerms.length,
-        }),
-      );
+
     }
+  }
 
     // If flagged for manual review, mark as pending
     if (localFilterResult.needsReview) {
@@ -455,7 +447,6 @@ class ModerationService {
             '⚠️ LAYER 1 FLAGGED: ${localFilterResult.categories.join(", ")} '
             '- Needs manual review');
       }
-      // TODO: Store for admin review queue
       // For now, let it pass to GPT for second opinion
     }
 
@@ -512,14 +503,16 @@ class ModerationService {
     // 1. Local heuristic block first (fast path)
     final localReasons = _localBlockReasons(trimmed);
     if (localReasons.isNotEmpty) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('🚫 Local moderation blocked: ${localReasons.join('; ')}');
+      }
       return ModerationResult.blockedResult(localReasons);
     }
 
     if (_apiKey.isEmpty) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ No OpenAI key; treating as approved (dev fallback)');
+      }
       return ModerationResult.approvedResult;
     }
 
@@ -527,16 +520,18 @@ class ModerationService {
     final cacheKey = _hash(trimmed);
     final cached = _getCached(cacheKey);
     if (cached != null) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
             '🗂️ Moderation cache hit (blocked=${cached.blocked}, pending=${cached.pending})');
+      }
       return cached;
     }
 
     // 3. Cooldown / rate-limit check BEFORE hitting API
     if (_underCooldown()) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⏳ Skipping remote moderation (cooldown active)');
+      }
       final pendingOrApproved = failClosed
           ? ModerationResult.pendingResult
           : ModerationResult.approvedResult;
@@ -544,8 +539,9 @@ class ModerationService {
       return pendingOrApproved;
     }
     if (_wouldExceedRateLimit()) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⏳ Local throttle: too many moderation calls this minute');
+      }
       final pendingOrApproved = failClosed
           ? ModerationResult.pendingResult
           : ModerationResult.approvedResult;
@@ -631,8 +627,9 @@ class ModerationService {
         });
       }
       if (anyFlagged) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('🚫 Moderation blocked: ${reasons.join(', ')}');
+        }
         final blockedRes = ModerationResult.blockedResult(reasons,
             statusCode: resp.statusCode,
             raw: jsonEncode(results.first['categories']));
@@ -748,11 +745,13 @@ bool _isLowRisk(String text) {
   final lc = text.toLowerCase();
   // Already caught explicit terms via regex earlier; here we just check structure.
   if (lc.length > 600) return false; // long form content -> want remote
-  if (RegExp(r'https?://').allMatches(lc).length > 2)
+  if (RegExp(r'https?://').allMatches(lc).length > 2) {
     return false; // too many links
+  }
   if (RegExp(r'[0-9]{5,}').hasMatch(lc)) return false; // large numeric blobs
-  if (RegExp(r'[^a-z0-9\s,.!?:;\-\[\]\(\)\n]').allMatches(lc).length > 20)
+  if (RegExp(r'[^a-z0-9\s,.!?:;\-\[\]\(\)\n]').allMatches(lc).length > 20) {
     return false; // excessive symbols
+  }
   // If it passes these structural checks and no hard block patterns matched earlier, treat as low risk.
   return true;
 }

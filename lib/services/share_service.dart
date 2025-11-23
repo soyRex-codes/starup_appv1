@@ -24,12 +24,13 @@ class ShareService {
       final shareUrl = DeepLinkService.generatePostLink(postId);
       final shareText = _buildShareText(title, description, shareUrl);
 
-      // iOS FIX: Provide sharePositionOrigin for iPad popover positioning
-      // If not provided, use center of screen as fallback
+      // iOS FIX: Validate and sanitize sharePositionOrigin coordinates
+      // Ensure coordinates are non-negative and within reasonable bounds
+      final validatedOrigin = _validateSharePosition(sharePositionOrigin);
+
       final result = await Share.share(
         shareText,
-        sharePositionOrigin:
-            sharePositionOrigin ?? const Rect.fromLTWH(0, 0, 100, 100),
+        sharePositionOrigin: validatedOrigin,
       );
 
       debugPrint('Share result status: ${result.status}');
@@ -82,6 +83,47 @@ class ShareService {
     buffer.writeln('#startups #entrepreneurship #FounderVers');
 
     return buffer.toString();
+  }
+
+  /// Validate and sanitize sharePositionOrigin coordinates
+  ///
+  /// Ensures coordinates are:
+  /// - Non-negative (fixes negative Y coordinate crashes)
+  /// - Within reasonable bounds (0-10000 range)
+  /// - Non-zero width and height
+  ///
+  /// Returns a safe default if validation fails.
+  static Rect _validateSharePosition(Rect? origin) {
+    // Default safe position (center-ish of typical screen)
+    const defaultRect = Rect.fromLTWH(100, 200, 100, 100);
+
+    if (origin == null) {
+      return defaultRect;
+    }
+
+    // Check for invalid coordinates (negative, NaN, infinite, or unreasonably large)
+    if (origin.left < 0 ||
+        origin.top < 0 ||
+        origin.left.isNaN ||
+        origin.top.isNaN ||
+        origin.left.isInfinite ||
+        origin.top.isInfinite ||
+        origin.left > 10000 ||
+        origin.top > 10000) {
+      debugPrint(
+          '⚠️ Invalid sharePositionOrigin detected: $origin. Using safe default.');
+      return defaultRect;
+    }
+
+    // Check for zero or negative width/height
+    if (origin.width <= 0 || origin.height <= 0) {
+      debugPrint(
+          '⚠️ Invalid sharePositionOrigin dimensions: ${origin.width}x${origin.height}. Using safe default.');
+      return defaultRect;
+    }
+
+    // Coordinates are valid
+    return origin;
   }
 
   /// Track sharing analytics

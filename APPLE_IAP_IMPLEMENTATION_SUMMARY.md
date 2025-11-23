@@ -151,7 +151,7 @@ These **MUST** match your App Store Connect product IDs character-for-character.
 - [x] All code changes implemented
 - [x] Run `flutter pub get`
 - [x] Deploy Edge Function to Supabase
-- [ ] Create IAP products in App Store Connect
+- [x] Create IAP products in App Store Connect
 - [ ] Test on physical iOS device with sandbox account
 - [ ] Take new screenshots (without debug banner)
 - [ ] Increment app version in pubspec.yaml

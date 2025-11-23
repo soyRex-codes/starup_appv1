@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:foundervers/features/premium/premium_payment_page.dart';
 
 /// Premium upgrade dialog shown when non-premium users try to access locked features
@@ -152,148 +153,191 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
 
               SizedBox(height: spacingMedium),
 
-              // Plan Selection - Stack vertically on very small screens
-              isSmallScreen
-                  ? Column(
-                      children: [
-                        _buildSelectablePriceCard(
-                          'Monthly',
-                          '\$19.99',
-                          'per month',
-                          !_isAnnual,
-                          () => setState(() => _isAnnual = false),
+              // Plan Selection and Buttons
+              if (Platform.isIOS) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Premium subscriptions are currently not available for purchase on the iOS app.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: descSize,
                         ),
-                        SizedBox(height: spacingSmall),
-                        _buildSelectablePriceCard(
-                          'Annual',
-                          '\$167.99',
-                          'per year',
-                          _isAnnual,
-                          () => setState(() => _isAnnual = true),
-                          savings: 'Save 30%',
-                        ),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(() => _isAnnual = false),
-                            child: _buildPriceCard(
-                              'Monthly',
-                              '\$19.99',
-                              'per month',
-                              !_isAnnual,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: spacingSmall),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(() => _isAnnual = true),
-                            child: _buildPriceCard(
-                              'Annual',
-                              '\$167.99',
-                              'per year',
-                              _isAnnual,
-                              savings: 'Save 30%',
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: spacingMedium),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 14),
                     ),
-
-              SizedBox(height: spacingMedium),
-
-              // Buttons - Stack vertically on small screens
-              isSmallScreen
-                  ? Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _navigateToPayment,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber.shade600,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(
-                                  vertical: isSmallScreen ? 12 : 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              elevation: 2,
-                            ),
-                            child: Text(
-                              'Upgrade Now',
-                              style: TextStyle(
-                                fontSize: isSmallScreen ? 14 : 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: spacingSmall),
-                        SizedBox(
-                          width: double.infinity,
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                  vertical: isSmallScreen ? 12 : 14),
-                            ),
-                            child: Text(
-                              'Maybe Later',
-                              style: TextStyle(
-                                fontSize: isSmallScreen ? 14 : 16,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: Text(
-                              'Maybe Later',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: spacingSmall),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton(
-                            onPressed: _navigateToPayment,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber.shade600,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              elevation: 2,
-                            ),
-                            child: const Text(
-                              'Upgrade Now',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Close',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
+                  ),
+                ),
+              ] else ...[
+                // Plan Selection - Stack vertically on very small screens
+                isSmallScreen
+                    ? Column(
+                        children: [
+                          _buildSelectablePriceCard(
+                            'Monthly',
+                            '\$19.99',
+                            'per month',
+                            !_isAnnual,
+                            () => setState(() => _isAnnual = false),
+                          ),
+                          SizedBox(height: spacingSmall),
+                          _buildSelectablePriceCard(
+                            'Annual',
+                            '\$167.99',
+                            'per year',
+                            _isAnnual,
+                            () => setState(() => _isAnnual = true),
+                            savings: 'Save 30%',
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => _isAnnual = false),
+                              child: _buildPriceCard(
+                                'Monthly',
+                                '\$19.99',
+                                'per month',
+                                !_isAnnual,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: spacingSmall),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => _isAnnual = true),
+                              child: _buildPriceCard(
+                                'Annual',
+                                '\$167.99',
+                                'per year',
+                                _isAnnual,
+                                savings: 'Save 30%',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                SizedBox(height: spacingMedium),
+
+                // Buttons - Stack vertically on small screens
+                isSmallScreen
+                    ? Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _navigateToPayment,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber.shade600,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(
+                                    vertical: isSmallScreen ? 12 : 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                elevation: 2,
+                              ),
+                              child: Text(
+                                'Upgrade Now',
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: spacingSmall),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.symmetric(
+                                    vertical: isSmallScreen ? 12 : 14),
+                              ),
+                              child: Text(
+                                'Maybe Later',
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              child: Text(
+                                'Maybe Later',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: spacingSmall),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton(
+                              onPressed: _navigateToPayment,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber.shade600,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                elevation: 2,
+                              ),
+                              child: const Text(
+                                'Upgrade Now',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+              ],
             ],
           ),
         ),

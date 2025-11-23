@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> testDatabaseSchema() async {
   final client = Supabase.instance.client;
 
-  print('🔍 Testing database schema...');
+  if (kDebugMode) {
+    print('🔍 Testing database schema...');
+  }
 
   try {
     // Test if conversations table exists and has expected columns
@@ -11,18 +14,28 @@ Future<void> testDatabaseSchema() async {
         .from('conversations')
         .select('id, type, created_at')
         .limit(1);
-    print('✅ Conversations table exists and has type column');
-    print('   Sample data: $conversations');
+    if (kDebugMode) {
+      print('✅ Conversations table exists and has type column');
+    }
+    if (kDebugMode) {
+      print('   Sample data: $conversations');
+    }
   } catch (e) {
-    print('❌ Conversations table issue: $e');
+    if (kDebugMode) {
+      print('❌ Conversations table issue: $e');
+    }
   }
 
   try {
     // Test if users table exists
     final users = await client.from('users').select('id').limit(1);
-    print('✅ Users table exists');
+    if (kDebugMode) {
+      print('✅ Users table exists');
+    }
   } catch (e) {
-    print('❌ Users table issue: $e');
+    if (kDebugMode) {
+      print('❌ Users table issue: $e');
+    }
   }
 
   try {
@@ -32,9 +45,13 @@ Future<void> testDatabaseSchema() async {
       'user1_id': '00000000-0000-0000-0000-000000000000',
       'user2_id': '00000000-0000-0000-0000-000000000001'
     });
-    print('✅ get_or_create_direct_conversation function exists');
+    if (kDebugMode) {
+      print('✅ get_or_create_direct_conversation function exists');
+    }
   } catch (e) {
-    print('❌ get_or_create_direct_conversation function issue: $e');
+    if (kDebugMode) {
+      print('❌ get_or_create_direct_conversation function issue: $e');
+    }
   }
 }
 

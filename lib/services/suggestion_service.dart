@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
 class SuggestionService {
   static final _supabase = Supabase.instance.client;
@@ -109,7 +110,7 @@ class SuggestionService {
       // Return true only if the update affected at least one row
       return updateResult.isNotEmpty;
     } catch (e) {
-      print('Error marking suggestion as read: $e');
+      debugPrint('Error marking suggestion as read: $e');
       return false;
     }
   }
@@ -150,7 +151,7 @@ class SuggestionService {
       // Return true only if the update affected at least one row
       return updateResult.isNotEmpty;
     } catch (e) {
-      print('Error marking suggestion as unread: $e');
+      debugPrint('Error marking suggestion as unread: $e');
       return false;
     }
   }

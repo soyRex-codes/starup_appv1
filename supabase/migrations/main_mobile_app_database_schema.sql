@@ -1072,72 +1072,7 @@ GRANT ALL ON admin_notifications TO service_role;
 -- Lightweight trigger that creates notification records for async processing
 -- Moved complex email logic to separate processing system for better maintainability
 
-CREATE OR REPLACE FUNCTION notify_admin_new_business_application()
-RETURNS TRIGGER
-LANGUAGE plpgsql 
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  service_type_display TEXT;
-  sanitized_form_data JSONB;
-BEGIN
-  -- Format service type for display
-  service_type_display := CASE NEW.service_type
-    WHEN 'tax_help' THEN 'Tax Help'
-    WHEN 'business_registration' THEN 'Business Registration'
-    WHEN 'app_development' THEN 'App Development'
-    WHEN 'marketing' THEN 'Marketing'
-    WHEN 'employee_hiring' THEN 'Employee Hiring'
-    WHEN 'investor_finding' THEN 'Investor Finding'
-    WHEN 'business_consultation' THEN 'Business Consultation'
-    ELSE INITCAP(REPLACE(NEW.service_type, '_', ' '))
-  END;
 
-  -- Sanitize form data - remove potentially sensitive fields and limit size
-  sanitized_form_data := jsonb_build_object(
-    'business_name', COALESCE(NEW.form_data->>'business_name', 'Not specified'),
-    'service_category', NEW.service_type,
-    'has_attachments', (
-      SELECT COUNT(*) > 0 
-      FROM jsonb_object_keys(NEW.form_data) keys 
-      WHERE keys LIKE '%_files'
-    ),
-    'form_fields_count', (SELECT COUNT(*) FROM jsonb_object_keys(NEW.form_data)),
-    'submission_method', COALESCE(NEW.form_data->>'submission_method', 'web_form')
-  );
-
-  -- Insert lightweight notification record for async processing
-  INSERT INTO admin_notifications (
-    type, 
-    reference_id, 
-    data,
-    created_at
-  ) VALUES (
-    'business_application',
-    NEW.id,
-    jsonb_build_object(
-      'applicant_name', NEW.applicant_name,
-      'applicant_email', NEW.applicant_email,
-      'service_type', NEW.service_type,
-      'service_type_display', service_type_display,
-      'application_id', NEW.id,
-      'created_at', NEW.created_at,
-      'sanitized_form_data', sanitized_form_data
-    ),
-    NOW()
-  );
-
-  -- Log successful notification creation
-  RAISE NOTICE 'Notification queued for business application ID: %, Service: %', NEW.id, service_type_display;
-
-  RETURN NEW;
-EXCEPTION WHEN OTHERS THEN
-  -- Log error but don't fail the application insert
-  RAISE WARNING 'Failed to create admin notification for application %: %', NEW.id, SQLERRM;
-  RETURN NEW;
-END;
-$$;
 
 -- Send Applicant Confirmation Email Function
 -- This function sends a confirmation email to the applicant immediately after submission
@@ -1226,178 +1161,7 @@ $$;
 -- This function processes pending notifications and sends emails via Edge Function
 -- Can be called by pg_cron, Edge Functions, or application workers
 
-CREATE OR REPLACE FUNCTION process_admin_notifications(batch_size INTEGER DEFAULT 10)
-RETURNS TABLE(processed_count INTEGER, failed_count INTEGER)
-LANGUAGE plpgsql 
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  notification_record admin_notifications%ROWTYPE;
-  http_response RECORD;
-  email_payload JSONB;
-  total_processed INTEGER := 0;
-  total_failed INTEGER := 0;
-  service_type_display TEXT;
-BEGIN
-  -- Process pending notifications in batches
-  FOR notification_record IN 
-    SELECT * FROM admin_notifications 
-    WHERE status = 'pending' 
-      AND retry_count < max_retries
-    ORDER BY created_at ASC 
-    LIMIT batch_size
-  LOOP
-    BEGIN
-      -- Build email payload for your existing Edge Function
-      -- Format service type for display
-      service_type_display := notification_record.data->>'service_type_display';
-      
-      -- Create email subject
-      email_payload := jsonb_build_object(
-        'applicant_name', notification_record.data->>'applicant_name',
-        'business_name', notification_record.data->'sanitized_form_data'->>'business_name',
-        'service_type', service_type_display,
-        'applicant_email', notification_record.data->>'applicant_email',
-        'admin_email', 'foundervers@gmail.com',
-        'subject', 'New Business Service Application: ' || service_type_display || 
-                   CASE WHEN notification_record.data->'sanitized_form_data'->>'has_attachments' = 'true' 
-                        THEN ' (with attachments)' 
-                        ELSE '' END,
-        'body', format('
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-        .header { background-color: #4CAF50; color: white; padding: 20px; border-radius: 8px; }
-        .content { margin-top: 20px; }
-        .field { margin: 10px 0; padding: 10px; background-color: #f9f9f9; border-radius: 4px; }
-        .field-label { font-weight: bold; color: #4CAF50; }
-        .field-value { margin-top: 5px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h2>🔔 New Business Service Application</h2>
-        <p>Service Type: <strong>%s</strong></p>
-    </div>
-    
-    <div class="content">
-        <div class="field">
-            <div class="field-label">👤 Applicant Information:</div>
-            <div class="field-value">
-                <strong>Name:</strong> %s<br>
-                <strong>Email:</strong> %s<br>
-                <strong>Submitted:</strong> %s
-            </div>
-        </div>
-        
-        <div class="field">
-            <div class="field-label">🏢 Business Information:</div>
-            <div class="field-value">
-                <strong>Business Name:</strong> %s<br>
-                <strong>Service Category:</strong> %s<br>
-                <strong>Form Fields:</strong> %s fields submitted<br>
-                <strong>Has Attachments:</strong> %s
-            </div>
-        </div>
-    </div>
-    
-    <div style="margin-top: 30px; padding: 15px; background-color: #e8f5e8; border-radius: 4px;">
-        <p><strong>Next Steps:</strong></p>
-        <ul>
-            <li>Review the application details</li>
-            <li>Contact the applicant if more information is needed</li>
-            <li>Connect them with the appropriate service provider</li>
-        </ul>
-    </div>
-    
-    <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-radius: 4px;">
-        <p><strong>📋 Application ID:</strong> %s</p>
-        <p><strong>🔔 Notification ID:</strong> %s</p>
-        <p style="font-size: 12px; color: #666;">
-            This email was automatically generated by the FounderVers Business Services Portal.
-            To view full application details including attachments, log into the admin dashboard.
-        </p>
-    </div>
-</body>
-</html>',
-          service_type_display,
-          notification_record.data->>'applicant_name',
-          notification_record.data->>'applicant_email',
-          notification_record.data->>'created_at',
-          notification_record.data->'sanitized_form_data'->>'business_name',
-          notification_record.data->'sanitized_form_data'->>'service_category',
-          notification_record.data->'sanitized_form_data'->>'form_fields_count',
-          CASE WHEN notification_record.data->'sanitized_form_data'->>'has_attachments' = 'true' 
-               THEN 'Yes' ELSE 'No' END,
-          notification_record.reference_id,
-          notification_record.id
-        ),
-        'application_id', notification_record.reference_id,
-        'notification_id', notification_record.id
-      );
 
-      -- Call your existing Edge Function
-      -- Note: URL will need to be configured with your actual Supabase project URL
-      SELECT INTO http_response * FROM net.http_post(
-        url := 'https://qddhubtyvqoqlbshxfkr.supabase.co/functions/v1/send-business-notification',
-        headers := jsonb_build_object(
-          'Content-Type', 'application/json',
-          'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkZGh1YnR5dnFvcWxic2h4ZmtyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTY3NTIzNiwiZXhwIjoyMDcxMjUxMjM2fQ.5nXTFu6A9RJDaF1ikXODhh62ua4kpf9inyANpTzr4c0'
-        ),
-        body := email_payload
-      );
-
-      -- Check if email was sent successfully
-      IF http_response.status_code BETWEEN 200 AND 299 THEN
-        -- Mark as processed
-        UPDATE admin_notifications 
-        SET status = 'processed',
-            processed_at = NOW(),
-            updated_at = NOW()
-        WHERE id = notification_record.id;
-        
-        total_processed := total_processed + 1;
-        RAISE NOTICE 'Processed notification % successfully', notification_record.id;
-      ELSE
-        -- Mark as failed and increment retry count
-        UPDATE admin_notifications 
-        SET retry_count = retry_count + 1,
-            error_message = 'HTTP ' || http_response.status_code || ': ' || COALESCE(http_response.content, 'No response content'),
-            updated_at = NOW(),
-            status = CASE 
-              WHEN retry_count + 1 >= max_retries THEN 'failed' 
-              ELSE 'pending' 
-            END
-        WHERE id = notification_record.id;
-        
-        total_failed := total_failed + 1;
-        RAISE WARNING 'Failed to send notification %: HTTP %', notification_record.id, http_response.status_code;
-      END IF;
-      
-    EXCEPTION WHEN OTHERS THEN
-      -- Handle processing errors
-      UPDATE admin_notifications 
-      SET retry_count = retry_count + 1,
-          error_message = SQLERRM,
-          updated_at = NOW(),
-          status = CASE 
-            WHEN retry_count + 1 >= max_retries THEN 'failed' 
-            ELSE 'pending' 
-          END
-      WHERE id = notification_record.id;
-      
-      total_failed := total_failed + 1;
-      RAISE WARNING 'Failed to process notification %: %', notification_record.id, SQLERRM;
-    END;
-  END LOOP;
-
-  -- Return processing results (fixed return logic)
-  RETURN QUERY SELECT total_processed, total_failed;
-END;
-$$;
 
 -- Helper function to cleanup old processed notifications
 CREATE OR REPLACE FUNCTION cleanup_old_admin_notifications(days_old INTEGER DEFAULT 30)
@@ -1546,74 +1310,7 @@ BEGIN
   -- Generate the SQL to update the process_admin_notifications function
   update_sql := format('
 -- Update the Edge Function URL and authorization in the notification processor
-CREATE OR REPLACE FUNCTION process_admin_notifications(batch_size INTEGER DEFAULT 10)
-RETURNS TABLE(processed_count INTEGER, failed_count INTEGER) AS $func$
-DECLARE
-  notification_record admin_notifications%%ROWTYPE;
-  http_response RECORD;
-  email_payload JSONB;
-  total_processed INTEGER := 0;
-  total_failed INTEGER := 0;
-  service_type_display TEXT;
-BEGIN
-  FOR notification_record IN 
-    SELECT * FROM admin_notifications 
-    WHERE status = ''pending'' 
-      AND retry_count < max_retries
-    ORDER BY created_at ASC 
-    LIMIT batch_size
-  LOOP
-    BEGIN
-      service_type_display := notification_record.data->>''service_type_display'';
-      
-      email_payload := jsonb_build_object(
-        ''applicant_name'', notification_record.data->>''applicant_name'',
-        ''business_name'', notification_record.data->''sanitized_form_data''->>''business_name'',
-        ''service_type'', service_type_display,
-        ''applicant_email'', notification_record.data->>''applicant_email'',
-        ''admin_email'', ''foundervers@gmail.com'',
-        ''subject'', ''New Business Service Application: '' || service_type_display,
-        ''body'', ''<h2>New Application Received</h2><p>A new business application has been submitted.</p>'',
-        ''application_id'', notification_record.reference_id,
-        ''notification_id'', notification_record.id
-      );
-
-      SELECT INTO http_response * FROM net.http_post(
-        url := ''%s/functions/v1/send-business-notification'',
-        headers := jsonb_build_object(
-          ''Content-Type'', ''application/json'',
-          ''Authorization'', ''Bearer %s''
-        ),
-        body := email_payload
-      );
-
-      IF http_response.status_code BETWEEN 200 AND 299 THEN
-        UPDATE admin_notifications 
-        SET status = ''processed'', processed_at = NOW(), updated_at = NOW()
-        WHERE id = notification_record.id;
-        total_processed := total_processed + 1;
-      ELSE
-        UPDATE admin_notifications 
-        SET retry_count = retry_count + 1,
-            error_message = ''HTTP '' || http_response.status_code,
-            updated_at = NOW(),
-            status = CASE WHEN retry_count + 1 >= max_retries THEN ''failed'' ELSE ''pending'' END
-        WHERE id = notification_record.id;
-        total_failed := total_failed + 1;
-      END IF;
-      
-    EXCEPTION WHEN OTHERS THEN
-      UPDATE admin_notifications 
-      SET retry_count = retry_count + 1, error_message = SQLERRM, updated_at = NOW(),
-          status = CASE WHEN retry_count + 1 >= max_retries THEN ''failed'' ELSE ''pending'' END
-      WHERE id = notification_record.id;
-      total_failed := total_failed + 1;
-    END;
-  END LOOP;
-
-  RETURN QUERY SELECT total_processed, total_failed;
-END;
-$func$ LANGUAGE plpgsql SECURITY DEFINER;',
+func$ LANGUAGE plpgsql SECURITY DEFINER;',
     project_url,
     service_role_key
   );
@@ -1701,13 +1398,13 @@ CREATE POLICY "Admins can manage applications" ON business_applications
 
 DROP POLICY IF EXISTS "Admins can delete applications" ON business_applications;
 CREATE POLICY "Admins can delete applications" ON business_applications
-  FOR DELETE USING (
-    (select auth.uid()) IN (
-      SELECT u.id
-      FROM public.users u
-      WHERE u.email = ANY(
-        SELECT unnest(string_to_array(current_setting('app.admin_emails', true), ','))
-      )
+  FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM users
+      WHERE users.id = auth.uid()
+      AND users.is_admin = true
     )
   );
 
@@ -1729,19 +1426,7 @@ CREATE TRIGGER update_business_applications_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_business_applications_updated_at();
 
--- Automatic admin email notification trigger
-DROP TRIGGER IF EXISTS notify_admin_business_application ON business_applications;
-CREATE TRIGGER notify_admin_business_application
-    AFTER INSERT ON business_applications
-    FOR EACH ROW
-    EXECUTE FUNCTION notify_admin_new_business_application();
 
--- Applicant confirmation email trigger
-DROP TRIGGER IF EXISTS send_applicant_confirmation ON business_applications;
-CREATE TRIGGER send_applicant_confirmation
-    AFTER INSERT ON business_applications
-    FOR EACH ROW
-    EXECUTE FUNCTION send_applicant_confirmation_email();
 
 -- Optional: Create a view for admin dashboard
 CREATE OR REPLACE VIEW business_applications_summary 
@@ -1782,4 +1467,111 @@ GRANT SELECT ON business_applications_summary TO authenticated;
 --
 -- ✅ COMPLETED: Storage policies have been set up in Supabase Dashboard
 -- File uploads should now work without RLS violations.
--- End of schema - Complete Mobile App with Business Applications! -----------------------
+
+-- Fix Storage Policies for startupbuilder bucket
+-- This ensures profile pictures and posts are visible to everyone
+
+-- 1. Ensure the bucket exists and is public
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('startupbuilder', 'startupbuilder', true)
+ON CONFLICT (id) DO UPDATE
+SET public = true;
+
+-- 2. Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated Upload" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update own files" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete own files" ON storage.objects;
+
+-- 3. Create "Public Access" policy (Everyone can view)
+CREATE POLICY "Public Access"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'startupbuilder' );
+
+-- 4. Create "Authenticated Upload" policy (Users can upload)
+CREATE POLICY "Authenticated Upload"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK ( bucket_id = 'startupbuilder' );
+
+-- 5. Create "Update own files" policy
+CREATE POLICY "Users can update own files"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING ( bucket_id = 'startupbuilder' AND auth.uid() = owner );
+
+-- 6. Create "Delete own files" policy
+CREATE POLICY "Users can delete own files"
+ON storage.objects FOR DELETE
+TO authenticated
+USING ( bucket_id = 'startupbuilder' AND auth.uid() = owner );
+-- Allow admins to delete any post
+-- This is required for the "Remove Post" feature in the Admin Dashboard
+
+-- Policy: Admins can delete any post
+DROP POLICY IF EXISTS "Admins can delete any post" ON posts;
+CREATE POLICY "Admins can delete any post"
+  ON posts FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM users
+      WHERE users.id = auth.uid()
+      AND users.is_admin = true
+    )
+  );
+
+-- Policy: Admins can update any post (e.g. for moderation status)
+DROP POLICY IF EXISTS "Admins can update any post" ON posts;
+CREATE POLICY "Admins can update any post"
+  ON posts FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM users
+      WHERE users.id = auth.uid()
+      AND users.is_admin = true
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM users
+      WHERE users.id = auth.uid()
+      AND users.is_admin = true
+    )
+  );
+-- FIX ACCOUNT DELETION (FINAL)
+-- Problem: The previous fix added a trigger, but the client app was blocked from deleting
+-- the user from the 'users' table because of a missing Row Level Security (RLS) policy.
+-- This script fixes both issues.
+
+-- 1. Allow users to delete their own profile from public.users
+-- Without this, the "DELETE FROM users" command from the app fails silently or throws an error,
+-- and the trigger never fires.
+DROP POLICY IF EXISTS "users delete self" ON public.users;
+CREATE POLICY "users delete self" ON public.users 
+FOR DELETE USING ((select auth.uid()) = id);
+
+-- 2. Ensure the Trigger Function exists (to delete from auth.users)
+CREATE OR REPLACE FUNCTION public.delete_auth_user_on_public_delete()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+BEGIN
+  -- Delete the user from auth.users
+  DELETE FROM auth.users WHERE id = OLD.id;
+  RETURN OLD;
+END;
+$$;
+
+-- 3. Ensure the Trigger exists
+DROP TRIGGER IF EXISTS on_user_delete ON public.users;
+CREATE TRIGGER on_user_delete
+  AFTER DELETE ON public.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.delete_auth_user_on_public_delete();
+
+-- 4. Grant necessary permissions (just in case)
+GRANT DELETE ON public.users TO authenticated;

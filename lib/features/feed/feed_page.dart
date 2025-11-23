@@ -11,6 +11,7 @@ import 'package:foundervers/app/widgets/filter_sheet.dart';
 import 'package:foundervers/features/feed/enhanced_post_card.dart';
 import 'package:foundervers/features/onboarding/feed_onboarding_overlay.dart';
 import 'package:foundervers/app/widgets/app_menu_drawer.dart';
+import 'package:foundervers/services/user_blocking_service.dart';
 
 import '../../app/theme.dart';
 import '../../app/widgets/app_header.dart';
@@ -51,6 +52,91 @@ class FeedPageState extends State<FeedPage> {
 
   // Background refresh state
   Timer? _backgroundRefreshTimer;
+  StreamSubscription? _blockSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _checkOnboarding();
+    _setupScrollListener();
+    
+    // Listen for block/unblock events to auto-refresh feed
+    _blockSubscription = UserBlockingService().onBlockStateChanged.listen((_) {
+      if (mounted) {
+        _load(reset: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _blockSubscription?.cancel();
+    _scrollCtrl.dispose();
+    _searchTimer?.cancel();
+    _hideNavTimer?.cancel();
+    _backgroundRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _setupScrollListener() {
+    _scrollCtrl.addListener(() {
+      final currentOffset = _scrollCtrl.offset;
+      final difference = currentOffset - _lastScrollOffset;
+
+      if (_isSearchBarFocused) {
+        _lastScrollOffset = currentOffset;
+        return;
+      }
+
+      // Only trigger if scrolled more than threshold
+      if (difference.abs() > _scrollThreshold) {
+        // Cancel any pending nav visibility changes
+        _hideNavTimer?.cancel();
+
+        // Debounce the hide/show to prevent jittery behavior
+        _hideNavTimer = Timer(const Duration(milliseconds: 100), () {
+          if (difference > 0 && _isHeaderVisible) {
+            // Scrolling down - hide header/nav
+            setState(() => _isHeaderVisible = false);
+            widget.onNavVisibilityChanged?.call(false);
+          } else if (difference < 0 && !_isHeaderVisible) {
+            // Scrolling up - show header/nav
+            setState(() => _isHeaderVisible = true);
+            widget.onNavVisibilityChanged?.call(true);
+          }
+        });
+        _lastScrollOffset = currentOffset;
+      }
+
+      // Always show at top
+      if (currentOffset <= 0 && !_isHeaderVisible) {
+        _hideNavTimer?.cancel();
+        setState(() => _isHeaderVisible = true);
+        widget.onNavVisibilityChanged?.call(true);
+      }
+
+      // Pagination logic (existing)
+      if (_scrollCtrl.position.pixels >=
+              _scrollCtrl.position.maxScrollExtent - 200 &&
+          !_loadingMore &&
+          !_loading) {
+        _load();
+      }
+    });
+  }
+
+  Future<void> _checkOnboarding() async {
+    final completed = await FeedOnboardingOverlay.hasCompletedOnboarding();
+    if (!completed && mounted) {
+      setState(() => _showOnboarding = true);
+    }
+  }
+
+  /// Public method to refresh the feed (called when new posts are created)
+  Future<void> refreshAfterPostCreation() async {
+    await _refreshFeed();
+  }
 
   Future<void> _load({bool reset = false}) async {
     if (reset) {
@@ -245,81 +331,7 @@ class FeedPageState extends State<FeedPage> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _load(reset: true);
-    _checkOnboarding();
-    _setupScrollListener();
-  }
 
-  void _setupScrollListener() {
-    _scrollCtrl.addListener(() {
-      final currentOffset = _scrollCtrl.offset;
-      final difference = currentOffset - _lastScrollOffset;
-
-      if (_isSearchBarFocused) {
-        _lastScrollOffset = currentOffset;
-        return;
-      }
-
-      // Only trigger if scrolled more than threshold
-      if (difference.abs() > _scrollThreshold) {
-        // Cancel any pending nav visibility changes
-        _hideNavTimer?.cancel();
-
-        // Debounce the hide/show to prevent jittery behavior
-        _hideNavTimer = Timer(const Duration(milliseconds: 100), () {
-          if (difference > 0 && _isHeaderVisible) {
-            // Scrolling down - hide header/nav
-            setState(() => _isHeaderVisible = false);
-            widget.onNavVisibilityChanged?.call(false);
-          } else if (difference < 0 && !_isHeaderVisible) {
-            // Scrolling up - show header/nav
-            setState(() => _isHeaderVisible = true);
-            widget.onNavVisibilityChanged?.call(true);
-          }
-        });
-        _lastScrollOffset = currentOffset;
-      }
-
-      // Always show at top
-      if (currentOffset <= 0 && !_isHeaderVisible) {
-        _hideNavTimer?.cancel();
-        setState(() => _isHeaderVisible = true);
-        widget.onNavVisibilityChanged?.call(true);
-      }
-
-      // Pagination logic (existing)
-      if (_scrollCtrl.position.pixels >=
-              _scrollCtrl.position.maxScrollExtent - 200 &&
-          !_loadingMore &&
-          !_loading) {
-        _load();
-      }
-    });
-  }
-
-  Future<void> _checkOnboarding() async {
-    final completed = await FeedOnboardingOverlay.hasCompletedOnboarding();
-    if (!completed && mounted) {
-      setState(() => _showOnboarding = true);
-    }
-  }
-
-  /// Public method to refresh the feed (called when new posts are created)
-  Future<void> refreshAfterPostCreation() async {
-    await _refreshFeed();
-  }
-
-  @override
-  void dispose() {
-    _scrollCtrl.dispose();
-    _searchTimer?.cancel();
-    _hideNavTimer?.cancel();
-    _backgroundRefreshTimer?.cancel();
-    super.dispose();
-  }
 
   void _onSearchChanged(String query) {
     // Cancel previous timer

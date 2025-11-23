@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 import 'package:foundervers/core/storage_utils.dart';
 
 @immutable
@@ -193,7 +194,7 @@ class PostModel {
               if (postId != null &&
                   mediaPostId != null &&
                   postId != mediaPostId) {
-                print(
+                debugPrint(
                     'WARNING: Media ${media.id} has post_id $mediaPostId but was loaded for post $postId');
                 return false; // Filter out incorrect media
               }

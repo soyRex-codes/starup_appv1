@@ -190,6 +190,12 @@ class FeedCache {
 
   /// Invalidate cache entries by category
   void invalidate({String? category, String? goal, String? search}) {
+    // If no filters provided, clear everything to ensure consistency
+    if (category == null && goal == null && search == null) {
+      clear();
+      return;
+    }
+
     final keysToRemove = <String>[];
 
     for (final key in _cache.keys) {
@@ -296,4 +302,6 @@ class CacheResult {
     required this.needsRefresh,
     required this.age,
   });
+
+  get length => null;
 }

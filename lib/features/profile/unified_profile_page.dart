@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:foundervers/core/storage_utils.dart';
 import 'package:foundervers/features/auth/user_service.dart';
 import 'package:foundervers/features/post_creation/post_service.dart';
@@ -11,6 +13,7 @@ import '../dm/new_dm_repos.dart';
 import '../dm/thread_view.dart';
 import 'package:foundervers/services/bookmark_service.dart';
 import 'package:foundervers/features/feed/enhanced_post_card.dart';
+import 'package:foundervers/services/user_blocking_service.dart';
 
 /// Unified profile page - works for both own profile and others' profiles
 /// Intelligently shows/hides features based on ownership
@@ -33,11 +36,24 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
   int _refreshKey = 0;
   final _supabase = Supabase.instance.client;
   late TabController _tabController;
+  bool _isUserBlocked = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _checkBlockStatus();
+  }
+
+  Future<void> _checkBlockStatus() async {
+    if (_targetUserId != null && !_isOwnProfile) {
+      final isBlocked = await UserBlockingService().isUserBlocked(_targetUserId!);
+      if (mounted) {
+        setState(() {
+          _isUserBlocked = isBlocked;
+        });
+      }
+    }
   }
 
   @override
@@ -75,6 +91,46 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
         title: Text(
             _isOwnProfile ? 'My Profile' : (widget.userName ?? 'User Profile')),
         centerTitle: true,
+        actions: [
+          if (!_isOwnProfile)
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                if (value == 'block') {
+                  await _confirmBlockUser(context);
+                } else if (value == 'unblock') {
+                  await _confirmUnblockUser(context);
+                }
+              },
+              itemBuilder: (BuildContext context) {
+                if (_isUserBlocked) {
+                  return [
+                    const PopupMenuItem<String>(
+                      value: 'unblock',
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+                          SizedBox(width: 8),
+                          Text('Unblock User'),
+                        ],
+                      ),
+                    ),
+                  ];
+                }
+                return [
+                  const PopupMenuItem<String>(
+                    value: 'block',
+                    child: Row(
+                      children: [
+                        Icon(Icons.block, color: Colors.red, size: 20),
+                        SizedBox(width: 8),
+                        Text('Block User', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ];
+              },
+            ),
+        ],
       ),
       body: FutureBuilder<Map<String, dynamic>?>(
         key: ValueKey(_refreshKey),
@@ -128,6 +184,92 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
         },
       ),
     );
+  }
+
+
+
+  Future<void> _confirmBlockUser(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Block User?'),
+        content: const Text(
+            'They will not be able to message you or see your posts. You will not see their posts in your feed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await UserBlockingService().blockUser(_targetUserId!);
+        if (mounted) {
+          setState(() {
+            _isUserBlocked = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User blocked successfully')),
+          );
+          Navigator.pop(context); // Go back to previous screen
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error blocking user: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _confirmUnblockUser(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unblock User?'),
+        content: const Text(
+            'They will be able to see your posts and message you again.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Unblock'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await UserBlockingService().unblockUser(_targetUserId!);
+        if (mounted) {
+          setState(() {
+            _isUserBlocked = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User unblocked successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error unblocking user: $e')),
+          );
+        }
+      }
+    }
   }
 
   Future<Map<String, dynamic>?> _fetchProfile() async {
@@ -216,7 +358,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                 radius: 40,
                 backgroundColor: Colors.grey[300],
                 backgroundImage:
-                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                    avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
                 child: avatarUrl == null
                     ? Icon(Icons.person, size: 40, color: Colors.grey[600])
                     : null,
@@ -433,24 +575,27 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                       ),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const PremiumPaymentPage(isAnnual: false),
-                        ),
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      backgroundColor: Colors.orange.shade700,
-                      foregroundColor: Colors.white,
+
+                  if (!Platform.isIOS)
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const PremiumPaymentPage(isAnnual: false),
+                          ),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        backgroundColor: Colors.orange.shade700,
+                        foregroundColor: Colors.white,
+                      ),
+                      child:
+                          const Text('Renew', style: TextStyle(fontSize: 12)),
                     ),
-                    child: const Text('Renew', style: TextStyle(fontSize: 12)),
-                  ),
                 ],
               ),
             ),

@@ -124,7 +124,7 @@ class _NavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -133,45 +133,50 @@ class _NavBar extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.only(top: 10, bottom: 8, left: 8, right: 8),
+      padding: const EdgeInsets.only(top: 4, bottom: 4, left: 8, right: 8),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 68,
+          height: 56,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavBtn(
                 label: 'Home',
-                icon: AppIcons.feed(size: 24),
+                icon: const Icon(Icons.home, size: 22),
                 active: index == 0,
                 onTap: () => onTap(0),
-                iconSize: 24,
+                iconSize: 22,
               ),
               _NavBtn(
                 label: 'Ecosystem',
-                icon: Image.asset(
-                  'lib/icons/ecosystem_application.png',
-                  width: 24,
-                  height: 24,
-                  fit: BoxFit.contain,
+                icon: ColorFiltered(
+                  colorFilter: ColorFilter.mode(
+                    index == 1
+                        ? const Color(0xFFFF6B2C)
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFFB0B0B0) // Light grey for dark mode
+                            : const Color(0xFF6B7280)), // Dark grey for light mode
+                    BlendMode.srcIn,
+                  ),
+                  child: Image.asset(
+                    'lib/icons/ecosystem_application.png',
+                    width: 22,
+                    height: 22,
+                    fit: BoxFit.contain,
+                  ),
                 ),
                 active: index == 1,
                 onTap: () => onTap(1),
-                iconSize: 24,
+                iconSize: 22,
               ),
               _AddNavBtn(onTap: onAdd),
               _NavBtn(
                 label: 'Business.AI',
-                icon: Image.asset(
-                  'lib/icons/ai-chatbot.png',
-                  width: 24,
-                  height: 24,
-                  fit: BoxFit.contain,
-                ),
+                icon: const Icon(Icons.auto_awesome, size: 22),
                 active: index == 2,
                 onTap: () => onTap(2),
-                iconSize: 24,
+                iconSize: 22,
               ),
               ValueListenableBuilder<int>(
                 valueListenable: DmUnreadController.instance.unread,
@@ -180,26 +185,26 @@ class _NavBar extends StatelessWidget {
                   icon: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      AppIcons.dms(size: 24),
+                      const Icon(Icons.chat_bubble_outline, size: 22),
                       if (unread > 0)
                         Positioned(
                           right: -4,
                           top: -4,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 2),
+                                horizontal: 4, vertical: 1),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFF6B2C),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(8),
                               border:
                                   Border.all(color: Colors.white, width: 1.5),
                             ),
-                            constraints: const BoxConstraints(minWidth: 18),
+                            constraints: const BoxConstraints(minWidth: 16),
                             child: Text(
                               unread > 99 ? '99+' : unread.toString(),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 9,
+                                fontSize: 8,
                                 fontWeight: FontWeight.w700,
                               ),
                               textAlign: TextAlign.center,
@@ -210,7 +215,7 @@ class _NavBar extends StatelessWidget {
                   ),
                   active: index == 3,
                   onTap: () => onTap(3),
-                  iconSize: 24,
+                  iconSize: 22,
                 ),
               ),
             ],
@@ -229,27 +234,27 @@ class _AddNavBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 45,
-        height: 45,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [Color(0xFFFF6B2C), Color(0xFFFF8C42)],
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFFFF6B2C).withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: const Icon(
           Icons.add,
           color: Colors.white,
-          size: 28,
+          size: 24,
         ),
       ),
     );
@@ -273,19 +278,19 @@ class _NavBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 color: active
                     ? const Color.fromARGB(255, 255, 107, 44).withOpacity(0.15)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: SizedBox(
                 width: iconSize,
@@ -294,22 +299,27 @@ class _NavBtn extends StatelessWidget {
                   data: IconThemeData(
                     color: active
                         ? const Color(0xFFFF6B2C)
-                        : const Color(0xFF6B7280),
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFFB0B0B0) // Light grey for dark mode
+                            : const Color(0xFF6B7280)), // Dark grey for light mode
                     size: iconSize,
                   ),
                   child: icon,
                 ),
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 height: 1.0,
                 fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color:
-                    active ? const Color(0xFFFF6B2C) : const Color(0xFF6B7280),
+                color: active 
+                    ? const Color(0xFFFF6B2C) 
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFFB0B0B0) // Light grey for dark mode
+                        : const Color(0xFF6B7280)), // Dark grey for light mode
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

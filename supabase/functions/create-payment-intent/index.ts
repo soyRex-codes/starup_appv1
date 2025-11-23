@@ -1,6 +1,6 @@
-import type {} from '../_shared/deno-runtime.d.ts';
+import type { } from '../_shared/deno-runtime.d.ts';
 
-export {};
+export { };
 
 // Import Stripe (will be installed via deno.json)
 import Stripe from 'npm:stripe@14.19.0';
@@ -79,6 +79,7 @@ interface PaymentIntentRequest {
   userId: string;
   email: string;
   applicant_name: string;
+  couponCode?: string;
 }
 
 interface PaymentIntentResponse {
@@ -137,14 +138,93 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    let finalAmount = body.amount;
+    let couponId = null;
+
+    // Apply Coupon if provided
+    if (body.couponCode) {
+      try {
+        console.log(`🎟️ Validating coupon: ${body.couponCode}`);
+
+        // List coupons to find by code (Stripe "coupons" are IDs, "promotion codes" are customer facing)
+        // We assume the user enters a Promotion Code or a Coupon ID. 
+        // For simplicity, we'll try to retrieve it as a Coupon ID first, 
+        // if that fails, we might need a more complex lookup, but usually Coupon ID = Code for simple setups.
+        // Actually, standard Stripe practice: Promotion Codes map to Coupons.
+        // Let's try to retrieve the coupon directly assuming Code = ID for now, or list promotion codes.
+
+        // Better approach: List promotion codes that match the code
+        const promotionCodes = await stripe.promotionCodes.list({
+          code: body.couponCode,
+          active: true,
+          limit: 1,
+        });
+
+        let coupon = null;
+
+        if (promotionCodes.data.length > 0) {
+          coupon = promotionCodes.data[0].coupon;
+          console.log('✅ Found Promotion Code');
+        } else {
+          // Fallback: Try to retrieve coupon directly by ID (if code == ID)
+          try {
+            coupon = await stripe.coupons.retrieve(body.couponCode);
+            console.log('✅ Found Coupon by ID');
+          } catch (e) {
+            console.log('❌ Coupon not found by ID');
+          }
+        }
+
+        if (coupon && coupon.valid) {
+          console.log(`💰 Applying discount: ${coupon.percent_off}% off or -${coupon.amount_off}`);
+
+          if (coupon.percent_off) {
+            finalAmount = finalAmount * (1 - (coupon.percent_off / 100));
+          } else if (coupon.amount_off) {
+            finalAmount = finalAmount - (coupon.amount_off / 100); // amount_off is in cents
+          }
+
+          couponId = coupon.id;
+
+          // If amount drops below $0.50, we consider it a "Free Transaction" if it was due to a coupon
+          // Otherwise Stripe would error.
+          if (finalAmount < 0.50) {
+            console.log('🎉 Transaction is effectively free (below Stripe minimum)');
+            return new Response(
+              JSON.stringify({
+                success: true,
+                isFree: true,
+                message: 'Transaction is free due to coupon',
+                couponCode: body.couponCode,
+              }),
+              {
+                status: 200,
+                headers: corsHeaders,
+              }
+            );
+          }
+
+          console.log(`📉 New Amount: ${finalAmount}`);
+        } else {
+          console.warn('⚠️ Invalid or inactive coupon');
+          // We don't fail the request, just ignore the coupon
+        }
+      } catch (error) {
+        console.error('❌ Error validating coupon:', error);
+      }
+    }
+
     // Create Stripe PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(body.amount * 100), // Convert to cents
+      amount: Math.round(finalAmount * 100), // Convert to cents
       currency: 'usd',
       metadata: {
         applicationId: body.applicationId,
         userId: body.userId,
         applicantName: body.applicant_name,
+        couponCode: body.couponCode || null,
+        couponId: couponId,
+        originalAmount: body.amount,
       },
       description: `FounderVers Application Fee - App ID: ${body.applicationId}`,
       receipt_email: body.email,

@@ -81,13 +81,13 @@ class _ChatPageWithTabsState extends State<ChatPageWithTabs>
                 unselectedLabelColor: Colors.grey[600],
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: 13, // Reduced from 14
                 ),
                 unselectedLabelStyle: const TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: 14,
+                  fontSize: 13, // Reduced from 14
                 ),
-                labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4), // Reduced from 8
                 indicatorSize: TabBarIndicatorSize.tab,
                 tabs: [
                   Tab(
@@ -95,8 +95,8 @@ class _ChatPageWithTabsState extends State<ChatPageWithTabs>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.inbox_outlined, size: 18),
-                        const SizedBox(width: 6),
+                        Icon(Icons.inbox_outlined, size: 16), // Reduced from 18
+                        const SizedBox(width: 4), // Reduced from 6
                         Text("DM's"),
                       ],
                     ),
@@ -106,8 +106,8 @@ class _ChatPageWithTabsState extends State<ChatPageWithTabs>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.lightbulb_outline, size: 18),
-                        const SizedBox(width: 6),
+                        Icon(Icons.lightbulb_outline, size: 16), // Reduced from 18
+                        const SizedBox(width: 4), // Reduced from 6
                         Text('Suggestions'),
                       ],
                     ),
@@ -117,8 +117,8 @@ class _ChatPageWithTabsState extends State<ChatPageWithTabs>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.public, size: 18),
-                        const SizedBox(width: 6),
+                        Icon(Icons.public, size: 16), // Reduced from 18
+                        const SizedBox(width: 4), // Reduced from 6
                         Text('Global Chat'),
                       ],
                     ),

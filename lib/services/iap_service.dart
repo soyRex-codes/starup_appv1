@@ -29,8 +29,16 @@ class IAPService {
 
   StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
   List<ProductDetails> _products = [];
+  List<String> _notFoundIds = [];
+  String? _lastError;
   bool _isAvailable = false;
   bool _isInitialized = false;
+
+  // Diagnostics getters
+  List<String> get notFoundIds => _notFoundIds;
+  String? get lastError => _lastError;
+  bool get isAvailable => _isAvailable;
+  bool get isInitialized => _isInitialized;
 
   /// Initialize IAP service
   /// Returns true if IAP is available on this device
@@ -68,8 +76,11 @@ class IAPService {
 
       _isInitialized = true;
       return true;
+      _isInitialized = true;
+      return true;
     } catch (e) {
-      debugPrint('❌ IAP: Initialization failed: $e');
+      _lastError = 'Initialization failed: $e';
+      debugPrint('❌ IAP: $_lastError');
       return false;
     }
   }
@@ -84,10 +95,12 @@ class IAPService {
       final response = await _iap.queryProductDetails(productIds);
 
       if (response.error != null) {
-        debugPrint('❌ IAP: Product query error: ${response.error}');
+        _lastError = 'Product query error: ${response.error}';
+        debugPrint('❌ IAP: $_lastError');
         return;
       }
 
+      _notFoundIds = response.notFoundIDs;
       if (response.notFoundIDs.isNotEmpty) {
         debugPrint('⚠️ IAP: Products not found: ${response.notFoundIDs}');
       }
@@ -99,7 +112,8 @@ class IAPService {
         debugPrint('   📦 ${product.id}: ${product.title} - ${product.price}');
       }
     } catch (e) {
-      debugPrint('❌ IAP: Failed to load products: $e');
+      _lastError = 'Failed to load products: $e';
+      debugPrint('❌ IAP: $_lastError');
     }
   }
 

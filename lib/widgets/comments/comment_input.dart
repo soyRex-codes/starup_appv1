@@ -71,7 +71,7 @@ class _CommentInputState extends State<CommentInput> {
       _focusNode.unfocus();
     } catch (e) {
       // Error handling is done in parent widget
-      print('Error submitting comment: $e');
+      debugPrint('Error submitting comment: $e');
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

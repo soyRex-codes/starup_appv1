@@ -128,8 +128,9 @@ class AdminService {
         final messages = await _client.from('chat_messages').select('id');
         totalMessages = (messages as List).length;
       } catch (e) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('Chat messages table not found, skipping count');
+        }
       }
 
       // Get recent activity (last 7 days)
@@ -261,6 +262,28 @@ class AdminService {
       }).eq('id', applicationId);
     } catch (e) {
       if (kDebugMode) debugPrint('Assign application error: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a business application
+  /// Logs the admin action and removes the application from the database
+  static Future<void> deleteApplication(int applicationId) async {
+    try {
+      // Log the admin action
+      await AdminAuthService.logAdminAction('delete_application', {
+        'application_id': applicationId,
+      });
+
+      // Delete the application
+      await _client
+          .from('business_applications')
+          .delete()
+          .eq('id', applicationId);
+
+      if (kDebugMode) debugPrint('✅ Application $applicationId deleted');
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Delete application error: $e');
       rethrow;
     }
   }

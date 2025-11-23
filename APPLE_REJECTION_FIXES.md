@@ -159,10 +159,7 @@ class FeatureFlags {
 ### If Choosing Option A (Implement IAP - Proper Solution):
 
 1. Add dependency:
-```yaml
-dependencies:
-  in_app_purchase: ^3.1.13
-```
+
 
 2. Create products in App Store Connect
 3. Implement new IAP service

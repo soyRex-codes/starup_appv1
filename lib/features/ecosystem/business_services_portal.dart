@@ -35,7 +35,7 @@ class BusinessServicesPortal extends StatefulWidget {
 }
 
 class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
-  PortalView _currentView = PortalView.form;
+  final PortalView _currentView = PortalView.form;
   BusinessServiceType? _selectedService;
   final _formKey = GlobalKey<FormState>();
 

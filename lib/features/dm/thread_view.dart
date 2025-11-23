@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:foundervers/core/storage_utils.dart';
+
 import 'new_dm_repos.dart';
 import 'dm_profile_cache.dart';
 import '../../app/app_icons.dart';
 import '../../app/theme.dart';
 import '../../features/profile/unified_profile_page.dart';
+import '../../services/media_compression_service.dart';
 
 /// Public thread view for individual conversations
 class ThreadView extends StatefulWidget {
@@ -30,6 +39,10 @@ class _ThreadViewState extends State<ThreadView> {
   // For displaying participant name
   ProfileModel? _otherParticipant;
   bool _loadingProfile = true;
+  final _picker = ImagePicker();
+  bool _uploading = false;
+  
+  static const int _maxFileSize = 10 * 1024 * 1024; // 10MB
 
   @override
   void initState() {
@@ -118,6 +131,7 @@ class _ThreadViewState extends State<ThreadView> {
         senderId: _me.id,
         content: text,
         createdAt: DateTime.now(),
+        messageType: 'text',
       );
       setState(() {
         _messages.add(optimistic);
@@ -140,6 +154,224 @@ class _ThreadViewState extends State<ThreadView> {
         });
       }
     }
+  }
+
+  Future<void> _pickAndSendImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70, // Compress to save data
+      );
+      
+      if (image == null) return;
+
+      setState(() {
+        _uploading = true;
+      });
+      
+      // Compress image before upload
+      final originalFile = File(image.path);
+      final compressedFile = await MediaCompressionService.instance.compressImage(
+        originalFile,
+        quality: 70, // Balanced quality
+      );
+      
+      final bytes = await compressedFile.readAsBytes();
+      // Extension might change (e.g. to .jpg), so get it from compressed file
+      final fileExt = compressedFile.path.split('.').last;
+      
+      await _uploadAndSend(
+        bytes: bytes,
+        fileName: '${DateTime.now().millisecondsSinceEpoch}.$fileExt',
+        fileExt: fileExt,
+        messageType: 'image',
+        fileSize: await compressedFile.length(),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _uploading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickAndSendFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
+      );
+
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.first;
+      
+      setState(() {
+        _uploading = true;
+      });
+      
+      if (file.size > _maxFileSize) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('File too large (Max 10MB)')),
+          );
+        }
+        if (mounted) {
+          setState(() {
+            _uploading = false;
+          });
+        }
+        return;
+      }
+
+      final bytes = file.bytes ?? await File(file.path!).readAsBytes();
+      final fileExt = file.extension ?? 'file';
+
+      await _uploadAndSend(
+        bytes: bytes,
+        fileName: file.name,
+        fileExt: fileExt,
+        messageType: 'file',
+        fileSize: file.size,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _uploading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick file: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadAndSend({
+    required Uint8List bytes,
+    required String fileName,
+    required String fileExt,
+    required String messageType,
+    required int fileSize,
+  }) async {
+    if (_me == null) return;
+
+    // _uploading is already set to true by the caller
+    // but we keep this for safety if called from elsewhere
+    if (!_uploading) {
+      setState(() {
+        _uploading = true;
+      });
+    }
+
+    try {
+      // 1. Upload to Supabase Storage
+      // Use a timestamp prefix for images to ensure uniqueness if not provided
+      final storagePath = messageType == 'image' 
+          ? '${_me.id}/$fileName' // fileName is already timestamped for images
+          : '${_me.id}/${DateTime.now().millisecondsSinceEpoch}_$fileName'; // Add timestamp for files
+
+      await Supabase.instance.client.storage
+          .from('chat-media')
+          .uploadBinary(storagePath, bytes);
+
+      // 2. Get Public URL
+      final fileUrl = Supabase.instance.client.storage
+          .from('chat-media')
+          .getPublicUrl(storagePath);
+
+      // 3. Prepare Metadata
+      final metadata = {
+        'url': fileUrl,
+        'path': storagePath,
+        'file_name': fileName,
+        'file_size': fileSize,
+        'extension': fileExt,
+      };
+
+      // 4. Send Message
+      final content = messageType == 'image' ? '📷 Image' : '📎 $fileName';
+      
+      final optimistic = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        conversationId: widget.thread.threadId,
+        senderId: _me.id,
+        content: content,
+        createdAt: DateTime.now(),
+        messageType: messageType,
+        metadata: metadata,
+      );
+
+      setState(() {
+        _messages.add(optimistic);
+        _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      });
+
+      final persisted = await _msgRepo.send(
+        threadId: widget.thread.threadId,
+        senderId: _me.id,
+        body: content,
+        messageType: messageType,
+        metadata: metadata,
+      );
+
+      setState(() {
+        final idx = _messages.indexWhere((m) => m.id == optimistic.id);
+        if (idx != -1) _messages[idx] = persisted;
+      });
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send attachment: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _uploading = false;
+        });
+      }
+    }
+  }
+
+  void _showAttachmentOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.purple),
+                title: const Text('Photo Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSendImage();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.description, color: Colors.blue),
+                title: const Text('Document'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSendFile();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _attachRealtime() {
@@ -234,6 +466,7 @@ class _ThreadViewState extends State<ThreadView> {
 
   @override
   void dispose() {
+    _input.dispose();
     _channel?.unsubscribe();
     super.dispose();
   }
@@ -288,15 +521,34 @@ class _ThreadViewState extends State<ThreadView> {
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: TextField(
-                    controller: _input,
-                    minLines: 1,
-                    maxLines: 5,
-                    textInputAction: TextInputAction.send,
-                    decoration: const InputDecoration(hintText: 'Message'),
-                    onSubmitted: (text) {
-                      if (!_sending) _send();
-                    },
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: _uploading 
+                            ? const SizedBox(
+                                width: 20, 
+                                height: 20, 
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.add_circle_outline, color: Colors.grey),
+                        onPressed: _uploading ? null : _showAttachmentOptions,
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _input,
+                          minLines: 1,
+                          maxLines: 5,
+                          textInputAction: TextInputAction.send,
+                          decoration: const InputDecoration(
+                            hintText: 'Message',
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          ),
+                          onSubmitted: (text) {
+                            if (!_sending) _send();
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -340,13 +592,15 @@ class _MessageBubbleState extends State<_MessageBubble> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     final bubble = Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: widget.mine
             ? AppColors.primary.withValues(alpha: 0.15)
-            : Colors.grey.shade200,
+            : (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -377,13 +631,135 @@ class _MessageBubbleState extends State<_MessageBubble> {
                     decoration: TextDecoration.underline,
                   )),
             ),
-          Text(widget.message.content),
+          if (!widget.mine) const SizedBox(height: 2),
+          if (widget.message.messageType == 'image')
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      backgroundColor: Colors.black,
+                      appBar: AppBar(
+                        backgroundColor: Colors.black,
+                        iconTheme: const IconThemeData(color: Colors.white),
+                      ),
+                      body: Center(
+                        child: InteractiveViewer(
+                          child: CachedNetworkImage(
+                            imageUrl: widget.message.metadata['url'] ?? '',
+                            placeholder: (context, url) =>
+                                const CircularProgressIndicator(),
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.error, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: widget.message.metadata['url'] ?? '',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    width: 200,
+                    height: 200,
+                    color: Colors.grey[300],
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    width: 200,
+                    height: 200,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.broken_image),
+                  ),
+                ),
+              ),
+            )
+          else if (widget.message.messageType == 'file')
+            GestureDetector(
+              onTap: () async {
+                final url = widget.message.metadata['url'];
+                if (url != null) {
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                }
+              },
+              child: Container(
+                width: 200,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: widget.mine ? Colors.white.withOpacity(0.2) : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: widget.mine ? Colors.white.withOpacity(0.3) : Colors.grey[400]!,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.description, color: Colors.blue, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.message.metadata['file_name'] ?? 'Document',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: widget.mine ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            _formatFileSize(widget.message.metadata['file_size']),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: widget.mine ? Colors.white70 : Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Text(
+              widget.message.content,
+              style: TextStyle(
+                fontSize: 15,
+                color: isDark 
+                    ? const Color(0xFFE0E0E0) // Light text for dark mode
+                    : Colors.black87, // Dark text for light mode
+              ),
+            ),
         ],
       ),
     );
     return Align(
       alignment: widget.mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: bubble,
+      child: ConstrainedBox(
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        child: bubble,
+      ),
     );
   }
 }

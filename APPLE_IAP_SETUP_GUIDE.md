@@ -15,7 +15,7 @@ FounderVers now uses **Apple In-App Purchase (IAP)** for premium subscriptions o
 - `supabase/functions/verify-apple-purchase/index.ts` - Backend verification
 
 #### Files Modified:
-- `pubspec.yaml` - Added `in_app_purchase: ^3.2.0` dependency
+- `pubspec.yaml` - Added `in_app_purchase: ^3.2.3` dependency
 - `lib/main.dart` - iOS initializes IAP, Android initializes Stripe
 - `lib/features/premium/premium_payment_page.dart` - Platform-specific payment flow
 

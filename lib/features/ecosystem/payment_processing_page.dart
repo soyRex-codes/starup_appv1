@@ -25,6 +25,14 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
   bool _isProcessing = false;
   String? _errorMessage;
 
+  final TextEditingController _couponController = TextEditingController();
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
+
   Future<void> _processPayment() async {
     setState(() {
       _isProcessing = true;
@@ -60,6 +68,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
         email: userEmail,
         applicantName: widget.applicationData['applicant_name'] ?? 'Applicant',
         paymentDetails: {}, // Stripe Payment Sheet handles card details
+        couponCode: _couponController.text.trim().isNotEmpty ? _couponController.text.trim() : null,
       );
 
       if (!processResult['success']) {
@@ -210,6 +219,54 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFFFF6B2C),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Coupon Code
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Coupon Code',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _couponController,
+                    decoration: InputDecoration(
+                      hintText: 'Enter code (e.g. SAVE10)',
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                   ),
                 ],

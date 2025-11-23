@@ -3,6 +3,12 @@ import 'package:foundervers/services/notification_service.dart';
 import 'package:foundervers/models/notification.dart';
 import 'package:foundervers/widgets/notifications/notification_card.dart';
 import 'package:foundervers/app/theme.dart';
+import 'package:foundervers/features/post_creation/post_service.dart';
+import 'package:foundervers/features/dm/dm_service.dart';
+import 'package:foundervers/features/feed/single_post_feed_page.dart';
+import 'package:foundervers/features/dm/thread_view.dart';
+import 'package:foundervers/features/dm/new_dm_repos.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// In-app notifications page with real-time updates
 class NotificationsPage extends StatefulWidget {
@@ -60,8 +66,99 @@ class _NotificationsPageState extends State<NotificationsPage> {
       });
     }
 
-    // TODO: Navigate based on notification type
-    // For now, just mark as read
+    // Navigate based on notification type
+    if (!mounted) return;
+
+    try {
+      if (notification.type == NotificationType.comment ||
+          notification.type == NotificationType.reply ||
+          notification.type == NotificationType.bookmark) {
+        // Navigate to post
+        if (notification.relatedPostId != null) {
+          // Show loading
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Loading post...'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          }
+
+          final postService = PostService();
+          final post = await postService.getPostById(notification.relatedPostId!);
+
+          if (mounted && post != null) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => SinglePostFeedPage(post: post),
+              ),
+            );
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Post not found or deleted'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } else if (notification.type == NotificationType.dm) {
+        // Navigate to DM
+        if (notification.relatedConversationId != null) {
+          // Show loading
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Loading conversation...'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          }
+
+          final dmService = DMService.instance;
+          final conversation = await dmService
+              .getConversationById(notification.relatedConversationId!);
+
+          if (mounted && conversation != null) {
+            final viewerId = Supabase.instance.client.auth.currentUser?.id ?? '';
+            final threadSummary = ThreadSummary(
+              conversationId: conversation.id,
+              viewerId: viewerId,
+              lastMessageId: null,
+              lastMessageAt: conversation.lastMessageAt,
+              unread: conversation.unreadCount,
+              participantIds:
+                  conversation.participants.map((p) => p.userId).toList(),
+              lastMessageSenderId: null,
+              lastMessagePreview: conversation.lastMessagePreview,
+            );
+
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ThreadView(thread: threadSummary),
+              ),
+            );
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Conversation not found'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleDismiss(NotificationModel notification) async {

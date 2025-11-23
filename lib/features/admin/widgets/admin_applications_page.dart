@@ -59,15 +59,67 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
         status: _selectedStatus,
         serviceType: _selectedServiceType,
       );
-      setState(() {
-        _applications = applications;
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() => _loading = false);
       if (mounted) {
+        setState(() {
+          _applications = applications;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading applications: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteApplication(int applicationId, String serviceType) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Application'),
+        content: Text(
+          'Are you sure you want to delete this ${serviceType.replaceAll('_', ' ')} application?\n\nThis action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await AdminService.deleteApplication(applicationId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Application deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadApplications(); // Reload list
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting application: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -181,10 +233,25 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Delete button
+                  OutlinedButton.icon(
+                    onPressed: () => _deleteApplication(
+                      application['id'] as int,
+                      serviceType,
+                    ),
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Delete'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                  // View icon
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
@@ -223,7 +290,7 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
                           labelText: 'Status',
                           border: OutlineInputBorder(),
                         ),
-                        value: _validatedStatus,
+                        initialValue: _validatedStatus,
                         items: [
                           const DropdownMenuItem(
                               value: null, child: Text('All Statuses')),
@@ -251,7 +318,7 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
                           labelText: 'Service Type',
                           border: OutlineInputBorder(),
                         ),
-                        value: _validatedServiceType,
+                        initialValue: _validatedServiceType,
                         items: [
                           const DropdownMenuItem(
                               value: null, child: Text('All Services')),
@@ -261,7 +328,7 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
                                     value: entry.key,
                                     child: Text(entry.value),
                                   ))
-                              .toList(),
+                              ,
                         ],
                         onChanged: (value) {
                           setState(() => _selectedServiceType = value);
