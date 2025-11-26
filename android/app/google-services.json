@@ -1,43 +1,26 @@
 {
   "project_info": {
-    "project_number": "765184371424",
-    "project_id": "startupbuilder-eed54",
-    "storage_bucket": "startupbuilder-eed54.firebasestorage.app"
+    "project_number": "726949218868",
+    "project_id": "foundervers-mobile-project",
+    "storage_bucket": "foundervers-mobile-project.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:765184371424:android:ce2133fcaa6f4e8a823e85",
+        "mobilesdk_app_id": "1:726949218868:android:5e92b69c1506f9e1949861",
         "android_client_info": {
           "package_name": "com.foundervers.mobile"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "765184371424-lohk2plk35de808qdi4fm2argcap3jh2.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAtka4GO20WBJx2WmDDP9nZ2FNr_yFKzR4"
+          "current_key": "AIzaSyCGksM25Lg7qiLwuDiLf2Cv3NBYnRln7P4"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "765184371424-lohk2plk35de808qdi4fm2argcap3jh2.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "765184371424-413bc585sajrmshrvgnqknfqq8usfcm3.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.mobileFoundervers"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

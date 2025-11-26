@@ -14,6 +14,7 @@ enum BusinessServiceType {
   businessConsultation,
   marketResearch,
   patentFiling,
+  softwareAudit,
 }
 
 enum PortalView {
@@ -152,6 +153,8 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         return 'market_research';
       case BusinessServiceType.patentFiling:
         return 'patent_filing';
+      case BusinessServiceType.softwareAudit:
+        return 'software_audit';
     }
   }
 
@@ -460,6 +463,8 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         return 'Market Research - Product Fit';
       case BusinessServiceType.patentFiling:
         return 'Product Patent Filing';
+      case BusinessServiceType.softwareAudit:
+        return 'Software Audit & Security';
     }
   }
 
@@ -483,6 +488,8 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         return 'Validate your product-market fit with comprehensive market research, competitor analysis, and customer insights.';
       case BusinessServiceType.patentFiling:
         return 'Protect your innovative ideas and products with professional patent filing and intellectual property services.';
+      case BusinessServiceType.softwareAudit:
+        return 'Comprehensive software and security audit to ensure your application is robust, secure, and scalable.';
     }
   }
 
@@ -545,6 +552,9 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         break;
       case BusinessServiceType.patentFiling:
         serviceSpecificFields = _buildPatentFilingForm();
+        break;
+      case BusinessServiceType.softwareAudit:
+        serviceSpecificFields = _buildSoftwareAuditForm();
         break;
     }
 
@@ -1633,5 +1643,29 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         ],
       ),
     );
+  }
+  List<Widget> _buildSoftwareAuditForm() {
+    return [
+      _buildDropdownField(
+        'Audit Type',
+        ['Security Audit', 'Code Quality Audit', 'Performance Audit', 'Full Audit'],
+        'auditType',
+      ),
+      _buildDropdownField(
+        'Platform',
+        ['Mobile App', 'Web App', 'Backend/API', 'Full Stack'],
+        'platform',
+      ),
+      _buildTextInputField('Tech Stack (e.g., Flutter, Node.js)', 'techStack'),
+      _buildDropdownField(
+        'Current Status',
+        ['In Development', 'Live/Production', 'Legacy Codebase'],
+        'currentStatus',
+      ),
+      _buildTextAreaField('Specific concerns or areas to focus on', 'auditConcerns'),
+      _buildTextInputField('Link to Codebase/Repo (optional)', 'repoLink'),
+      _buildFileUploadField('Upload architecture diagrams or docs',
+          fieldKey: 'audit_documents'),
+    ];
   }
 }

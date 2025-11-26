@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:foundervers/services/post_report_service.dart';
 import 'package:foundervers/core/utils/time_formatter.dart';
-import 'package:foundervers/features/feed/feed_service.dart';
 import 'package:foundervers/features/admin/services/admin_service.dart';
 
 /// Admin page for reviewing post reports
@@ -15,7 +14,7 @@ class AdminReportsPage extends StatefulWidget {
 class _AdminReportsPageState extends State<AdminReportsPage> {
   List<Map<String, dynamic>> _reports = [];
   bool _loading = true;
-  String _filter = 'pending'; // 'pending', 'all', 'resolved', 'dismissed'
+  final String _filter = 'pending'; // 'pending', 'all', 'resolved', 'dismissed'
 
   @override
   void initState() {

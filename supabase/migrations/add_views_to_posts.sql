@@ -12,7 +12,10 @@ COMMENT ON COLUMN posts.views IS 'Count of how many times users have viewed this
 
 -- Create RPC function to increment views in bulk
 -- This function takes an array of post IDs and increments their views by 1
-CREATE OR REPLACE FUNCTION increment_post_views(post_ids UUID[])
+-- Drop the old function that accepts UUID[] to resolve the overloading conflict
+DROP FUNCTION IF EXISTS increment_post_views(UUID[]);
+
+CREATE OR REPLACE FUNCTION increment_post_views(post_ids BIGINT[])
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER

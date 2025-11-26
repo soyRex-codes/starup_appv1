@@ -84,8 +84,9 @@ class AuthService {
         // User must verify email with OTP before they can use the account
         if (response.session != null) {
           await _client.auth.signOut();
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('🚪 User signed out - must verify email first');
+          }
         }
 
         // Create basic user profile immediately (before email confirmation)
@@ -97,11 +98,13 @@ class AuthService {
             displayName: displayName,
             isEmailVerified: false,
           );
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('✅ Basic user profile created (unverified)');
+          }
         } catch (profileError) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('⚠️ Failed to create user profile: $profileError');
+          }
           // Don't fail the whole registration for this
         }
       }
@@ -193,8 +196,9 @@ class AuthService {
         'email_verified': true,
       }).eq('id', user.id);
 
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('✅ Email marked as verified for user: ${user.id}');
+      }
     } on PostgrestException catch (e) {
       if (kDebugMode) debugPrint('Mark email verified error: $e');
     }
@@ -256,7 +260,7 @@ class AuthService {
       }
     }
 
-    String? _fallbackName() =>
+    String? fallbackName() =>
         displayName ??
         user.userMetadata?['full_name'] ??
         user.email?.split('@')[0];
@@ -264,7 +268,7 @@ class AuthService {
     final payload = <String, dynamic>{
       'id': user.id,
       'email': user.email,
-      'name': existingProfile?['name'] ?? _fallbackName(),
+      'name': existingProfile?['name'] ?? fallbackName(),
       'username': existingProfile?['username'] ?? user.email?.split('@')[0],
       'full_name': existingProfile?['full_name'] ??
           displayName ??

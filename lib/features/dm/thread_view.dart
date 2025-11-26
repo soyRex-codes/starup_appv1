@@ -644,11 +644,17 @@ class _MessageBubbleState extends State<_MessageBubble> {
                         iconTheme: const IconThemeData(color: Colors.white),
                       ),
                       body: Center(
-                        child: InteractiveViewer(
-                          child: CachedNetworkImage(
-                            imageUrl: widget.message.metadata['url'] ?? '',
-                            placeholder: (context, url) =>
-                                const CircularProgressIndicator(),
+                          child: InteractiveViewer(
+                            child: CachedNetworkImage(
+                              // Request high-res but optimized image for full screen
+                              imageUrl: StorageUtils.resolvePublicUrl(
+                                widget.message.metadata['path'],
+                                bucket: 'chat-media',
+                                width: 1920, // Limit max width
+                                quality: 85,
+                              ) ?? widget.message.metadata['url'] ?? '',
+                              placeholder: (context, url) =>
+                                  const CircularProgressIndicator(),
                             errorWidget: (context, url, error) =>
                                 const Icon(Icons.error, color: Colors.white),
                           ),
@@ -661,7 +667,13 @@ class _MessageBubbleState extends State<_MessageBubble> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: CachedNetworkImage(
-                  imageUrl: widget.message.metadata['url'] ?? '',
+                  // Request small thumbnail for bubble
+                  imageUrl: StorageUtils.resolvePublicUrl(
+                    widget.message.metadata['path'],
+                    bucket: 'chat-media',
+                    width: 400, // 2x for retina
+                    quality: 70,
+                  ) ?? widget.message.metadata['url'] ?? '',
                   width: 200,
                   height: 200,
                   fit: BoxFit.cover,
@@ -761,5 +773,18 @@ class _MessageBubbleState extends State<_MessageBubble> {
         child: bubble,
       ),
     );
+  }
+  String _formatFileSize(dynamic size) {
+    if (size == null) return '';
+    final bytes = size is int ? size : int.tryParse(size.toString()) ?? 0;
+    if (bytes <= 0) return '';
+    const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = 0;
+    double s = bytes.toDouble();
+    while (s >= 1024 && i < suffixes.length - 1) {
+      s /= 1024;
+      i++;
+    }
+    return '${s.toStringAsFixed(1)} ${suffixes[i]}';
   }
 }

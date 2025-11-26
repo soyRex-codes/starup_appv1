@@ -176,6 +176,8 @@ class NotificationCard extends StatelessWidget {
         return AppColors.accent.withOpacity(0.15); // Yellow
       case NotificationType.system:
         return Colors.grey.withOpacity(0.15);
+      case NotificationType.broadcast:
+        return Colors.red.withOpacity(0.15); // Red for broadcasts
     }
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/features/notifications/notifications.dart';
 import 'package:foundervers/widgets/foundervers_logo.dart';
 import 'package:foundervers/services/notification_service.dart';

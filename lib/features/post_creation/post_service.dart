@@ -416,8 +416,8 @@ class PostService {
   /// Fetch a single post by ID
   Future<PostModel?> getPostById(int id) async {
     try {
-      final _supabase = Supabase.instance.client;
-      final response = await _supabase
+      final supabase = Supabase.instance.client;
+      final response = await supabase
           .from('posts')
           .select('''
             *,

@@ -69,6 +69,8 @@ dependencies:
   permission_handler: ^11.3.1  # Permission management
 
   shared_preferences: any
+  firebase_messaging: ^16.0.4
+  firebase_core: ^4.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

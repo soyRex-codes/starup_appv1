@@ -337,6 +337,7 @@ class BusinessApplicationService {
     'business_consultation': 'Business Consultation',
     'market_research': 'Market Research',
     'patent_filing': 'Patent Filing',
+    'software_audit': 'Software Audit',
   };
 
   /// Get display name for service type
@@ -373,6 +374,7 @@ class BusinessApplicationService {
       'employee_hiring': 'Find and hire qualified employees',
       'investor_finding': 'Connect with potential investors for funding',
       'business_consultation': 'Get expert advice on business operations',
+      'software_audit': 'Comprehensive software and security audit',
     };
   }
 }

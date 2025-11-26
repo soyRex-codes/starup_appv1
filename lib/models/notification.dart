@@ -7,7 +7,8 @@ enum NotificationType {
   dm('dm', 'Message', '📨'),
   bookmark('bookmark', 'Bookmark', '💾'),
   collabRequest('collab_request', 'Collaboration', '🤝'),
-  system('system', 'System', '🔔');
+  system('system', 'System', '🔔'),
+  broadcast('broadcast', 'Broadcast', '📢');
 
   final String value;
   final String displayName;

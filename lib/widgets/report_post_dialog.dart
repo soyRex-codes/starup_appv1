@@ -101,7 +101,7 @@ class _ReportPostDialogState extends State<ReportPostDialog> {
                   setState(() => _selectedReason = value);
                 },
               );
-            }).toList(),
+            }),
 
             const SizedBox(height: 16),
 

@@ -176,16 +176,16 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
   Widget _buildStatsSection(BuildContext context, double screenWidth) {
     return Row(
       children: [
-        Expanded(child: _buildStatCard('--', 'Helping Founders', Icons.people)),
+        Expanded(
+            child: _buildStatCard('Bring', 'Ideas to Life', Icons.people)),
         const SizedBox(width: 12),
         Expanded(
-            child: _buildStatCard('24hrs', 'Response Time', Icons.access_time)),
+            child: _buildStatCard('24/7', 'Response Time', Icons.access_time)),
         const SizedBox(width: 12),
         Expanded(child: _buildStatCard('100%', 'Success Rate', Icons.verified)),
       ],
     );
   }
-
   Widget _buildStatCard(String value, String label, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -270,56 +270,53 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
 
     final services = [
       _ServiceData(
-        'Tax Help',
-        'Professional tax assistance',
-        'lib/icons/tax_help.png',
-        const Color(0xFF2196F3),
-        'Popular',
-        [
-          'Expert tax consultants',
-          'Same-day filing available',
-          'Audit protection included'
-        ],
-        'Starting at \$299',
-      ),
-      _ServiceData(
-        'Legal',
-        'Business registration & compliance',
-        'lib/icons/Legal_compliant.png',
-        const Color(0xFF9C27B0),
+        'Consultation',
+        'Strategic business & technical advice',
+        'lib/icons/consultation.png',
+        const Color(0xFF673AB7),
         null,
         [
-          'LLC, S-Corp, C-Corp setup',
-          'State compliance assistance',
-          'Legal document review'
+          'CTO for a Day" (Technical Roadmap/Technical Feasibility Audit)',
+          'Roast My App Landing Page (Conversion Optimization)',
+          'Strategic business advice',
+          'Product reality Check',
+          'Business Model Validation',
         ],
-        '2-3 weeks delivery',
+        '1 Free consultation on Application submission',
       ),
       _ServiceData(
-        'Development',
-        'App & web development',
+        'Market Research',
+        'Product-market fit analysis',
+        'lib/icons/market-research.png',
+        const Color(0xFF009688),
+        null,
+        [
+          'Competitor analysis',
+          'Product-market fit analysis',
+          'Market size insights',
+          'Customer validation',
+        ],
+        '2-4 weeks turnaround - depending on the product',
+      ),
+      _ServiceData(
+        'Software Development',
+        'Mobile, Web & Desktop Apps Development',
         'lib/icons/development.png',
         const Color(0xFF00BCD4),
         'Trending',
         [
-          'Mobile & web apps',
-          'Custom tech solutions',
-          'Ongoing support included'
+          'UI/UX Design',
+          'The MVP & Prototyping to show your product to Investor & the world',
+          'Mobile Apps - iOS & Android',
+          'Web Apps',
+          'DNS Setup & website deployment on web via AWS, GCP, Azure, or others',
+          'Desktop Apps - MacOS, Windows & Linux',  
+          'App Store & Play store Apps Submission & Approval Shepherd - Mobile & Desktop apps.',
+          'AI Integration / Automation Setup',
+          'Custom Tech Solutions',
+          'Ongoing Support Included'
         ],
-        'Free consultation',
-      ),
-      _ServiceData(
-        'Marketing',
-        'Advertisement & campaigns',
-        'lib/icons/marketting & adverstisement.png',
-        const Color(0xFFFF5722),
-        null,
-        [
-          'Social media campaigns',
-          'SEO & content marketing',
-          'ROI-focused strategies'
-        ],
-        'Plans from \$500/mo',
+        '1 Free consultation on Application submission',
       ),
       _ServiceData(
         'Hiring',
@@ -330,9 +327,22 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
         [
           'Pre-vetted candidates',
           'Technical & non-technical',
-          'Fast placement guarantee'
+          'quality candidates guaranteed',
         ],
-        'No upfront costs',
+        'One-time set Fees depending on filed',
+      ),
+      _ServiceData(
+        'Marketing',
+        'Advertisement, campaigns, & Reviews',
+        'lib/icons/marketting & adverstisement.png',
+        const Color(0xFFFF5722),
+        null,
+        [
+          'Advertisement videos for your product',
+          'logo Re-design',
+          'Social media campaigns',
+        ],
+        'One-time set Fees depending on complexity',
       ),
       _ServiceData(
         'Investors',
@@ -341,47 +351,64 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
         const Color(0xFFFFB300),
         'Popular',
         [
-          'Pitch deck preparation',
+          'Pitch Deck "Storytelling" preparation & Polish',
           'Investor matchmaking',
-          'Due diligence support'
+          'Due diligence support',
         ],
-        'Success-based fees',
+        'Success-based commission',
       ),
       _ServiceData(
-        'Consultation',
-        'Strategic business advice',
-        'lib/icons/consultation.png',
-        const Color(0xFF673AB7),
-        null,
+        'Software Audit',
+        'Software audit & security',
+        'lib/icons/development.png',
+        const Color(0xFF00BCD4),
+        'Trending',
         [
-          'Growth strategy planning',
-          'Operations optimization',
-          'Expert mentorship'
+          'Software audit',
+          'Software Security audit',
+          'General security consultation',
         ],
-        '1-hour free session',
-      ),
-      _ServiceData(
-        'Market Research',
-        'Product-market fit analysis',
-        'lib/icons/market-research.png',
-        const Color(0xFF009688),
-        null,
-        ['Competitor analysis', 'Customer validation', 'Market size insights'],
-        '2-4 weeks turnaround',
+        '1 Free consultation on Application submission',
       ),
       _ServiceData(
         'Patent Filing',
         'Protect your innovations',
         'lib/icons/patent_filing.png',
         const Color(0xFFE91E63),
-        null,
+        'Coming Soon',
         [
           'Patent search & filing',
           'IP protection strategy',
           'Trademark registration'
         ],
-        'Starting at \$1,500',
+        'One-time set Fees depending on complexity',
       ),
+      _ServiceData(
+        'Legal',
+        'Business registration & compliance',
+        'lib/icons/Legal_compliant.png',
+        const Color(0xFF9C27B0),
+        'Coming Soon',
+        [
+          'LLC, S-Corp, C-Corp setup',
+          'State compliance assistance',
+          'Legal document review'
+        ],
+        '1 Free consultation on Application submission',
+      ),
+      _ServiceData(
+        'Tax Help',
+        'Professional tax assistance',
+        'lib/icons/tax_help.png',
+        const Color(0xFF2196F3),
+        'Coming Soon',
+        [
+          'Expert tax consultants',
+          'Same-day filing available',
+          'Audit protection included'
+        ],
+        '1 Free consultation on Application submission',
+      )
     ];
 
     return GridView.builder(
@@ -392,7 +419,7 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
         childAspectRatio:
-            screenWidth > 600 ? 1.15 : 0.95, // Increased for small screens
+            screenWidth > 600 ? 0.9 : 0.75, // Taller cards for more content
       ),
       itemCount: services.length,
       itemBuilder: (context, index) {
@@ -426,9 +453,13 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
         );
       },
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+        cursor: service.badge == 'Coming Soon'
+            ? SystemMouseCursors.basic
+            : SystemMouseCursors.click,
         child: GestureDetector(
-          onTap: () => _openBusinessService(context, service.type),
+          onTap: service.badge == 'Coming Soon'
+              ? null
+              : () => _openBusinessService(context, service.type),
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -560,7 +591,7 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                             color: const Color(0xFF1A1A1A),
                             letterSpacing: -0.3,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(height: screenWidth > 600 ? 6 : 4),
@@ -573,13 +604,13 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                             color: Colors.grey[600],
                             height: 1.3,
                           ),
-                          maxLines: 2,
+                          maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(height: screenWidth > 600 ? 14 : 10),
 
                         // Features list
-                        ...service.features.take(3).map((feature) => Padding(
+                        ...service.features.take(5).map((feature) => Padding(
                               padding: EdgeInsets.only(
                                   bottom: screenWidth > 600 ? 6 : 4),
                               child: Row(
@@ -603,7 +634,7 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                                         color: Colors.grey[700],
                                         height: 1.3,
                                       ),
-                                      maxLines: 1,
+                                      maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -700,12 +731,10 @@ class _ServiceData {
 
   BusinessServiceType get type {
     switch (title) {
-      case 'Tax Help':
-        return BusinessServiceType.taxHelp;
-      case 'Legal':
-        return BusinessServiceType.businessRegistration;
-      case 'Development':
+      case 'Software Development':
         return BusinessServiceType.appDevelopment;
+      case 'Software Audit':
+        return BusinessServiceType.softwareAudit;
       case 'Marketing':
         return BusinessServiceType.marketing;
       case 'Hiring':
@@ -718,6 +747,10 @@ class _ServiceData {
         return BusinessServiceType.marketResearch;
       case 'Patent Filing':
         return BusinessServiceType.patentFiling;
+      case 'Tax Help':
+        return BusinessServiceType.taxHelp;
+      case 'Legal':
+        return BusinessServiceType.businessRegistration;
       default:
         return BusinessServiceType.taxHelp;
     }

@@ -38,19 +38,22 @@ class PermissionsHelper {
       return false;
     }
     
-    // Show explanation before requesting
-    if (context.mounted) {
-      final shouldRequest = await _showPermissionExplanationDialog(
-        context,
-        PermissionType.camera,
-      );
-      
-      if (!shouldRequest) return false;
-    }
+    // Request permission directly (Guideline 5.1.1)
+    // We rely on the usage description in Info.plist to explain why we need access
     
     // Request permission
     final result = await Permission.camera.request();
-    return result.isGranted;
+    
+    if (result.isGranted) {
+      return true;
+    }
+    
+    // If permission denied (or already denied), show settings dialog
+    if (context.mounted) {
+      await showPermissionDeniedDialog(context, PermissionType.camera);
+    }
+    
+    return false;
   }
   
   /// Request photo library permission with explanation dialog
@@ -58,8 +61,12 @@ class PermissionsHelper {
   static Future<bool> requestPhotoPermission(BuildContext context) async {
     // Web doesn't need permission requests
     if (kIsWeb) return true;
+
+    // iOS 14+ uses PHPicker via FilePicker, which doesn't require explicit permission
+    // The system handles the UI and grants access to selected items only.
+    if (Platform.isIOS) return true;
     
-    final permission = Platform.isIOS ? Permission.photos : Permission.storage;
+    final permission = Permission.storage;
     final status = await permission.status;
     
     if (status.isGranted || status.isLimited) {
@@ -77,19 +84,22 @@ class PermissionsHelper {
       return false;
     }
     
-    // Show explanation before requesting
-    if (context.mounted) {
-      final shouldRequest = await _showPermissionExplanationDialog(
-        context,
-        PermissionType.photos,
-      );
-      
-      if (!shouldRequest) return false;
-    }
+    // Request permission directly (Guideline 5.1.1)
+    // We rely on the usage description in Info.plist to explain why we need access
     
     // Request permission
     final result = await permission.request();
-    return result.isGranted || result.isLimited;
+    
+    if (result.isGranted || result.isLimited) {
+      return true;
+    }
+    
+    // If permission denied (or already denied), show settings dialog
+    if (context.mounted) {
+      await showPermissionDeniedDialog(context, PermissionType.photos);
+    }
+    
+    return false;
   }
   
   /// Show explanation dialog before requesting permission

@@ -8,6 +8,7 @@ import 'widgets/admin_analytics_page.dart';
 import 'widgets/admin_chat_moderation_page.dart';
 import 'widgets/admin_applications_page.dart';
 import 'widgets/admin_reports_page.dart';
+import 'widgets/admin_broadcast_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -314,6 +315,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
               () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AdminAnalyticsPage()),
+              ),
+            ),
+            _buildActionCard(
+              'Broadcast',
+              'Send push to all users',
+              Icons.campaign,
+              Colors.deepOrange,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AdminBroadcastPage()),
               ),
             ),
           ],

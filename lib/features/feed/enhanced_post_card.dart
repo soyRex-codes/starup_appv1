@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -19,7 +20,6 @@ import 'package:foundervers/services/comment_service.dart';
 import 'package:foundervers/core/utils/time_formatter.dart';
 import 'package:foundervers/services/bookmark_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:foundervers/services/share_service.dart';
 import 'package:foundervers/widgets/report_post_dialog.dart';
 import 'package:foundervers/services/view_analytics_service.dart';
 
@@ -60,10 +60,12 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   // View tracking state
   bool _hasViewBeenCounted = false;
   Timer? _viewTimer;
+  int _commentCount = 0;
   
   @override
   void initState() {
     super.initState();
+    _commentCount = widget.post.commentCount;
     _checkBookmarkStatus();
   }
   
@@ -131,7 +133,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
 
   Future<void> _recordView() async {
     _hasViewBeenCounted = true;
-    final counted = await ViewAnalyticsService().trackView(widget.post.id);
+    final counted = await ViewAnalyticsService().trackView(widget.post.id.toString());
     if (counted && mounted) {
       // Trigger rebuild to show updated count (Optimistic UI)
       setState(() {});
@@ -532,6 +534,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                           ),
                                       ],
                                     ),
+
                                     // Time posted - accurate from database
                                     if (widget.post.createdAt != null)
                                       Padding(
@@ -725,8 +728,9 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                         const SizedBox(height: 6),
                         GestureDetector(
                           onTap: () async {
-                            if (widget.isDetailView)
+                            if (widget.isDetailView) {
                               return; // No-op in detail view
+                            }
                             final changed =
                                 await Navigator.of(context).push<bool>(
                               MaterialPageRoute(
@@ -830,29 +834,71 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                     ?.color,
                               ),
                             ),
-                            if (_shouldShowSeeMore) ...[
-                              const SizedBox(height: 4),
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _isDescriptionExpanded =
-                                        !_isDescriptionExpanded;
-                                  });
-                                },
-                                child: Text(
-                                  _isDescriptionExpanded
-                                      ? 'See less'
-                                      : 'See more',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? const Color(
-                                            0xFF4FC3F7) // Bright blue for dark mode
-                                        : Theme.of(context).primaryColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                            if (_shouldShowSeeMore || (widget.post.views > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id.toString()) > 0)) ...[
+                              const SizedBox(height: 6),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  if (_shouldShowSeeMore)
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _isDescriptionExpanded =
+                                              !_isDescriptionExpanded;
+                                        });
+                                      },
+                                      child: Text(
+                                        _isDescriptionExpanded
+                                            ? 'See less'
+                                            : 'See more',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? const Color(0xFF4FC3F7)
+                                              : Theme.of(context).primaryColor,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    const SizedBox.shrink(),
+
+                                  // View Counter moved here
+                                  if (widget.post.views > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id.toString()) > 0)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).brightness == Brightness.dark 
+                                            ? Colors.white.withOpacity(0.05) 
+                                            : Colors.grey[100],
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.visibility_outlined,
+                                              size: 12, 
+                                              color: Theme.of(context).brightness == Brightness.dark 
+                                                  ? Colors.grey[400] 
+                                                  : Colors.grey[500]),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${widget.post.views + ViewAnalyticsService().getPendingViewCount(widget.post.id.toString())}',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500,
+                                              color: Theme.of(context).brightness == Brightness.dark 
+                                                  ? Colors.grey[400] 
+                                                  : Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
                             ],
                           ],
@@ -912,32 +958,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // View Counter - Visible to everyone
-                            if (widget.post.views > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id) > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.visibility_outlined,
-                                        size: 14, color: Colors.grey[500]),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${widget.post.views + ViewAnalyticsService().getPendingViewCount(widget.post.id)}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+
                           ],
                         ),
                       ]),
@@ -1249,6 +1270,8 @@ class _PostImageThumbState extends State<_PostImageThumb> {
       final url = StorageUtils.getMediaUrl(
         path: currentMediaPath,
         bucket: widget.bucket,
+        width: 600, // Optimize feed images
+        quality: 80,
       );
 
       // Only update state if the widget still has the same mediaPath
@@ -1414,7 +1437,15 @@ class _AvatarCircle extends StatelessWidget {
       child: CircleAvatar(
         radius: 20,
         backgroundColor: Colors.grey[200],
-        backgroundImage: url != null ? CachedNetworkImageProvider(url!) : null,
+        backgroundImage: url != null
+            ? CachedNetworkImageProvider(
+                StorageUtils.resolvePublicUrl(
+                  url!,
+                  width: 100, // Optimize small avatars
+                  quality: 70,
+                ) ?? '',
+              )
+            : null,
         child: url == null
             ? Text(
                 (name ?? '?').substring(0, 1).toUpperCase(),

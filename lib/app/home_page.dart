@@ -4,7 +4,6 @@ import 'package:foundervers/features/dm/dm_unread_controller.dart';
 import 'package:foundervers/features/ecosystem/ecosystem_application_page.dart';
 import 'package:foundervers/features/chat/chat_page_with_tabs.dart';
 import 'package:foundervers/features/business_ai/business_ai_page.dart';
-import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/core/cache/feed_cache.dart';
 import 'package:foundervers/services/premium_subscription_service.dart';
 import 'package:foundervers/widgets/premium_upgrade_dialog.dart';

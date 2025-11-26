@@ -303,5 +303,5 @@ class CacheResult {
     required this.age,
   });
 
-  get length => null;
+  Null get length => null;
 }

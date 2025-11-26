@@ -316,6 +316,8 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
     final createdAt = profile['created_at'] as String?;
     final avatarUrl = StorageUtils.resolvePublicUrl(
       profile['avatar_url'] as String?,
+      width: 200, // Optimize avatar size
+      quality: 70,
     );
     final emailVerified = profile['email_verified'] as bool? ?? false;
     final isPremium = profile['is_premium'] as bool? ?? false;

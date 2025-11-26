@@ -10,6 +10,11 @@ import 'package:foundervers/services/screenshot_permission_service.dart';
 import 'package:foundervers/services/network_service.dart';
 import 'package:foundervers/services/iap_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:foundervers/services/push_notification_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+// Global navigator key for push notification deep linking
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> _bootstrap() async {
   // Load env from bundled .env.mobile (client-safe values only)
@@ -89,6 +94,20 @@ void main() async {
   // Enable screenshots for social media sharing
   await ScreenshotPermissionService.enableScreenshots();
 
+  // Initialize Firebase (Required for Push Notifications)
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    log('⚠️ Firebase initialization failed: $e');
+  }
+
+  // Initialize Push Notifications
+  try {
+    await PushNotificationService.instance.initialize();
+  } catch (e) {
+    log('⚠️ Push Notification initialization failed: $e');
+  }
+
   runApp(const MyApp());
 }
 
@@ -98,6 +117,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey, // Add global navigator key
       title: 'Foundervers',
       debugShowCheckedModeBanner: false, // Remove DEBUG banner for App Store
       theme: buildAppTheme(),

@@ -9,6 +9,10 @@ class StorageUtils {
     required String? path,
     required String bucket,
     bool preferSigned = false,
+    int? width,
+    int? height,
+    int? quality,
+    String? resize, // 'cover', 'contain', 'fill'
   }) {
     if (path == null || path.isEmpty) {
       return '';
@@ -21,11 +25,32 @@ class StorageUtils {
 
     // For public buckets like 'startupbuilder', use public URL for better performance
     if (bucket == 'startupbuilder' && !preferSigned) {
-      return '${AppEnv.supabaseUrl}/storage/v1/object/public/$bucket/$path';
+      final baseUrl = '${AppEnv.supabaseUrl}/storage/v1/object/public/$bucket/$path';
+      return _appendTransformations(baseUrl, width, height, quality, resize);
     }
 
     // For private buckets, would need signed URL (handled by calling code)
-    return '${AppEnv.supabaseUrl}/storage/v1/object/public/$bucket/$path';
+    final baseUrl = '${AppEnv.supabaseUrl}/storage/v1/object/public/$bucket/$path';
+    return _appendTransformations(baseUrl, width, height, quality, resize);
+  }
+
+  static String _appendTransformations(
+    String url,
+    int? width,
+    int? height,
+    int? quality,
+    String? resize,
+  ) {
+    if (width == null && height == null && quality == null) return url;
+
+    final params = <String>[];
+    if (width != null) params.add('width=$width');
+    if (height != null) params.add('height=$height');
+    if (quality != null) params.add('quality=$quality');
+    if (resize != null) params.add('resize=$resize');
+
+    if (params.isEmpty) return url;
+    return '$url?${params.join('&')}';
   }
 
   /// Normalize avatar/media paths to full public URLs.
@@ -34,6 +59,10 @@ class StorageUtils {
   static String? resolvePublicUrl(
     String? path, {
     String? bucket,
+    int? width,
+    int? height,
+    int? quality,
+    String? resize,
   }) {
     if (path == null || path.isEmpty) return null;
     if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -41,7 +70,14 @@ class StorageUtils {
     }
 
     final resolvedBucket = bucket ?? AppEnv.startupbuilderBucket;
-    return getMediaUrl(path: path, bucket: resolvedBucket);
+    return getMediaUrl(
+      path: path, 
+      bucket: resolvedBucket,
+      width: width,
+      height: height,
+      quality: quality,
+      resize: resize,
+    );
   }
 
   /// Check if a file extension is supported for upload
