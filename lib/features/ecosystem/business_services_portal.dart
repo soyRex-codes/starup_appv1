@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../services/business_application_service.dart';
 import '../../services/file_upload_service.dart';
 import 'payment_summary_page.dart';
+import 'ecosystem_service_model.dart';
 
 enum BusinessServiceType {
   taxHelp,
@@ -493,6 +494,15 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
     }
   }
 
+  List<String> _getServiceFeatures(BusinessServiceType type) {
+    try {
+      final serviceData = ecosystemServices.firstWhere((s) => s.type == type);
+      return serviceData.features.map((f) => f.title).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
   List<Widget> _buildFormFields(BusinessServiceType service) {
     List<Widget> commonFields = [
       // Contact Information (required for all services)
@@ -570,13 +580,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
       ),
       _buildDropdownField(
         'Type of Help Needed',
-        [
-          'Annual Tax Filing',
-          'Quarterly Estimated Taxes',
-          'Tax Planning/Strategy',
-          'Audit Representation',
-          'Back Taxes'
-        ],
+        _getServiceFeatures(BusinessServiceType.taxHelp),
         'helpType',
       ),
       _buildDropdownField(
@@ -607,6 +611,11 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
 
   List<Widget> _buildBusinessRegistrationForm() {
     return [
+      _buildDropdownField(
+        'Service Needed',
+        _getServiceFeatures(BusinessServiceType.businessRegistration),
+        'serviceNeeded',
+      ),
       _buildDropdownField(
         'Type of Business Formation',
         ['LLC', 'S-Corp', 'C-Corp', 'Partnership', 'Sole Proprietor'],
@@ -648,8 +657,8 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
   List<Widget> _buildAppDevelopmentForm() {
     return [
       _buildDropdownField(
-        'Type of Development',
-        ['Mobile App', 'Web App', 'Desktop App', 'API/Backend', 'Full Stack'],
+        'Service Type',
+        _getServiceFeatures(BusinessServiceType.appDevelopment),
         'developmentType',
       ),
       _buildDropdownField(
@@ -706,12 +715,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
       ),
       _buildDropdownField(
         'Service of Interest',
-        [
-          'Social Media Marketing',
-          'SEO',
-          'Pay-Per-Click Ads (PPC)',
-          'Content Creation'
-        ],
+        _getServiceFeatures(BusinessServiceType.marketing),
         'serviceInterest',
       ),
       _buildTextAreaField('Key Products/Services to Market', 'keyProducts'),
@@ -789,6 +793,11 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
   List<Widget> _buildInvestorFindingForm() {
     return [
       _buildDropdownField(
+        'Service Needed',
+        _getServiceFeatures(BusinessServiceType.investorFinding),
+        'serviceNeeded',
+      ),
+      _buildDropdownField(
         'Current Funding Stage',
         ['Pre-Seed', 'Seed', 'Series A', 'Bootstrapped'],
         'fundingStage',
@@ -812,14 +821,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
     return [
       _buildDropdownField(
         'Type of Consultation Needed',
-        [
-          'Business Strategy',
-          'Operations Optimization',
-          'Financial Planning',
-          'Market Analysis',
-          'Growth Strategy',
-          'Operational Efficiency'
-        ],
+        _getServiceFeatures(BusinessServiceType.businessConsultation),
         'consultationType',
       ),
       _buildDropdownField(
@@ -904,14 +906,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
     return [
       _buildDropdownField(
         'Type of Market Research',
-        [
-          'Product-Market Fit Analysis',
-          'Competitor Analysis',
-          'Target Market Research',
-          'Customer Validation',
-          'Market Size Analysis',
-          'Pricing Strategy Research',
-        ],
+        _getServiceFeatures(BusinessServiceType.marketResearch),
         'researchType',
       ),
       _buildDropdownField(
@@ -968,6 +963,11 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
 
   List<Widget> _buildPatentFilingForm() {
     return [
+      _buildDropdownField(
+        'Service Needed',
+        _getServiceFeatures(BusinessServiceType.patentFiling),
+        'serviceNeeded',
+      ),
       _buildDropdownField(
         'Type of Patent',
         [
@@ -1573,8 +1573,30 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
       }
     });
 
-    // TODO: Delete file from storage if needed
-    // FileUploadService.deleteFile(filePath);
+    // Delete file from storage
+    final filePath = file['path'] as String?;
+    if (filePath != null) {
+      FileUploadService.deleteFile(filePath);
+    } else {
+      // Try to extract path from URL for legacy files
+      final url = file['url'] as String?;
+      if (url != null) {
+        try {
+          // URL format: .../storage/v1/object/public/bucketName/path/to/file
+          final uri = Uri.parse(url);
+          final segments = uri.pathSegments;
+          final publicIndex = segments.indexOf('public');
+          if (publicIndex != -1 && publicIndex + 2 < segments.length) {
+            // public/bucketName/path...
+            final pathSegments = segments.skip(publicIndex + 2);
+            final extractedPath = pathSegments.join('/');
+            FileUploadService.deleteFile(extractedPath);
+          }
+        } catch (e) {
+          debugPrint('Error parsing file URL for deletion: $e');
+        }
+      }
+    }
   }
 
   Widget _buildDatePickerField(String label, String key) {
@@ -1648,7 +1670,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
     return [
       _buildDropdownField(
         'Audit Type',
-        ['Security Audit', 'Code Quality Audit', 'Performance Audit', 'Full Audit'],
+        _getServiceFeatures(BusinessServiceType.softwareAudit),
         'auditType',
       ),
       _buildDropdownField(

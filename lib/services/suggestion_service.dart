@@ -47,7 +47,7 @@ class SuggestionService {
           .from('suggestions')
           .select('''
             *,
-            post:posts(id, title, name, user_id)
+            post:posts!inner(id, title, name, user_id)
           ''')
           .eq('post.user_id', user.id)
           .order('created_at', ascending: false);
@@ -75,84 +75,34 @@ class SuggestionService {
   }
 
   /// Mark suggestion as read (only post creator can do this)
-  static Future<bool> markAsRead(String suggestionId) async {
+  static Future<void> markAsRead(String suggestionId) async {
     try {
       final user = _supabase.auth.currentUser;
-      if (user == null) return false;
+      if (user == null) throw Exception('User not authenticated');
 
-      // Get the suggestion with its post_id
-      final suggestion = await _supabase
-          .from('suggestions')
-          .select('id, post_id')
-          .eq('id', suggestionId)
-          .maybeSingle();
-
-      if (suggestion == null) return false;
-
-      // Check if user owns the post
-      final post = await _supabase
-          .from('posts')
-          .select('user_id')
-          .eq('id', suggestion['post_id'])
-          .maybeSingle();
-
-      if (post == null || post['user_id'] != user.id) {
-        return false; // User doesn't own the post
-      }
-
-      // Update the suggestion as read
-      final updateResult = await _supabase
-          .from('suggestions')
-          .update({'is_read': true})
-          .eq('id', suggestionId)
-          .select('id');
-
-      // Return true only if the update affected at least one row
-      return updateResult.isNotEmpty;
+      await _supabase.rpc('toggle_suggestion_read_status', params: {
+        'p_suggestion_id': suggestionId,
+        'p_is_read': true,
+      });
     } catch (e) {
       debugPrint('Error marking suggestion as read: $e');
-      return false;
+      rethrow;
     }
   }
 
   /// Mark suggestion as unread (only post creator can do this)
-  static Future<bool> markAsUnread(String suggestionId) async {
+  static Future<void> markAsUnread(String suggestionId) async {
     try {
       final user = _supabase.auth.currentUser;
-      if (user == null) return false;
+      if (user == null) throw Exception('User not authenticated');
 
-      // Get the suggestion with its post_id
-      final suggestion = await _supabase
-          .from('suggestions')
-          .select('id, post_id')
-          .eq('id', suggestionId)
-          .maybeSingle();
-
-      if (suggestion == null) return false;
-
-      // Check if user owns the post
-      final post = await _supabase
-          .from('posts')
-          .select('user_id')
-          .eq('id', suggestion['post_id'])
-          .maybeSingle();
-
-      if (post == null || post['user_id'] != user.id) {
-        return false; // User doesn't own the post
-      }
-
-      // Update the suggestion as unread
-      final updateResult = await _supabase
-          .from('suggestions')
-          .update({'is_read': false})
-          .eq('id', suggestionId)
-          .select('id');
-
-      // Return true only if the update affected at least one row
-      return updateResult.isNotEmpty;
+      await _supabase.rpc('toggle_suggestion_read_status', params: {
+        'p_suggestion_id': suggestionId,
+        'p_is_read': false,
+      });
     } catch (e) {
       debugPrint('Error marking suggestion as unread: $e');
-      return false;
+      rethrow;
     }
   }
 

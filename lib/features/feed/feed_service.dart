@@ -5,6 +5,7 @@ import 'package:foundervers/features/post_creation/post_service.dart';
 import 'package:foundervers/core/cache/feed_cache.dart';
 
 import 'package:foundervers/services/user_blocking_service.dart';
+import 'package:foundervers/services/post_counts_manager.dart';
 
 class FeedService {
   final SupabaseClient _s = Supa.client;
@@ -34,6 +35,17 @@ class FeedService {
       );
 
       if (cacheResult != null) {
+        // CRITICAL: Sync cached posts to PostCountsManager immediately
+        // This ensures widgets have data when they initialize
+        final countsMap = <int, PostCounts>{};
+        for (final post in cacheResult.posts) {
+          countsMap[post.id] = PostCounts(
+            views: post.views,
+            comments: post.commentCount,
+          );
+        }
+        PostCountsManager.instance.syncFromDatabase(countsMap);
+        
         // Notify caller if background refresh is needed
         if (onCacheCheck != null) {
           onCacheCheck(cacheResult.needsRefresh);
@@ -53,7 +65,7 @@ class FeedService {
     // CRITICAL FIX: Use explicit post-media relationship to prevent wrong images
     // First fetch posts without media join to avoid Supabase join issues
     var q = _s.from('posts').select(
-          'id,user_id,name,category,title,description,funding_goal,post_goal,post_goal_description,email,created_at,updated_at,moderation_status,status,comment_count',
+          'id,user_id,name,category,title,description,funding_goal,post_goal,post_goal_description,email,created_at,updated_at,moderation_status,status,comment_count,views',
         );
     
     // Filter out blocked users
@@ -164,6 +176,16 @@ class FeedService {
         .map((r) =>
             PostModel.fromJson(r).copyWith(author: authors[r['user_id']]))
         .toList();
+
+    // Sync counts to PostCountsManager for global state management
+    final countsMap = <int, PostCounts>{};
+    for (final post in posts) {
+      countsMap[post.id] = PostCounts(
+        views: post.views,
+        comments: post.commentCount,
+      );
+    }
+    PostCountsManager.instance.syncFromDatabase(countsMap);
 
     // Cache the results for future use
     _cache.put(

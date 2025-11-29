@@ -113,6 +113,9 @@ class _SignInPageState extends State<SignInPage> {
           } else if (errorStr.contains('email not confirmed')) {
             throw Exception(
                 'Please verify your email before signing in. Check your inbox for the verification link.');
+          } else if (errorStr.contains('account suspended')) {
+            throw Exception(
+                'Your account has been suspended. Please send an email to foundervers@gmail.com for review if you think this was a mistake.');
           } else {
             throw Exception(
                 'Sign in failed. Please check your credentials and try again.');
@@ -165,83 +168,101 @@ class _SignInPageState extends State<SignInPage> {
           debugPrint('Is login: $_isLogin');
         }
 
-        setState(() {
-          // More specific error handling
-          final errorStr = e.toString().toLowerCase();
+        // Determine error message asynchronously
+        String? errorMessage;
+        final errorStr = e.toString().toLowerCase();
 
-          // Check for specific Supabase auth errors first
-          if (errorStr.contains('email_address_invalid') ||
-              errorStr.contains('invalid_email') ||
-              errorStr.contains('invalid email format')) {
-            _error = 'Please enter a valid email address.';
-          } else if (errorStr.contains('invalid email or password') ||
-              errorStr.contains('invalid credentials') ||
-              errorStr.contains('invalid login') ||
-              errorStr.contains('invalid_credentials')) {
-            // Sign-in specific error
-            _error = 'Invalid email or password. Please try again.';
-          } else if (errorStr.contains('email not confirmed') ||
-              errorStr.contains('email_not_confirmed')) {
-            _error = 'Please verify your email before signing in.';
-          } else if (errorStr.contains('signup_disabled') ||
-              errorStr.contains('signup disabled')) {
-            _error =
-                'Account creation is currently disabled. Please try again later.';
-          } else if (errorStr.contains('password_too_short') ||
-              errorStr.contains('password') && errorStr.contains('short')) {
-            _error = 'Password must be at least 12 characters long.';
-          } else if (errorStr.contains('user_already_registered') ||
-              errorStr.contains('email_address_not_available') ||
-              errorStr.contains('user already registered') ||
-              errorStr.contains('already exists')) {
-            _error =
-                'An account with this email already exists. Please sign in instead.';
-          } else if (errorStr.contains('over_email_send_rate_limit') ||
-              errorStr.contains('rate_limit') ||
-              errorStr.contains('rate limit') ||
-              errorStr.contains('too many') ||
-              errorStr.contains('429')) {
-            final match = RegExp(r'after (\d+) seconds').firstMatch(errorStr);
-            final waitTime = match?.group(1);
-            if (waitTime != null) {
-              _error =
-                  'Too many email requests. Please wait $waitTime seconds before trying again.';
+        // Check for specific Supabase auth errors first
+        if (errorStr.contains('email_address_invalid') ||
+            errorStr.contains('invalid_email') ||
+            errorStr.contains('invalid email format')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else if (errorStr.contains('invalid email or password') ||
+            errorStr.contains('invalid credentials') ||
+            errorStr.contains('invalid login') ||
+            errorStr.contains('invalid_credentials')) {
+          
+          // Check if the user is suspended using the RPC
+          try {
+            final email = _email.text.trim(); // Get email from controller
+            final rpcResponse = await AuthService.instance.checkSuspensionStatus(email);
+            if (rpcResponse['found'] == true && rpcResponse['is_suspended'] == true) {
+               errorMessage = 'Your account has been suspended. Please send an email to foundervers@gmail.com for review if you think this was a mistake.';
             } else {
-              _error =
-                  'Too many requests. Please wait a minute before trying again.';
+               errorMessage = 'Invalid email or password. Please try again.';
             }
-          } else if (errorStr.contains('socketexception') ||
-              errorStr.contains('failed host lookup') ||
-              errorStr.contains('network') && errorStr.contains('error')) {
-            _error =
-                'Network connection issue. Please check your internet connection and try again.';
-          } else if (errorStr.contains('timeout') ||
-              errorStr.contains('timed out')) {
-            _error =
-                'Connection timeout. Please check your internet connection and try again.';
-          } else if (errorStr.contains('handshake') ||
-              errorStr.contains('certificate') ||
-              errorStr.contains('ssl')) {
-            _error =
-                'Secure connection failed. Please check your network settings and try again.';
-          } else if (errorStr.contains('exception:')) {
-            // Clean up "Exception: " prefix from error messages
-            final cleanError =
-                e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
-            _error = cleanError;
-          } else {
-            // Show the actual error for debugging but in a user-friendly way
-            if (kDebugMode) {
-              _error = _isLogin
-                  ? 'Sign in failed: ${e.toString()}'
-                  : 'Signup failed: ${e.toString()}';
-            } else {
-              _error = _isLogin
-                  ? 'Sign in failed. Please try again.'
-                  : 'Unable to create account. Please try again.';
-            }
+          } catch (_) {
+            errorMessage = 'Invalid email or password. Please try again.';
           }
-        });
+        } else if (errorStr.contains('email not confirmed') ||
+            errorStr.contains('email_not_confirmed')) {
+          errorMessage = 'Please verify your email before signing in.';
+        } else if (errorStr.contains('account suspended')) {
+           errorMessage = 'Your account has been suspended. Please send an email to foundervers@gmail.com for review if you think this was a mistake.';
+        } else if (errorStr.contains('signup_disabled') ||
+            errorStr.contains('signup disabled')) {
+          errorMessage =
+              'Account creation is currently disabled. Please try again later.';
+        } else if (errorStr.contains('password_too_short') ||
+            errorStr.contains('password') && errorStr.contains('short')) {
+          errorMessage = 'Password must be at least 12 characters long.';
+        } else if (errorStr.contains('user_already_registered') ||
+            errorStr.contains('email_address_not_available') ||
+            errorStr.contains('user already registered') ||
+            errorStr.contains('already exists')) {
+          errorMessage =
+              'An account with this email already exists. Please sign in instead.';
+        } else if (errorStr.contains('over_email_send_rate_limit') ||
+            errorStr.contains('rate_limit') ||
+            errorStr.contains('rate limit') ||
+            errorStr.contains('too many') ||
+            errorStr.contains('429')) {
+          final match = RegExp(r'after (\d+) seconds').firstMatch(errorStr);
+          final waitTime = match?.group(1);
+          if (waitTime != null) {
+            errorMessage =
+                'Too many email requests. Please wait $waitTime seconds before trying again.';
+          } else {
+            errorMessage =
+                'Too many requests. Please wait a minute before trying again.';
+          }
+        } else if (errorStr.contains('socketexception') ||
+            errorStr.contains('failed host lookup') ||
+            errorStr.contains('network') && errorStr.contains('error')) {
+          errorMessage =
+              'Network connection issue. Please check your internet connection and try again.';
+        } else if (errorStr.contains('timeout') ||
+            errorStr.contains('timed out')) {
+          errorMessage =
+              'Connection timeout. Please check your internet connection and try again.';
+        } else if (errorStr.contains('handshake') ||
+            errorStr.contains('certificate') ||
+            errorStr.contains('ssl')) {
+          errorMessage =
+              'Secure connection failed. Please check your network settings and try again.';
+        } else if (errorStr.contains('exception:')) {
+          // Clean up "Exception: " prefix from error messages
+          final cleanError =
+              e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+          errorMessage = cleanError;
+        } else {
+          // Show the actual error for debugging but in a user-friendly way
+          if (kDebugMode) {
+            errorMessage = _isLogin
+                ? 'Sign in failed: ${e.toString()}'
+                : 'Signup failed: ${e.toString()}';
+          } else {
+            errorMessage = _isLogin
+                ? 'Sign in failed. Please try again.'
+                : 'Unable to create account. Please try again.';
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _error = errorMessage;
+          });
+        }
       }
     } finally {
       if (mounted) {

@@ -19,8 +19,8 @@ class FileUploadService {
   }
 
   /// Upload a single file to Supabase storage
-  /// Returns the public URL of the uploaded file
-  static Future<String?> uploadFile({
+  /// Returns a map with 'url' and 'path' of the uploaded file
+  static Future<Map<String, String>?> uploadFile({
     required PlatformFile file,
     required String applicationId,
     String? customFileName,
@@ -92,7 +92,10 @@ class FileUploadService {
           return null;
         }
 
-        return publicUrl;
+        return {
+          'url': publicUrl,
+          'path': filePath,
+        };
       } catch (e, stackTrace) {
         _logError('Public URL generation failed', e, stackTrace);
         return null;
@@ -112,15 +115,16 @@ class FileUploadService {
     final uploadedFiles = <Map<String, dynamic>>[];
 
     for (final file in files) {
-      final url = await uploadFile(
+      final result = await uploadFile(
         file: file,
         applicationId: applicationId,
       );
 
-      if (url != null) {
+      if (result != null) {
         uploadedFiles.add(generateFileMetadata(
           fileName: file.name,
-          fileUrl: url,
+          fileUrl: result['url']!,
+          filePath: result['path']!,
           fileSize: file.size,
           fileType: file.extension ?? 'unknown',
         ));
@@ -211,6 +215,7 @@ class FileUploadService {
   static Map<String, dynamic> generateFileMetadata({
     required String fileName,
     required String fileUrl,
+    required String filePath,
     required int fileSize,
     required String fileType,
     String? description,
@@ -218,6 +223,7 @@ class FileUploadService {
     return {
       'name': fileName,
       'url': fileUrl,
+      'path': filePath,
       'size': fileSize,
       'type': fileType,
       'size_formatted': StorageUtils.formatFileSize(fileSize),

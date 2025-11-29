@@ -12,6 +12,7 @@ import 'package:foundervers/features/feed/enhanced_post_card.dart';
 import 'package:foundervers/features/onboarding/feed_onboarding_overlay.dart';
 import 'package:foundervers/app/widgets/app_menu_drawer.dart';
 import 'package:foundervers/services/user_blocking_service.dart';
+import 'package:foundervers/app/widgets/error_state_widget.dart';
 
 import '../../app/theme.dart';
 import '../../app/widgets/app_header.dart';
@@ -256,22 +257,53 @@ class FeedPageState extends State<FeedPage> {
   }
 
   Future<void> _openFilterSheet() async {
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => FilterSheet(
-        initialCategory: _categoryFilter,
-        initialGoal: _goalFilter,
-        initialDateRange: _dateRangeFilter,
-      ),
-    );
+    if (!mounted) return;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
+    Map<String, dynamic>? result;
+
+    if (isTablet) {
+      // Show as a Dialog on tablets (iPad)
+      result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        barrierDismissible: false, // Prevent accidental dismissal
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: FilterSheet(
+                initialCategory: _categoryFilter,
+                initialGoal: _goalFilter,
+                initialDateRange: _dateRangeFilter,
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Show as BottomSheet on phones
+      result = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        useRootNavigator: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => FilterSheet(
+          initialCategory: _categoryFilter,
+          initialGoal: _goalFilter,
+          initialDateRange: _dateRangeFilter,
+        ),
+      );
+    }
 
     if (result != null) {
       setState(() {
-        _categoryFilter = result['category'];
-        _goalFilter = result['goal'];
-        _dateRangeFilter = PostAge.fromValue(result['dateRange'] ?? 'all');
+        _categoryFilter = result!['category'];
+        _goalFilter = result!['goal'];
+        _dateRangeFilter = PostAge.fromValue(result!['dateRange'] ?? 'all');
       });
       _load(reset: true);
     }
@@ -443,15 +475,11 @@ class FeedPageState extends State<FeedPage> {
                                 )),
                       ],
                     )
-                  : _error != null
-                      ? ListView(
-                          controller: _scrollCtrl,
-                          padding: const EdgeInsets.all(16),
-                          children: [
-                              Text(_error!,
-                                  style: const TextStyle(color: Colors.red)),
-                            ])
-                      : ListView.builder(
+                    : _error != null
+                        ? ErrorStateWidget(
+                            onRetry: () => _load(reset: true),
+                          )
+                        : ListView.builder(
                           controller: _scrollCtrl,
                           padding: EdgeInsets.zero,
                           itemCount: displayPosts.length + 1,

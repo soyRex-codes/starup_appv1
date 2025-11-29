@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:foundervers/services/premium_subscription_service.dart';
 import 'package:foundervers/services/iap_service.dart';
 import 'package:foundervers/models/premium_payment_model.dart';
@@ -188,7 +189,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
       }
 
       debugPrint('❌ Payment failed: ${processResult['message']}');
-      print('🔍 Error details: ${processResult['error']}');
+      if (kDebugMode) debugPrint('🔍 Error details: ${processResult['error']}');
 
       // Show user-friendly error message
       setState(() {
@@ -208,10 +209,10 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
       return;
     }
 
-    print('✅ Payment processed successfully');
+    if (kDebugMode) debugPrint('✅ Payment processed successfully');
 
     // Step 3: Complete premium payment and activate subscription
-    print('🎯 Step 3: Activating premium subscription...');
+    if (kDebugMode) debugPrint('🎯 Step 3: Activating premium subscription...');
     final activated = await _premiumService.completePremiumPayment(
       paymentId: paymentId,
       isAnnual: _isAnnualPlan,
@@ -221,7 +222,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
       throw Exception('Failed to activate premium subscription');
     }
 
-    print('🎉 Premium subscription activated successfully!');
+    if (kDebugMode) debugPrint('🎉 Premium subscription activated successfully!');
 
     // Step 4: Navigate to success page
     if (mounted) {

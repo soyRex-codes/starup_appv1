@@ -288,14 +288,24 @@ class ApplicationPaymentService {
     required String reason,
   }) async {
     try {
-      // TODO: Call Supabase Edge Function to process Stripe refund
-      // For now, just update status
+      // Call Supabase Edge Function to process Stripe refund
+      final response = await _supabase.functions.invoke(
+        'process-refund',
+        body: {
+          'paymentId': paymentId,
+          'reason': reason,
+        },
+      );
+
+      if (response.status != 200) {
+        throw Exception('Failed to process refund: ${response.data}');
+      }
 
       final result = await _supabase
           .from('application_payments')
           .update({
             'status': 'refunded',
-            'metadata': {'refund_reason': reason},
+            'metadata': {'refund_reason': reason, 'refund_id': response.data['refundId']},
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', paymentId)

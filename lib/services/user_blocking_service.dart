@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:foundervers/features/feed/feed_service.dart';
 
@@ -123,7 +124,7 @@ class UserBlockingService {
       
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching blocked profiles: $e');
+      if (kDebugMode) debugPrint('Error fetching blocked profiles: $e');
       return [];
     }
   }

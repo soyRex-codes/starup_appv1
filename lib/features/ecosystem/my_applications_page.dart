@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/business_application_service.dart';
+import 'package:foundervers/app/widgets/error_state_widget.dart';
 
 class MyApplicationsPage extends StatefulWidget {
   const MyApplicationsPage({super.key});
@@ -296,19 +297,8 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Error: ${snapshot.error}'),
-                  TextButton(
-                    onPressed: _loadApplications,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+            return ErrorStateWidget(
+              onRetry: _loadApplications,
             );
           }
 

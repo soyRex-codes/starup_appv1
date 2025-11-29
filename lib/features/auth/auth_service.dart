@@ -52,6 +52,19 @@ class AuthService {
     }
   }
 
+  /// Check suspension status using RPC (allows checking without login)
+  Future<Map<String, dynamic>> checkSuspensionStatus(String email) async {
+    try {
+      final response = await _client.rpc('get_suspension_status', params: {
+        'email_input': email,
+      });
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      if (kDebugMode) debugPrint('Error checking suspension status: $e');
+      return {'found': false};
+    }
+  }
+
   Future<AuthResponse> registerWithEmailPassword({
     required String email,
     required String password,

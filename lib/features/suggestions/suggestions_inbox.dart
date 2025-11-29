@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../../services/suggestion_service.dart';
 import '../../app/app_icons.dart';
@@ -251,19 +252,13 @@ class _SuggestionsInboxState extends State<SuggestionsInbox> {
     final isCurrentlyRead = suggestion['is_read'] == true;
     final suggestionId = suggestion['id'];
 
-    bool success;
     try {
       if (isCurrentlyRead) {
-        success = await SuggestionService.markAsUnread(suggestionId);
+        await SuggestionService.markAsUnread(suggestionId);
       } else {
-        success = await SuggestionService.markAsRead(suggestionId);
+        await SuggestionService.markAsRead(suggestionId);
       }
-    } catch (e) {
-      success = false;
-      print('Error toggling read status: $e');
-    }
 
-    if (success) {
       _loadSuggestions(); // Refresh the list
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -274,12 +269,11 @@ class _SuggestionsInboxState extends State<SuggestionsInbox> {
           ),
         );
       }
-    } else {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'Failed to ${isCurrentlyRead ? 'mark as unread' : 'mark as read'}'),
+            content: Text('Failed: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),

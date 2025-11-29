@@ -6,6 +6,7 @@ import '../core/env.dart';
 import 'hive_ai_service.dart';
 import 'gpt_text_moderation_service.dart';
 import 'local_text_filter_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Result object for a moderation decision
 class ModerationResult {
@@ -721,15 +722,33 @@ class ModerationService {
     return r.blocked;
   }
 
-  @Deprecated('Use moderatePost')
-  Future<bool> shouldBlockPost({
-    required String title,
+
+
+  /// Report a user for violating community guidelines
+  Future<bool> reportUser({
+    required String reportedUserId,
+    required String reason,
     String? description,
-    List<String> imageUrls = const [],
   }) async {
-    final r = await moderatePost(
-        title: title, description: description, imageUrls: imageUrls);
-    return r.blocked;
+    try {
+      final supabase = Supabase.instance.client;
+      final reporterId = supabase.auth.currentUser?.id;
+      if (reporterId == null) return false;
+
+      await supabase.from('user_reports').insert({
+        'reporter_id': reporterId,
+        'reported_user_id': reportedUserId,
+        'reason': reason,
+        'description': description,
+        'status': 'pending',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('Error reporting user: $e');
+      return false;
+    }
   }
 }
 

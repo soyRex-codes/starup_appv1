@@ -21,7 +21,7 @@ CREATE SCHEMA IF NOT EXISTS extensions;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS pg_net;
+CREATE EXTENSION IF NOT EXISTS pg_net SCHEMA extensions;
 
 DO $$
 DECLARE
@@ -1355,6 +1355,7 @@ ALTER TABLE business_applications ENABLE ROW LEVEL SECURITY;
 -- Policy: Users and admins can access applications data efficiently
 DROP POLICY IF EXISTS "Users can view own applications" ON business_applications;
 DROP POLICY IF EXISTS "Admins can view all applications" ON business_applications;
+DROP POLICY IF EXISTS "Users can access applications" ON business_applications;
 CREATE POLICY "Users can access applications" ON business_applications
   FOR SELECT USING (
     applicant_id = (select auth.uid())
@@ -1575,3 +1576,356 @@ CREATE TRIGGER on_user_delete
 
 -- 4. Grant necessary permissions (just in case)
 GRANT DELETE ON public.users TO authenticated;
+
+-- =====================================================================
+-- DATA CONSISTENCY FIXES
+-- =====================================================================
+
+-- Fix stale comment counts in posts table (Backfill)
+-- This ensures comment_count matches the actual number of comments
+UPDATE posts p
+SET comment_count = (
+  SELECT COUNT(*)
+  FROM comments c
+  WHERE c.post_id = p.id
+  AND c.deleted_at IS NULL
+);
+
+-- =====================================================================
+-- SECURITY FIXES
+-- =====================================================================
+
+-- =====================================================================
+-- PERFORMANCE FIXES
+-- =====================================================================
+
+-- Fix performance warnings by optimizing RLS policies
+-- 1. Wrap auth.uid() and current_setting() in (select ...) to prevent re-evaluation for each row
+-- 2. Combine multiple permissive policies into single policies
+
+-- =============================================================================
+-- POSTS
+-- =============================================================================
+DROP POLICY IF EXISTS "Admins can delete any post" ON posts;
+DROP POLICY IF EXISTS "delete posts" ON posts;
+DROP POLICY IF EXISTS "Admins and users can delete posts" ON posts;
+CREATE POLICY "Admins and users can delete posts" ON posts FOR DELETE USING (
+  (select auth.uid()) = user_id OR (select is_admin())
+);
+
+DROP POLICY IF EXISTS "Admins can update any post" ON posts;
+DROP POLICY IF EXISTS "update posts" ON posts;
+DROP POLICY IF EXISTS "Admins and users can update posts" ON posts;
+CREATE POLICY "Admins and users can update posts" ON posts FOR UPDATE USING (
+  (select auth.uid()) = user_id OR (select is_admin())
+);
+
+-- =============================================================================
+-- BUSINESS APPLICATIONS
+-- =============================================================================
+DROP POLICY IF EXISTS "Admins can delete applications" ON business_applications;
+CREATE POLICY "Admins can delete applications" ON business_applications FOR DELETE USING (
+  (select is_admin())
+);
+
+DROP POLICY IF EXISTS "Admins can manage applications" ON business_applications;
+CREATE POLICY "Admins can manage applications" ON business_applications FOR UPDATE USING (
+  (select is_admin())
+);
+
+DROP POLICY IF EXISTS "Users can access applications" ON business_applications;
+CREATE POLICY "Users can access applications" ON business_applications FOR SELECT USING (
+  (select auth.uid()) = applicant_id OR (select is_admin())
+);
+
+-- =============================================================================
+-- POST REPORTS
+-- =============================================================================
+-- Only apply if table exists
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'post_reports') THEN
+    DROP POLICY IF EXISTS "Admins can view all reports" ON post_reports;
+    DROP POLICY IF EXISTS "Users can view their own reports" ON post_reports;
+    DROP POLICY IF EXISTS "Admins and users can view reports" ON post_reports;
+    CREATE POLICY "Admins and users can view reports" ON post_reports FOR SELECT USING (
+      (select auth.uid()) = reporter_id OR (select is_admin())
+    );
+
+    DROP POLICY IF EXISTS "Admins can update reports" ON post_reports;
+    CREATE POLICY "Admins can update reports" ON post_reports FOR UPDATE USING (
+      (select is_admin())
+    );
+
+    DROP POLICY IF EXISTS "Users can create reports" ON post_reports;
+    CREATE POLICY "Users can create reports" ON post_reports FOR INSERT WITH CHECK (
+      (select auth.uid()) = reporter_id
+    );
+  END IF;
+END $$;
+
+-- =============================================================================
+-- APPLICATION PAYMENTS
+-- =============================================================================
+-- Only apply if table exists
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'application_payments') THEN
+    DROP POLICY IF EXISTS "Admins can view all payments" ON application_payments;
+    DROP POLICY IF EXISTS "Users can view own payments" ON application_payments;
+    DROP POLICY IF EXISTS "Admins and users can view payments" ON application_payments;
+    CREATE POLICY "Admins and users can view payments" ON application_payments FOR SELECT USING (
+      (select auth.uid()) = user_id OR (select is_admin())
+    );
+
+    DROP POLICY IF EXISTS "Users can create own payments" ON application_payments;
+    CREATE POLICY "Users can create own payments" ON application_payments FOR INSERT WITH CHECK (
+      (select auth.uid()) = user_id
+    );
+  END IF;
+END $$;
+
+-- =============================================================================
+-- USER BLOCKS
+-- =============================================================================
+-- Only apply if table exists
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'user_blocks') THEN
+    DROP POLICY IF EXISTS "Users can block others" ON user_blocks;
+    CREATE POLICY "Users can block others" ON user_blocks FOR INSERT WITH CHECK (
+      (select auth.uid()) = blocker_id
+    );
+
+    DROP POLICY IF EXISTS "Users can unblock others" ON user_blocks;
+    CREATE POLICY "Users can unblock others" ON user_blocks FOR DELETE USING (
+      (select auth.uid()) = blocker_id
+    );
+
+    DROP POLICY IF EXISTS "Users can view their own blocks" ON user_blocks;
+    CREATE POLICY "Users can view their own blocks" ON user_blocks FOR SELECT USING (
+      (select auth.uid()) = blocker_id
+    );
+  END IF;
+END $$;
+
+-- =============================================================================
+-- BOOKMARKS
+-- =============================================================================
+-- Only apply if table exists
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'bookmarks') THEN
+    DROP POLICY IF EXISTS "Users can create own bookmarks" ON bookmarks;
+    CREATE POLICY "Users can create own bookmarks" ON bookmarks FOR INSERT WITH CHECK (
+      (select auth.uid()) = user_id
+    );
+
+    DROP POLICY IF EXISTS "Users can delete own bookmarks" ON bookmarks;
+    CREATE POLICY "Users can delete own bookmarks" ON bookmarks FOR DELETE USING (
+      (select auth.uid()) = user_id
+    );
+
+    DROP POLICY IF EXISTS "Users can view own bookmarks" ON bookmarks;
+    CREATE POLICY "Users can view own bookmarks" ON bookmarks FOR SELECT USING (
+      (select auth.uid()) = user_id
+    );
+  END IF;
+END $$;
+
+-- =============================================================================
+-- PREMIUM PAYMENTS
+-- =============================================================================
+-- Only apply if table exists
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'premium_payments') THEN
+    DROP POLICY IF EXISTS "Users can insert own premium payments" ON premium_payments;
+    CREATE POLICY "Users can insert own premium payments" ON premium_payments FOR INSERT WITH CHECK (
+      (select auth.uid()) = user_id
+    );
+
+    DROP POLICY IF EXISTS "Users can update own premium payments" ON premium_payments;
+    CREATE POLICY "Users can update own premium payments" ON premium_payments FOR UPDATE USING (
+      (select auth.uid()) = user_id
+    );
+
+    DROP POLICY IF EXISTS "Users can view own premium payments" ON premium_payments;
+    CREATE POLICY "Users can view own premium payments" ON premium_payments FOR SELECT USING (
+      (select auth.uid()) = user_id
+    );
+  END IF;
+END $$;
+
+-- =============================================================================
+-- NOTIFICATIONS
+-- =============================================================================
+-- Only apply if table exists
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'notifications') THEN
+    DROP POLICY IF EXISTS "Users can delete their own notifications" ON notifications;
+    CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE USING (
+      (select auth.uid()) = user_id
+    );
+
+    DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
+    CREATE POLICY "Users can update their own notifications" ON notifications FOR UPDATE USING (
+      (select auth.uid()) = user_id
+    );
+
+    DROP POLICY IF EXISTS "Users can view their own notifications" ON notifications;
+    CREATE POLICY "Users can view their own notifications" ON notifications FOR SELECT USING (
+      (select auth.uid()) = user_id
+    );
+  END IF;
+END $$;
+
+-- =====================================================================
+-- SUSPENSION CHECK RPC
+-- =====================================================================
+
+-- RPC to check if a user is suspended by email
+-- This is SECURITY DEFINER to allow checking without being logged in
+CREATE OR REPLACE FUNCTION get_suspension_status(email_input TEXT)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  user_data RECORD;
+  result JSON;
+BEGIN
+  -- Find the user in public.users by email
+  SELECT is_suspended, suspension_reason 
+  INTO user_data
+  FROM public.users
+  WHERE email = email_input
+  LIMIT 1;
+
+  IF user_data IS NULL THEN
+    RETURN json_build_object('found', false);
+  END IF;
+
+  RETURN json_build_object(
+    'found', true,
+    'is_suspended', user_data.is_suspended,
+    'suspension_reason', user_data.suspension_reason
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_suspension_status(TEXT) TO anon, authenticated;
+
+-- =====================================================================
+-- MESSAGE SOFT DELETE FIX
+-- =====================================================================
+
+-- 1. Add deleted_at column to messages table if it doesn't exist
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='deleted_at') THEN
+    ALTER TABLE messages ADD COLUMN deleted_at TIMESTAMPTZ;
+  END IF;
+END $$;
+
+-- 2. Add RLS policy to allow users to soft delete (update) their own messages
+-- This was missing, causing the "Failed to delete message" error
+DROP POLICY IF EXISTS "Users can update own messages" ON messages;
+CREATE POLICY "Users can update own messages" ON messages FOR UPDATE
+  USING ((select auth.uid()) = sender_id)
+  WITH CHECK ((select auth.uid()) = sender_id);
+
+-- 3. Enforce Soft Delete in SELECT Policy (Server-Side Enforcement)
+-- This ensures deleted messages are NEVER returned to the client, even if requested
+DROP POLICY IF EXISTS "messages_select" ON messages;
+CREATE POLICY "messages_select" ON messages FOR SELECT
+  USING (
+    is_conversation_member_safe(conversation_id, (select auth.uid()))
+    AND deleted_at IS NULL
+  );
+
+-- 4. Add Partial Index for Performance
+-- This makes querying active messages faster by ignoring the deleted ones
+CREATE INDEX IF NOT EXISTS idx_messages_active 
+ON messages(conversation_id, created_at DESC) 
+WHERE deleted_at IS NULL;
+
+-- 5. Soft Delete RPC (Fix for RLS Violation)
+-- This function handles the delete server-side to avoid "row violates policy" errors
+-- caused by the strict SELECT policy hiding the row during UPDATE.
+CREATE OR REPLACE FUNCTION soft_delete_message(p_message_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE messages
+  SET deleted_at = NOW()
+  WHERE id = p_message_id
+  AND sender_id = auth.uid(); -- Strict ownership check
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION soft_delete_message(UUID) TO authenticated;
+
+-- =====================================================================
+-- REALTIME CONFIGURATION
+-- =====================================================================
+
+-- 6. Enable Realtime for Messaging Tables
+-- This is required for instant message receipt and inbox updates.
+-- Note: 'supabase_realtime' is the default publication created by Supabase.
+
+DO $$ BEGIN
+  -- Enable for messages (Chat View)
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+  END IF;
+
+  -- Enable for conversations (Inbox View)
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'conversations'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
+  END IF;
+END $$;
+
+-- 7. Suggestion Status RPC (Fix for RLS Violation)
+-- This function handles the read/unread toggle server-side to avoid RLS conflicts
+-- when joining with the posts table during an update.
+CREATE OR REPLACE FUNCTION toggle_suggestion_read_status(
+  p_suggestion_id UUID,
+  p_is_read BOOLEAN
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_post_owner_id UUID;
+BEGIN
+  -- 1. Get the post owner for this suggestion
+  SELECT p.user_id INTO v_post_owner_id
+  FROM suggestions s
+  JOIN posts p ON s.post_id = p.id
+  WHERE s.id = p_suggestion_id;
+
+  -- 2. Check if suggestion/post exists
+  IF v_post_owner_id IS NULL THEN
+    RAISE EXCEPTION 'Suggestion or Post not found (ID: %)', p_suggestion_id;
+  END IF;
+
+  -- 3. Check authorization
+  IF v_post_owner_id != auth.uid() THEN
+    RAISE EXCEPTION 'Not authorized: You (%) are not the owner (%) of the post', auth.uid(), v_post_owner_id;
+  END IF;
+
+  -- 4. Perform Update
+  UPDATE suggestions
+  SET is_read = p_is_read
+  WHERE id = p_suggestion_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION toggle_suggestion_read_status(UUID, BOOLEAN) TO authenticated;

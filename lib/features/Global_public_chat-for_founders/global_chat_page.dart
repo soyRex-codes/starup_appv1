@@ -6,6 +6,7 @@ import 'package:foundervers/core/visibility.dart';
 import 'package:foundervers/features/profile/unified_profile_page.dart';
 import 'package:foundervers/services/moderation_service.dart';
 import 'global_chat_cache.dart';
+import 'package:foundervers/app/widgets/error_state_widget.dart';
 
 class GlobalChatPage extends StatefulWidget {
   const GlobalChatPage({super.key});
@@ -150,9 +151,14 @@ class _GlobalChatPageState extends State<GlobalChatPage> {
                   }
 
                   if (snapshot.hasError) {
-                    return Center(
-                      child: Text('Error loading messages: ${snapshot.error}'),
-                    );
+                    return ErrorStateWidget(
+                        message: 'We couldn\'t load the chat. Please check your connection.',
+                        onRetry: () {
+                          setState(() {
+                            // Trigger rebuild to retry stream
+                          });
+                        },
+                      );
                   }
 
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {

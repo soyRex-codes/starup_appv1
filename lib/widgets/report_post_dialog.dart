@@ -147,11 +147,5 @@ class _ReportPostDialogState extends State<ReportPostDialog> {
     );
   }
 
-  /// Show report dialog
-  static Future<bool?> show(BuildContext context, String postId) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => ReportPostDialog(postId: postId),
-    );
-  }
+
 }

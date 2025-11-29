@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'business_services_portal.dart';
+import 'ecosystem_service_model.dart';
+import 'ecosystem_guide_page.dart';
 
 /// Page for ecosystem applications and integrations with premium glassmorphism design
 class EcosystemApplicationPage extends StatefulWidget {
@@ -72,13 +74,131 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                 padding: EdgeInsets.symmetric(
                     horizontal: horizontalPadding, vertical: 20),
                 children: [
-                  // Premium Hero Header
-                  _buildHeroHeader(context, screenWidth),
-                  const SizedBox(height: 32),
+                  // Vibrant description banner with platform colors
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFFF6B35), // Vibrant orange
+                          Color(0xFFFF8C42), // Medium orange
+                          Color(0xFFFFB347), // Golden orange
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF8C42).withOpacity(0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.4),
+                              width: 2,
+                            ),
+                          ),
+                          child: Image.asset(
+                            'lib/icons/ecosystem_application.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Text(
+                            'Professional services to accelerate your startup journey',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                              shadows: [
+                                Shadow(
+                                  color: Color(0x40000000),
+                                  offset: Offset(0, 1),
+                                  blurRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
-                  // Stats Section
+                  // Enhanced Stats Section (moved to top, more prominent)
                   _buildStatsSection(context, screenWidth),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
+
+                  // Prominent Guide Button
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const EcosystemGuidePage()),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF9800).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFFF9800).withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.menu_book_rounded,
+                                color: Color(0xFFE65100),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Flexible(
+                                child: Text(
+                                  'How it all works',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFE65100),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Color(0xFFE65100),
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
                   // Business Services Header
                   _buildSectionHeader(
@@ -96,165 +216,126 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
     );
   }
 
-  Widget _buildHeroHeader(BuildContext context, double screenWidth) {
-    return Container(
-      padding: EdgeInsets.all(screenWidth > 600 ? 32 : 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-            const Color(0xFFFF9800),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: screenWidth > 600 ? 64 : 56,
-                height: screenWidth > 600 ? 64 : 56,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-                child: Image.asset(
-                  'lib/icons/ecosystem_application.png',
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ecosystem Applications',
-                      style: TextStyle(
-                        fontSize: screenWidth > 600 ? 28 : 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Professional services to accelerate your startup journey',
-                      style: TextStyle(
-                        fontSize: screenWidth > 600 ? 15 : 14,
-                        color: Colors.white.withOpacity(0.9),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStatsSection(BuildContext context, double screenWidth) {
     return Row(
       children: [
         Expanded(
             child: _buildStatCard('Bring', 'Ideas to Life', Icons.people)),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
             child: _buildStatCard('24/7', 'Response Time', Icons.access_time)),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(child: _buildStatCard('100%', 'Success Rate', Icons.verified)),
       ],
     );
   }
+  
   Widget _buildStatCard(String value, String label, IconData icon) {
+    // Gradient colors for each card (orange/gold variations)
+    final gradients = {
+      'Bring': [const Color(0xFFFF6B35), const Color(0xFFFF8C42)],
+      '24/7': [const Color(0xFFFF8C42), const Color(0xFFFFA500)],
+      '100%': [const Color(0xFFFFA500), const Color(0xFFFFB347)],
+    };
+    
+    final colors = gradients[value] ?? [const Color(0xFFFF8C42), const Color(0xFFFFA500)];
+    
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      height: 130, // Fixed height for consistency (adjusted to prevent overflow)
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: colors[0].withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.25),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon, 
+              color: Colors.white, 
+              size: 20,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A1A),
+              color: Colors.white,
+              height: 1,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
+            style: const TextStyle(
+              fontSize: 10.5,
+              color: Colors.white,
               fontWeight: FontWeight.w500,
+              height: 1.2,
             ),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
+
+
   Widget _buildSectionHeader(
       BuildContext context, String title, double screenWidth) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Container(
-          width: 4,
-          height: 24,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                const Color(0xFF4CAF50),
-              ],
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    const Color(0xFFFF9800), // Match orange theme
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: screenWidth > 600 ? 24 : 20,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1A1A1A),
-            letterSpacing: -0.5,
-          ),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: screenWidth > 600 ? 24 : 20,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1A1A1A),
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -268,148 +349,8 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
             ? 2
             : 1;
 
-    final services = [
-      _ServiceData(
-        'Consultation',
-        'Strategic business & technical advice',
-        'lib/icons/consultation.png',
-        const Color(0xFF673AB7),
-        null,
-        [
-          'CTO for a Day" (Technical Roadmap/Technical Feasibility Audit)',
-          'Roast My App Landing Page (Conversion Optimization)',
-          'Strategic business advice',
-          'Product reality Check',
-          'Business Model Validation',
-        ],
-        '1 Free consultation on Application submission',
-      ),
-      _ServiceData(
-        'Market Research',
-        'Product-market fit analysis',
-        'lib/icons/market-research.png',
-        const Color(0xFF009688),
-        null,
-        [
-          'Competitor analysis',
-          'Product-market fit analysis',
-          'Market size insights',
-          'Customer validation',
-        ],
-        '2-4 weeks turnaround - depending on the product',
-      ),
-      _ServiceData(
-        'Software Development',
-        'Mobile, Web & Desktop Apps Development',
-        'lib/icons/development.png',
-        const Color(0xFF00BCD4),
-        'Trending',
-        [
-          'UI/UX Design',
-          'The MVP & Prototyping to show your product to Investor & the world',
-          'Mobile Apps - iOS & Android',
-          'Web Apps',
-          'DNS Setup & website deployment on web via AWS, GCP, Azure, or others',
-          'Desktop Apps - MacOS, Windows & Linux',  
-          'App Store & Play store Apps Submission & Approval Shepherd - Mobile & Desktop apps.',
-          'AI Integration / Automation Setup',
-          'Custom Tech Solutions',
-          'Ongoing Support Included'
-        ],
-        '1 Free consultation on Application submission',
-      ),
-      _ServiceData(
-        'Hiring',
-        'Employee recruitment',
-        'lib/icons/HR_Employeer_hiring.png',
-        const Color(0xFF4CAF50),
-        null,
-        [
-          'Pre-vetted candidates',
-          'Technical & non-technical',
-          'quality candidates guaranteed',
-        ],
-        'One-time set Fees depending on filed',
-      ),
-      _ServiceData(
-        'Marketing',
-        'Advertisement, campaigns, & Reviews',
-        'lib/icons/marketting & adverstisement.png',
-        const Color(0xFFFF5722),
-        null,
-        [
-          'Advertisement videos for your product',
-          'logo Re-design',
-          'Social media campaigns',
-        ],
-        'One-time set Fees depending on complexity',
-      ),
-      _ServiceData(
-        'Investors',
-        'Find funding opportunities',
-        'lib/icons/investor.png',
-        const Color(0xFFFFB300),
-        'Popular',
-        [
-          'Pitch Deck "Storytelling" preparation & Polish',
-          'Investor matchmaking',
-          'Due diligence support',
-        ],
-        'Success-based commission',
-      ),
-      _ServiceData(
-        'Software Audit',
-        'Software audit & security',
-        'lib/icons/development.png',
-        const Color(0xFF00BCD4),
-        'Trending',
-        [
-          'Software audit',
-          'Software Security audit',
-          'General security consultation',
-        ],
-        '1 Free consultation on Application submission',
-      ),
-      _ServiceData(
-        'Patent Filing',
-        'Protect your innovations',
-        'lib/icons/patent_filing.png',
-        const Color(0xFFE91E63),
-        'Coming Soon',
-        [
-          'Patent search & filing',
-          'IP protection strategy',
-          'Trademark registration'
-        ],
-        'One-time set Fees depending on complexity',
-      ),
-      _ServiceData(
-        'Legal',
-        'Business registration & compliance',
-        'lib/icons/Legal_compliant.png',
-        const Color(0xFF9C27B0),
-        'Coming Soon',
-        [
-          'LLC, S-Corp, C-Corp setup',
-          'State compliance assistance',
-          'Legal document review'
-        ],
-        '1 Free consultation on Application submission',
-      ),
-      _ServiceData(
-        'Tax Help',
-        'Professional tax assistance',
-        'lib/icons/tax_help.png',
-        const Color(0xFF2196F3),
-        'Coming Soon',
-        [
-          'Expert tax consultants',
-          'Same-day filing available',
-          'Audit protection included'
-        ],
-        '1 Free consultation on Application submission',
-      )
-    ];
+    // Use shared data from ecosystem_service_model.dart
+    final services = ecosystemServices;
 
     return GridView.builder(
       shrinkWrap: true,
@@ -435,10 +376,11 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
 
   Widget _buildGlassmorphicServiceCard(
     BuildContext context,
-    _ServiceData service,
+    EcosystemServiceData service,
     int index,
     double screenWidth,
   ) {
+    // ... (rest of the method remains the same, just updated type signature)
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 400 + (index * 100)),
@@ -627,7 +569,7 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
-                                      feature,
+                                      feature.title,
                                       style: TextStyle(
                                         fontSize:
                                             screenWidth > 600 ? 11.5 : 10.5,
@@ -669,23 +611,34 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                         SizedBox(height: screenWidth > 600 ? 12 : 8),
 
                         // Action button/arrow
-                        Row(
-                          children: [
-                            Text(
-                              'Get Started',
-                              style: TextStyle(
-                                fontSize: screenWidth > 600 ? 13 : 12,
-                                fontWeight: FontWeight.w600,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: service.color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Get Started',
+                                style: TextStyle(
+                                  fontSize: screenWidth > 600 ? 12 : 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: service.color,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: screenWidth > 600 ? 16 : 14,
                                 color: service.color,
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward,
-                              size: screenWidth > 600 ? 16 : 14,
-                              color: service.color,
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -706,53 +659,5 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
         builder: (context) => BusinessServicesPortal(initialService: type),
       ),
     );
-  }
-}
-
-// Service data model
-class _ServiceData {
-  final String title;
-  final String description;
-  final String iconPath;
-  final Color color;
-  final String? badge;
-  final List<String> features;
-  final String pricing;
-
-  _ServiceData(
-    this.title,
-    this.description,
-    this.iconPath,
-    this.color,
-    this.badge,
-    this.features,
-    this.pricing,
-  );
-
-  BusinessServiceType get type {
-    switch (title) {
-      case 'Software Development':
-        return BusinessServiceType.appDevelopment;
-      case 'Software Audit':
-        return BusinessServiceType.softwareAudit;
-      case 'Marketing':
-        return BusinessServiceType.marketing;
-      case 'Hiring':
-        return BusinessServiceType.employeeHiring;
-      case 'Investors':
-        return BusinessServiceType.investorFinding;
-      case 'Consultation':
-        return BusinessServiceType.businessConsultation;
-      case 'Market Research':
-        return BusinessServiceType.marketResearch;
-      case 'Patent Filing':
-        return BusinessServiceType.patentFiling;
-      case 'Tax Help':
-        return BusinessServiceType.taxHelp;
-      case 'Legal':
-        return BusinessServiceType.businessRegistration;
-      default:
-        return BusinessServiceType.taxHelp;
-    }
   }
 }

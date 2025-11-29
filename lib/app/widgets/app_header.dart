@@ -209,6 +209,7 @@ class _AppHeaderState extends State<AppHeader> {
             size: 24,
           ),
         ),
+        const SizedBox(width: 8),
 
         // Filter icon with badge
         if (widget.onFilterTap != null)
@@ -249,6 +250,7 @@ class _AppHeaderState extends State<AppHeader> {
               ],
             ),
           ),
+        const SizedBox(width: 8),
 
         // Menu button
         IconButton(

@@ -14,6 +14,7 @@ import '../dm/thread_view.dart';
 import 'package:foundervers/services/bookmark_service.dart';
 import 'package:foundervers/features/feed/enhanced_post_card.dart';
 import 'package:foundervers/services/user_blocking_service.dart';
+import 'package:foundervers/services/moderation_service.dart';
 
 /// Unified profile page - works for both own profile and others' profiles
 /// Intelligently shows/hides features based on ownership
@@ -99,6 +100,8 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                   await _confirmBlockUser(context);
                 } else if (value == 'unblock') {
                   await _confirmUnblockUser(context);
+                } else if (value == 'report') {
+                  await _showReportUserDialog(context);
                 }
               },
               itemBuilder: (BuildContext context) {
@@ -124,6 +127,16 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                         Icon(Icons.block, color: Colors.red, size: 20),
                         SizedBox(width: 8),
                         Text('Block User', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'report',
+                    child: Row(
+                      children: [
+                        Icon(Icons.flag_outlined, color: Colors.orange, size: 20),
+                        SizedBox(width: 8),
+                        Text('Report User'),
                       ],
                     ),
                   ),
@@ -272,6 +285,112 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
     }
   }
 
+
+
+  Future<void> _showReportUserDialog(BuildContext context) async {
+    final reasonController = TextEditingController();
+    String selectedReason = 'Spam';
+    final reasons = [
+      'Spam',
+      'Abusive Behavior',
+      'Fake Account',
+      'Inappropriate Content',
+      'Scam / Fraud',
+      'Other'
+    ];
+
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Report User'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Why are you reporting this user?'),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: selectedReason,
+                  decoration: const InputDecoration(
+                    labelText: 'Reason',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  items: reasons
+                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() => selectedReason = v);
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: reasonController,
+                  decoration: const InputDecoration(
+                    labelText: 'Additional Details (Optional)',
+                    border: OutlineInputBorder(),
+                    hintText: 'Please provide more context...',
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Submit Report'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (submitted == true && mounted) {
+      try {
+        // Import ModerationService if not already imported, or use fully qualified name if needed.
+        // Assuming ModerationService is available via import or singleton.
+        // Based on previous files, it's in 'package:foundervers/services/moderation_service.dart'
+        // We need to ensure it's imported at the top of the file.
+        // For now, I'll use the class directly assuming import exists or I'll add it.
+        // Wait, I need to check imports.
+        // I'll assume I need to add the import if it's missing, but let's check imports first.
+        // Actually, I can just use ModerationService() constructor.
+        
+        await ModerationService().reportUser(
+          reportedUserId: _targetUserId!,
+          reason: selectedReason,
+          description: reasonController.text.trim(),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Report submitted. Thank you for helping keep our community safe.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error submitting report: $e')),
+          );
+        }
+      }
+    }
+  }
+
   Future<Map<String, dynamic>?> _fetchProfile() async {
     try {
       final userService = UserService();
@@ -291,17 +410,16 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
 
   Widget _buildProfileContent(
       BuildContext context, Map<String, dynamic> profile) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Profile Header
-          _buildProfileHeader(context, profile),
-          const SizedBox(height: 8),
-          // User Posts Section
-          _buildPostsSection(context, profile),
-        ],
-      ),
+    // Use NestedScrollView to enable scrolling between header and content
+    return NestedScrollView(
+      headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+        return <Widget>[
+          SliverToBoxAdapter(
+            child: _buildProfileHeader(context, profile),
+          ),
+        ];
+      },
+      body: _buildPostsSection(context, profile),
     );
   }
 
@@ -316,8 +434,6 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
     final createdAt = profile['created_at'] as String?;
     final avatarUrl = StorageUtils.resolvePublicUrl(
       profile['avatar_url'] as String?,
-      width: 200, // Optimize avatar size
-      quality: 70,
     );
     final emailVerified = profile['email_verified'] as bool? ?? false;
     final isPremium = profile['is_premium'] as bool? ?? false;
@@ -673,53 +789,57 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
     }
 
     // If viewing own profile, show tabs with My Posts and Saved
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TabBar(
-            controller: _tabController,
-            labelColor: Theme.of(context).primaryColor,
-            unselectedLabelColor: Colors.grey[600],
-            indicatorColor: Theme.of(context).primaryColor,
-            labelStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-            tabs: const [
-              Tab(text: 'My Posts'),
-              Tab(text: 'Saved'),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 600, // Fixed height for TabBarView
-            child: TabBarView(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // TabBar pinned at top
+        Material(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: TabBar(
               controller: _tabController,
-              children: [
-                _buildMyPostsList(context),
-                _buildSavedPostsList(context),
+              labelColor: Theme.of(context).primaryColor,
+              unselectedLabelColor: Colors.grey[600],
+              indicatorColor: Theme.of(context).primaryColor,
+              labelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              tabs: const [
+                Tab(text: 'My Posts'),
+                Tab(text: 'Saved'),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        // TabBarView content
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildMyPostsList(context),
+              _buildSavedPostsList(context),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   // Simple posts list for other users' profiles
   Widget _buildSimplePostsList(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -731,8 +851,10 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          FutureBuilder<List<PostModel>>(
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: FutureBuilder<List<PostModel>>(
             future: _fetchUserPosts(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -763,6 +885,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                   child: Padding(
                     padding: const EdgeInsets.all(32.0),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.post_add, size: 64, color: Colors.grey[400]),
                         const SizedBox(height: 16),
@@ -780,9 +903,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
               }
 
               return ListView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 itemCount: posts.length,
                 itemBuilder: (context, index) {
                   final post = posts[index];
@@ -799,8 +920,8 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
               );
             },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -854,9 +975,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
         }
 
         return ListView.builder(
-          padding: EdgeInsets.zero,
-          shrinkWrap: true,
-          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           itemCount: posts.length,
           itemBuilder: (context, index) {
             final post = posts[index];
@@ -933,9 +1052,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
         }
 
         return ListView.builder(
-          padding: EdgeInsets.zero,
-          shrinkWrap: true,
-          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           itemCount: posts.length,
           itemBuilder: (context, index) {
             final post = posts[index];
@@ -947,7 +1064,9 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
               subtitle: _buildPostSubtitle(post),
               goalLabel: _buildPostGoalLabel(post),
               onEdited: () => setState(() => _refreshKey++),
-              onDeleted: () => setState(() => _refreshKey++),
+              onDeleted: () {
+                setState(() => _refreshKey++);
+              },
             );
           },
         );

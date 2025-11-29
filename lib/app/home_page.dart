@@ -8,6 +8,7 @@ import 'package:foundervers/core/cache/feed_cache.dart';
 import 'package:foundervers/services/premium_subscription_service.dart';
 import 'package:foundervers/widgets/premium_upgrade_dialog.dart';
 import 'package:foundervers/services/deep_link_service.dart';
+import 'package:foundervers/features/premium/premium_payment_page.dart';
 
 import '../features/post_creation/post_creation_page.dart';
 
@@ -80,8 +81,11 @@ class _HomePageState extends State<HomePage> {
                     featureName: 'Business.AI',
                   );
                   if (upgrade == true && mounted) {
-                    // TODO: Navigate to payment page
-                    // Navigator.push(context, MaterialPageRoute(builder: (_) => PremiumPaymentPage()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const PremiumPaymentPage(isAnnual: false)),
+                    );
                   }
                   return; // Don't switch tabs
                 }

@@ -11,6 +11,7 @@ import 'package:foundervers/core/storage_utils.dart';
 
 import 'new_dm_repos.dart';
 import 'dm_profile_cache.dart';
+import 'dm_service.dart';
 import '../../app/app_icons.dart';
 import '../../app/theme.dart';
 import '../../features/profile/unified_profile_page.dart';
@@ -402,29 +403,40 @@ class _ThreadViewState extends State<ThreadView> {
     _channel!.onPostgresChanges(
       event: PostgresChangeEvent.insert,
       schema: 'public',
-      table: 'dm_messages',
+      table: 'messages', // ✅ Correct table name
       // Filter for only messages in this thread
       filter: PostgresChangeFilter(
         type: PostgresChangeFilterType.eq,
-        column: 'thread_id',
+        column: 'conversation_id', // ✅ Correct column name
         value: widget.thread.threadId,
       ),
       callback: (payload) {
         try {
-          final newRow = payload.newRecord as Map<String, dynamic>?;
-          if (newRow == null) return;
+          final newRow = payload.newRecord;
+          if (newRow.isEmpty) return;
+          
+          // Convert to ChatMessage
+          // Note: newRow might be missing joined fields, but ChatMessage.fromJson handles basic fields
           final msg = ChatMessage.fromJson(newRow);
+          
           if (_messages.any((m) => m.id == msg.id)) return;
-          setState(() {
-            _messages.add(msg);
-            _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-          });
+          
+          if (mounted) {
+            setState(() {
+              _messages.add(msg);
+              _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            });
+          }
+          
           if (msg.senderId != _me?.id) {
             _markThreadRead();
           }
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Error handling realtime message: $e');
+        }
       },
     );
+    
     _channel!.subscribe();
   }
 
@@ -440,6 +452,21 @@ class _ThreadViewState extends State<ThreadView> {
       }
     } finally {
       _markingRead = false;
+    }
+  }
+
+  Future<void> _deleteMessage(String messageId) async {
+    try {
+      await DMService.instance.deleteMessage(messageId, widget.thread.conversationId);
+      setState(() {
+        _messages.removeWhere((m) => m.id == messageId);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e')),
+        );
+      }
     }
   }
 
@@ -509,7 +536,11 @@ class _ThreadViewState extends State<ThreadView> {
                       itemBuilder: (context, i) {
                         final m = _messages[i];
                         final mine = m.senderId == _me?.id;
-                        return _MessageBubble(message: m, mine: mine);
+                        return _MessageBubble(
+                          message: m,
+                          mine: mine,
+                          onDelete: mine ? () => _deleteMessage(m.id) : null,
+                        );
                       },
                     ),
                   ),
@@ -572,7 +603,14 @@ class _ThreadViewState extends State<ThreadView> {
 class _MessageBubble extends StatefulWidget {
   final ChatMessage message;
   final bool mine;
-  const _MessageBubble({required this.message, required this.mine});
+  final VoidCallback? onDelete;
+
+  const _MessageBubble({
+    required this.message,
+    required this.mine,
+    this.onDelete,
+  });
+
   @override
   State<_MessageBubble> createState() => _MessageBubbleState();
 }
@@ -594,19 +632,48 @@ class _MessageBubbleState extends State<_MessageBubble> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    final bubble = Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: widget.mine
-            ? AppColors.primary.withValues(alpha: 0.15)
-            : (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    final bubble = GestureDetector(
+      onLongPress: widget.onDelete != null
+          ? () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete Message?'),
+                  content: const Text(
+                      'This message will be removed for everyone in the chat.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onDelete?.call();
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+            }
+          : null,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: widget.mine
+              ? AppColors.primary.withValues(alpha: 0.15)
+              : (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
           if (!widget.mine)
             GestureDetector(
               onTap: () {
@@ -650,8 +717,6 @@ class _MessageBubbleState extends State<_MessageBubble> {
                               imageUrl: StorageUtils.resolvePublicUrl(
                                 widget.message.metadata['path'],
                                 bucket: 'chat-media',
-                                width: 1920, // Limit max width
-                                quality: 85,
                               ) ?? widget.message.metadata['url'] ?? '',
                               placeholder: (context, url) =>
                                   const CircularProgressIndicator(),
@@ -671,8 +736,6 @@ class _MessageBubbleState extends State<_MessageBubble> {
                   imageUrl: StorageUtils.resolvePublicUrl(
                     widget.message.metadata['path'],
                     bucket: 'chat-media',
-                    width: 400, // 2x for retina
-                    quality: 70,
                   ) ?? widget.message.metadata['url'] ?? '',
                   width: 200,
                   height: 200,
@@ -763,6 +826,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
               ),
             ),
         ],
+    ),
       ),
     );
     return Align(

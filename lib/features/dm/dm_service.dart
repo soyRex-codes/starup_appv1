@@ -247,7 +247,6 @@ class DMService {
             sender_profile:users(id, username, full_name, avatar_url)
           ''')
           .eq('conversation_id', conversationId)
-          .isFilter('deleted_at', null)
           .order('created_at', ascending: false)
           .limit(limit)
           .range(offset, offset + limit - 1);
@@ -398,6 +397,38 @@ class DMService {
     } catch (e) {
       debugPrint('Error sending image: $e');
       return null;
+    }
+  }
+
+  /// Delete a message (soft delete)
+  Future<void> deleteMessage(String messageId, String conversationId) async {
+    try {
+      final currentUserId = _supabase.auth.currentUser?.id;
+      if (currentUserId == null) return;
+
+      // Perform soft delete using RPC to avoid RLS violation
+      await _supabase.rpc('soft_delete_message', params: {
+        'p_message_id': messageId,
+      });
+      
+      // Remove from cache
+      _messageCache.removeMessage(conversationId, messageId);
+
+      // Notify listeners (remove from stream)
+      final currentMessages = await _getCurrentMessages();
+      final updatedMessages =
+          currentMessages.where((m) => m.id != messageId).toList();
+      _messagesController.add(updatedMessages);
+
+    } catch (e) {
+      debugPrint('Error deleting message: $e');
+      // We don't rethrow here to avoid crashing UI, but we could if we want to show a snackbar
+      // The previous implementation showed a snackbar in the UI by catching the error.
+      // Let's rethrow so the UI can show the error if needed, or just log it.
+      // Given the user asked for "production" code, silent failure or simple logging is often better 
+      // than crashing, but the UI expects to handle it.
+      // Let's keep the rethrow so the UI (ThreadView) can show "Failed to delete" if it wants.
+      rethrow;
     }
   }
 

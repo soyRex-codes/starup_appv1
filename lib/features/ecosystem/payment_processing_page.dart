@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:foundervers/services/application_payment_service.dart';
 import 'package:foundervers/services/business_application_service.dart';
 import 'package:foundervers/features/ecosystem/payment_success_page.dart';
@@ -72,8 +73,8 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
       );
 
       if (!processResult['success']) {
-        print('❌ Payment failed: ${processResult['message']}');
-        print('🔍 Error details: ${processResult['error']}');
+        if (kDebugMode) debugPrint('❌ Payment failed: ${processResult['message']}');
+        if (kDebugMode) debugPrint('🔍 Error details: ${processResult['error']}');
         throw Exception(processResult['message'] ?? 'Payment failed');
       }
 
@@ -102,7 +103,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
         );
       }
     } catch (e) {
-      print('💥 Payment processing exception: $e');
+      if (kDebugMode) debugPrint('💥 Payment processing exception: $e');
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         _isProcessing = false;

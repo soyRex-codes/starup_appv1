@@ -144,8 +144,7 @@ class PremiumSubscriptionService {
         'premium_subscription_type': isAnnual ? 'annual' : 'monthly',
       }).eq('id', userId);
 
-      // TODO: Log transaction in a separate payments table
-      // await _logPayment(userId, transactionId, isAnnual);
+      // Transaction logging is handled by createPayment and completePremiumPayment
 
       return true;
     } catch (e) {

@@ -200,6 +200,7 @@ class AdminService {
     int offset = 0,
     String? status,
     String? serviceType,
+    String? searchQuery,
   }) async {
     try {
       final queryBuilder = _client.from('business_applications').select('*');
@@ -210,9 +211,13 @@ class AdminService {
           : queryBuilder.neq('status',
               'draft'); // Exclude DRAFT if no specific status selected
 
-      final finalQuery = serviceType != null && serviceType.isNotEmpty
+      var finalQuery = serviceType != null && serviceType.isNotEmpty
           ? filteredQuery.eq('service_type', serviceType)
           : filteredQuery;
+      
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        finalQuery = finalQuery.or('applicant_name.ilike.%$searchQuery%,applicant_email.ilike.%$searchQuery%');
+      }
 
       final applications = await finalQuery
           .order('created_at', ascending: false)

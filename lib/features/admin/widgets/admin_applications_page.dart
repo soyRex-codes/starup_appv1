@@ -58,6 +58,7 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
       final applications = await AdminService.getAllApplications(
         status: _selectedStatus,
         serviceType: _selectedServiceType,
+        searchQuery: _searchController.text.trim(),
       );
       if (mounted) {
         setState(() {
@@ -350,7 +351,8 @@ class _AdminApplicationsPageState extends State<AdminApplicationsPage> {
                           prefixIcon: Icon(Icons.search),
                         ),
                         onChanged: (value) {
-                          // TODO: Implement search functionality
+                          // Debounce search could be added here for better performance
+                          _loadApplications();
                         },
                       ),
                     ),

@@ -22,6 +22,7 @@ import 'package:foundervers/services/bookmark_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:foundervers/widgets/report_post_dialog.dart';
 import 'package:foundervers/services/view_analytics_service.dart';
+import 'package:foundervers/services/post_counts_manager.dart';
 
 class EnhancedPostCard extends StatefulWidget {
   const EnhancedPostCard({
@@ -60,19 +61,69 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   // View tracking state
   bool _hasViewBeenCounted = false;
   Timer? _viewTimer;
-  int _commentCount = 0;
+  
+  // NEW: Replace local state with managed counts
+  StreamSubscription<PostCounts>? _countsSubscription;
+  PostCounts? _counts;
   
   @override
   void initState() {
     super.initState();
-    _commentCount = widget.post.commentCount;
+    
+    // Initialize counts from PostCountsManager OR use widget.post as fallback
+    // This prevents showing 0 before manager is populated
+    final managedCounts = PostCountsManager.instance.getCounts(widget.post.id);
+    
+    // If manager has no data yet, initialize it with widget.post values
+    if (managedCounts.views == 0 && managedCounts.comments == 0) {
+      // Seed the manager with current post data
+      PostCountsManager.instance.updateCounts(
+        widget.post.id,
+        views: widget.post.views,
+        comments: widget.post.commentCount,
+      );
+      _counts = PostCounts(
+        views: widget.post.views,
+        comments: widget.post.commentCount,
+      );
+    } else {
+      _counts = managedCounts;
+    }
+    
+    // Subscribe to count updates
+    _countsSubscription = PostCountsManager.instance
+        .watchCounts(widget.post.id)
+        .listen((counts) {
+      if (mounted) {
+        setState(() => _counts = counts);
+      }
+    });
+    
     _checkBookmarkStatus();
   }
   
   @override
   void dispose() {
+    _countsSubscription?.cancel();
     _viewTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(EnhancedPostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.id != widget.post.id) {
+      // Post changed, resubscribe to new post's counts
+      _countsSubscription?.cancel();
+      _counts = PostCountsManager.instance.getCounts(widget.post.id);
+      _countsSubscription = PostCountsManager.instance
+          .watchCounts(widget.post.id)
+          .listen((counts) {
+        if (mounted) {
+          setState(() => _counts = counts);
+        }
+      });
+    }
   }
 
   Future<void> _checkBookmarkStatus() async {
@@ -834,7 +885,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                     ?.color,
                               ),
                             ),
-                            if (_shouldShowSeeMore || (widget.post.views > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id.toString()) > 0)) ...[
+                            if (_shouldShowSeeMore || ((_counts?.views ?? widget.post.views) > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id.toString()) > 0)) ...[
                               const SizedBox(height: 6),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -865,8 +916,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                   else
                                     const SizedBox.shrink(),
 
-                                  // View Counter moved here
-                                  if (widget.post.views > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id.toString()) > 0)
+                                  // View Counter - use managed counts + pending
+                                  if ((_counts?.views ?? widget.post.views) > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id.toString()) > 0)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8, vertical: 4),
@@ -886,7 +937,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                                   : Colors.grey[500]),
                                           const SizedBox(width: 4),
                                           Text(
-                                            '${widget.post.views + ViewAnalyticsService().getPendingViewCount(widget.post.id.toString())}',
+                                            '${(_counts?.views ?? widget.post.views) + ViewAnalyticsService().getPendingViewCount(widget.post.id.toString())}',
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w500,
@@ -950,7 +1001,9 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                               fit: FlexFit.loose,
                               child: _ModernActionButton(
                                 label:
-                                    _commentCount > 0 ? '$_commentCount' : '',
+                                    (_counts?.comments ?? widget.post.commentCount) > 0 
+                                        ? '${_counts?.comments ?? widget.post.commentCount}' 
+                                        : '',
                                 icon: const Icon(Icons.chat_bubble_outline,
                                     size: 16),
                                 variant: ActionButtonVariant.outlined,
@@ -970,18 +1023,15 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   }
 
   Future<void> _openComments() async {
-    final initialCount = _commentCount;
+    final initialCount = _counts?.comments ?? widget.post.commentCount;
     int? latestFromSheet;
     await CommentSheet.show(
       context,
       widget.post,
       onCountChanged: (count) {
         latestFromSheet = count;
-        if (mounted) {
-          setState(() {
-            _commentCount = count;
-          });
-        }
+        // Update manager instead of local state
+        PostCountsManager.instance.updateCommentCount(widget.post.id, count);
       },
     );
 
@@ -989,12 +1039,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
       try {
         final latestCount =
             await _commentService.getCommentCount(widget.post.id);
-        if (mounted) {
-          setState(() {
-            _commentCount = latestCount;
-          });
-        }
-        // Update the final count
+        // Update manager with latest from API
+        PostCountsManager.instance.updateCommentCount(widget.post.id, latestCount);
         latestFromSheet = latestCount;
       } catch (_) {
         // Ignore failures silently; existing count will remain until next refresh.
@@ -1270,8 +1316,6 @@ class _PostImageThumbState extends State<_PostImageThumb> {
       final url = StorageUtils.getMediaUrl(
         path: currentMediaPath,
         bucket: widget.bucket,
-        width: 600, // Optimize feed images
-        quality: 80,
       );
 
       // Only update state if the widget still has the same mediaPath
@@ -1441,8 +1485,6 @@ class _AvatarCircle extends StatelessWidget {
             ? CachedNetworkImageProvider(
                 StorageUtils.resolvePublicUrl(
                   url!,
-                  width: 100, // Optimize small avatars
-                  quality: 70,
                 ) ?? '',
               )
             : null,
