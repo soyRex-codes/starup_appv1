@@ -38,7 +38,7 @@ class EcosystemGuidePage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFF8C42).withOpacity(0.3),
+                    color: const Color(0xFFFF8C42).withValues(alpha: 0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -111,7 +111,7 @@ class EcosystemGuidePage extends StatelessWidget {
             height: 24,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Text(
@@ -140,7 +140,7 @@ class EcosystemGuidePage extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 13,
                   ),
                 ),
@@ -159,7 +159,7 @@ class EcosystemGuidePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -175,7 +175,7 @@ class EcosystemGuidePage extends StatelessWidget {
             height: 48,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: service.color.withOpacity(0.1),
+              color: service.color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Image.asset(

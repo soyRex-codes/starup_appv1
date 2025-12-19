@@ -196,7 +196,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _getStatusColor(_currentStatus).withOpacity(0.2),
+              color: _getStatusColor(_currentStatus).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: _getStatusColor(_currentStatus)),
             ),
@@ -229,7 +229,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
                           Theme.of(context)
                               .colorScheme
                               .primary
-                              .withOpacity(0.7),
+                              .withValues(alpha: 0.7),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
@@ -253,7 +253,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onPrimary
-                                .withOpacity(0.8),
+                                .withValues(alpha: 0.8),
                           ),
                         ),
                       ],
@@ -419,7 +419,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -460,7 +460,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 4),
@@ -547,10 +547,10 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
@@ -559,7 +559,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -591,7 +591,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.6),
+                        .withValues(alpha: 0.6),
                   ),
                 ),
                 if (fileSize.isNotEmpty) ...[
@@ -603,7 +603,7 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                     ),
                   ),
                 ],

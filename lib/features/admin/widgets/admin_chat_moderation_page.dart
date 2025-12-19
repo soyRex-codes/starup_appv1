@@ -51,7 +51,7 @@ class _AdminChatModerationPageState extends State<AdminChatModerationPage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -173,7 +173,7 @@ class _AdminChatModerationPageState extends State<AdminChatModerationPage> {
                       Text(
                         _formatDate(message['created_at']),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                       ),
                     ],
@@ -197,7 +197,7 @@ class _AdminChatModerationPageState extends State<AdminChatModerationPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -232,20 +232,20 @@ class _AdminChatModerationPageState extends State<AdminChatModerationPage> {
                 Icon(
                   Icons.message,
                   size: 16,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   'Global Chat',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                 ),
                 const Spacer(),
                 Text(
                   'ID: ${message['id']}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                 ),
               ],

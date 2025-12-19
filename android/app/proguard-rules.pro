@@ -65,3 +65,9 @@
 # General Android
 -keepattributes SourceFile,LineNumberTable
 -keep public class * extends java.lang.Exception
+
+# Network & Connectivity
+-keep class java.net.** { *; }
+-keep class java.nio.channels.** { *; }
+-dontwarn java.nio.channels.**
+-dontwarn java.net.**

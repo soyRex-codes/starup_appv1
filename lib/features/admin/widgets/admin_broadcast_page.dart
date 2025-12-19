@@ -217,6 +217,8 @@ class _AdminBroadcastPageState extends State<AdminBroadcastPage> {
       // 1. Get FCM Token
       final fcmToken = await FirebaseMessaging.instance.getToken();
       
+      if (!mounted) return;
+
       // 2. Get APNs Token (iOS only)
       String? apnsToken;
       if (Theme.of(context).platform == TargetPlatform.iOS) {

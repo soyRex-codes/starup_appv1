@@ -4,6 +4,7 @@ import 'package:foundervers/services/application_payment_service.dart';
 import 'package:foundervers/services/business_application_service.dart';
 import 'package:foundervers/features/ecosystem/payment_success_page.dart';
 import 'package:foundervers/models/payment_model.dart';
+import 'package:foundervers/features/payments/web_payment_form.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Payment Processing Page
@@ -72,10 +73,57 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
         couponCode: _couponController.text.trim().isNotEmpty ? _couponController.text.trim() : null,
       );
 
-      if (!processResult['success']) {
-        if (kDebugMode) debugPrint('❌ Payment failed: ${processResult['message']}');
-        if (kDebugMode) debugPrint('🔍 Error details: ${processResult['error']}');
-        throw Exception(processResult['message'] ?? 'Payment failed');
+      // Handle web payment flow
+      if (processResult['needsWebPayment'] == true) {
+        debugPrint('🌐 Web: Showing WebPaymentForm dialog');
+        setState(() => _isProcessing = false);
+        
+        final clientSecret = processResult['clientSecret'] as String;
+        final amount = processResult['amount'] as double;
+        
+        // Show web payment form in a dialog
+        if (mounted) {
+          final webPaymentResult = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => Dialog(
+              backgroundColor: Colors.transparent,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 450),
+                child: WebPaymentForm(
+                  clientSecret: clientSecret,
+                  merchantName: 'FounderVers',
+                  amount: amount,
+                  onSuccess: () => Navigator.of(ctx).pop(true),
+                  onError: (error) {
+                    debugPrint('❌ Web payment error: $error');
+                    Navigator.of(ctx).pop(false);
+                  },
+                  onCancel: () => Navigator.of(ctx).pop(null),
+                ),
+              ),
+            ),
+          );
+          
+          if (webPaymentResult == true) {
+            // Payment successful - proceed to update status and receipt
+            // Continue with the flow (Step 3) using the 'paymentId' we already have
+            // But we need to ensure the status is updated in step 3
+          } else if (webPaymentResult == false) {
+             setState(() => _errorMessage = 'Payment failed. Please try again.');
+             return;
+          } else {
+             setState(() => _errorMessage = 'Payment was cancelled');
+             return;
+          }
+        }
+      } else {
+        // Mobile flow (Step 2 checked success internally for Stripe sheet)
+        if (!processResult['success']) {
+          if (kDebugMode) debugPrint('❌ Payment failed: ${processResult['message']}');
+          if (kDebugMode) debugPrint('🔍 Error details: ${processResult['error']}');
+          throw Exception(processResult['message'] ?? 'Payment failed');
+        }
       }
 
       // Step 3: Update application status
@@ -198,7 +246,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -236,7 +284,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -284,7 +332,7 @@ class _PaymentProcessingPageState extends State<PaymentProcessingPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],

@@ -73,6 +73,8 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
           // Mark email as verified in our users table
           await AuthService.instance.markEmailAsVerified();
           
+          if (!mounted) return;
+
           // Email verified successfully - session should now be active
           // AuthGate will automatically navigate to home page
           Navigator.of(context).pushNamedAndRemoveUntil(
@@ -181,6 +183,8 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
           // Email was confirmed via link
           await AuthService.instance.markEmailAsVerified();
           
+          if (!mounted) return;
+
           Navigator.of(context).pushNamedAndRemoveUntil(
             '/',
             (route) => false,
@@ -282,10 +286,10 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).primaryColor.withOpacity(0.3),
+                    color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(

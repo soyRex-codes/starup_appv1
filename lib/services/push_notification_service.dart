@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:foundervers/features/notifications/device_service.dart';
 import 'package:foundervers/main.dart';
@@ -64,7 +65,7 @@ class PushNotificationService {
 
       // 7. Subscribe to Broadcast Topic
       // For iOS, wait a bit to ensure APNs token is fully registered with Firebase
-      if (Platform.isIOS) {
+      if (!kIsWeb && Platform.isIOS) {
         debugPrint('🔔 Waiting for APNs token to register with Firebase...');
         await Future.delayed(const Duration(seconds: 3));
       }
@@ -97,7 +98,7 @@ class PushNotificationService {
     );
 
     // Create high importance channel for Android
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       await _localNotifications
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
@@ -117,7 +118,7 @@ class PushNotificationService {
   Future<void> _saveToken() async {
     try {
       // On iOS, we must wait for the APNs token to be generated before getting the FCM token
-      if (Platform.isIOS) {
+      if (!kIsWeb && Platform.isIOS) {
         String? apnsToken = await _fcm.getAPNSToken();
         if (apnsToken == null) {
           debugPrint('🔔 Waiting for APNs token...');
@@ -146,7 +147,7 @@ class PushNotificationService {
           await _deviceService.registerToken(
             userId: user.id,
             token: token,
-            platform: Platform.isAndroid ? 'android' : 'ios',
+            platform: kIsWeb ? 'web' : (Platform.isAndroid ? 'android' : 'ios'),
           );
         }
       }
@@ -163,7 +164,7 @@ class PushNotificationService {
       await _deviceService.registerToken(
         userId: user.id,
         token: newToken,
-        platform: Platform.isAndroid ? 'android' : 'ios',
+        platform: kIsWeb ? 'web' : (Platform.isAndroid ? 'android' : 'ios'),
       );
     }
   }
@@ -173,7 +174,7 @@ class PushNotificationService {
     debugPrint('🔔 Foreground Message: ${message.notification?.title}');
 
     final notification = message.notification;
-    final android = message.notification?.android;
+    // final android = message.notification?.android;
 
     // Show local notification
     if (notification != null) {

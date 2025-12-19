@@ -30,7 +30,7 @@ class NotificationCard extends StatelessWidget {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       child: Material(
-        color: notification.read ? Colors.white : AppColors.primary.withOpacity(0.05),
+        color: notification.read ? Colors.white : AppColors.primary.withValues(alpha: 0.05),
         child: InkWell(
           onTap: onTap,
           child: Container(
@@ -102,7 +102,7 @@ class NotificationCard extends StatelessWidget {
                         notification.timeAgo,
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary.withOpacity(0.7),
+                          color: AppColors.textSecondary.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -165,19 +165,19 @@ class NotificationCard extends StatelessWidget {
   Color _getIconBackgroundColor() {
     switch (notification.type) {
       case NotificationType.comment:
-        return const Color(0xFF6B4EE6).withOpacity(0.15); // Purple
+        return const Color(0xFF6B4EE6).withValues(alpha: 0.15); // Purple
       case NotificationType.reply:
-        return AppColors.primary.withOpacity(0.15); // Orange
+        return AppColors.primary.withValues(alpha: 0.15); // Orange
       case NotificationType.dm:
-        return Colors.blue.withOpacity(0.15);
+        return Colors.blue.withValues(alpha: 0.15);
       case NotificationType.bookmark:
-        return const Color(0xFF10B981).withOpacity(0.15); // Green
+        return const Color(0xFF10B981).withValues(alpha: 0.15); // Green
       case NotificationType.collabRequest:
-        return AppColors.accent.withOpacity(0.15); // Yellow
+        return AppColors.accent.withValues(alpha: 0.15); // Yellow
       case NotificationType.system:
-        return Colors.grey.withOpacity(0.15);
+        return Colors.grey.withValues(alpha: 0.15);
       case NotificationType.broadcast:
-        return Colors.red.withOpacity(0.15); // Red for broadcasts
+        return Colors.red.withValues(alpha: 0.15); // Red for broadcasts
     }
   }
 }

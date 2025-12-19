@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 import 'package:foundervers/models/post.dart';
 
 /// In-memory cache for feed posts to reduce API calls and improve UX
@@ -41,7 +42,7 @@ class FeedCache {
 
       // Use processor count as proxy for device capability
       // Higher-end devices can handle larger caches
-      final processorCount = Platform.numberOfProcessors;
+      final processorCount = kIsWeb ? 4 : Platform.numberOfProcessors;
 
       if (processorCount >= 8) {
         return (_maxCacheSize * 1.5).round(); // High-end devices: 75 entries

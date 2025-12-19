@@ -113,7 +113,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         gradient: LinearGradient(
           colors: [
             Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.7),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -134,7 +134,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             'Admin Dashboard - Full System Access',
             style: TextStyle(
               fontSize: 16,
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
+              color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.9),
             ),
           ),
         ],
@@ -149,7 +149,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -212,9 +212,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // Asymmetric padding
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -348,11 +348,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -366,7 +366,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               width: 40, // Reduced from 48
               height: 40, // Reduced from 48
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 20), // Reduced from 24

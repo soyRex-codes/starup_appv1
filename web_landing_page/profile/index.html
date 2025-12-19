@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -153,8 +154,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @media (max-width: 480px) {
@@ -167,8 +173,28 @@
             }
         }
     </style>
+    <link rel="icon" href="../icons/foundervers.png">
+    <link rel="apple-touch-icon" href="../icons/foundervers.png">
+    <meta property="og:image" content="../icons/foundervers.png">
+    <link rel="stylesheet" href="../style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
+
 <body>
+    <!-- Navigation Bar -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <img src="../foundervers.png" alt="FounderVers Logo">
+                <span>FounderVers</span>
+            </a>
+            <div class="nav-links">
+                <a href="../index.html#features">Features</a>
+                <a href="../index.html#download">Download</a>
+                <a href="../legal.html">Privacy</a>
+            </div>
+        </div>
+    </nav>
     <div class="container">
         <div class="logo">👤</div>
         <h1>Open in FounderVers</h1>
@@ -190,7 +216,8 @@
                 <span class="icon">📱</span>
                 <span>Open in App</span>
             </a>
-            <a href="/download.html" class="download-btn ios-btn">
+            <a href="https://apps.apple.com/us/app/foundervers/id6755343289" class="download-btn ios-btn"
+                target="_blank">
                 <span class="icon">🍎</span>
                 <span>Download on App Store</span>
             </a>
@@ -201,22 +228,32 @@
         </div>
     </div>
 
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="../legal.html">Privacy Policy</a>
+            <a href="mailto:foundervers@gmail.com">Contact Support</a>
+        </div>
+        <p style="margin-top: 20px; color: var(--text-secondary); font-size: 12px;">&copy; 2024 FounderVers. All rights
+            reserved.</p>
+    </footer>
+
     <script>
         // Extract profile ID from URL
         const profileId = window.location.pathname.match(/\/profile\/([^\/]+)/)?.[1];
-        
+
         if (profileId) {
             // Immediately try to open in app
             const deepLink = `foundervers://profile/${profileId}`;
             const universalLink = `https://foundervers.com/profile/${profileId}`;
-            
+
             // Set up button to retry opening app
             const openAppBtn = document.getElementById('open-app-btn');
             openAppBtn.href = deepLink;
 
             // Try to open app immediately on page load
             let attemptedOpen = false;
-            
+
             // For iOS, use a hidden iframe approach
             if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
                 const iframe = document.createElement('iframe');
@@ -224,12 +261,12 @@
                 iframe.src = deepLink;
                 document.body.appendChild(iframe);
                 attemptedOpen = true;
-                
+
                 // If user is still here after 2 seconds, show download options
                 setTimeout(() => {
                     if (!document.hidden) {
                         // Still on page, app not installed
-                        document.getElementById('profile-content').innerHTML = 
+                        document.getElementById('profile-content').innerHTML =
                             'Download the FounderVers app to view this profile and connect with founders worldwide.';
                     }
                 }, 2000);
@@ -238,18 +275,18 @@
             else if (/android/i.test(navigator.userAgent)) {
                 window.location.href = deepLink;
                 attemptedOpen = true;
-                
+
                 // Fallback after 2 seconds
                 setTimeout(() => {
                     if (!document.hidden) {
-                        document.getElementById('profile-content').innerHTML = 
+                        document.getElementById('profile-content').innerHTML =
                             'Download the FounderVers app to view this profile and connect with founders worldwide.';
                     }
                 }, 2000);
             }
             // Desktop
             else {
-                document.getElementById('profile-content').innerHTML = 
+                document.getElementById('profile-content').innerHTML =
                     'This profile is best viewed in the FounderVers mobile app. Visit from your mobile device or download the app.';
                 openAppBtn.style.display = 'none';
             }
@@ -278,4 +315,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -64,7 +64,7 @@ class PermissionsHelper {
 
     // iOS 14+ uses PHPicker via FilePicker, which doesn't require explicit permission
     // The system handles the UI and grants access to selected items only.
-    if (Platform.isIOS) return true;
+    if (!kIsWeb && Platform.isIOS) return true;
     
     final permission = Permission.storage;
     final status = await permission.status;

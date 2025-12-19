@@ -186,7 +186,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                         label: Text(
                             'Suspended (${_users.where((u) => u['is_suspended'] == true).length})'),
                         selected: _filterStatus == 'suspended',
-                        selectedColor: Colors.red.withOpacity(0.3),
+                        selectedColor: Colors.red.withValues(alpha: 0.3),
                         onSelected: (selected) {
                           setState(() => _filterStatus = 'suspended');
                         },
@@ -273,7 +273,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: isSuspended
-                    ? Colors.red.withOpacity(0.3)
+                    ? Colors.red.withValues(alpha: 0.3)
                     : Theme.of(context).colorScheme.primary,
                 child: Text(
                   (user['name'] ?? user['username'] ?? 'U')[0].toUpperCase(),
@@ -345,7 +345,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.2),
+                        color: Colors.red.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
@@ -536,10 +536,10 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
+                            color: Colors.red.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                             border:
-                                Border.all(color: Colors.red.withOpacity(0.3)),
+                                Border.all(color: Colors.red.withValues(alpha: 0.3)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

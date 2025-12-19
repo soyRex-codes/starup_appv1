@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:foundervers/services/premium_subscription_service.dart';
 import 'package:foundervers/services/iap_service.dart';
 import 'package:foundervers/models/premium_payment_model.dart';
+import 'package:foundervers/features/payments/web_payment_form.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Premium Payment Processing Page
@@ -46,7 +47,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
     });
 
     try {
-      debugPrint('🚀 Starting premium payment process...');
+      debugPrint('Starting premium payment process...');
 
       final userId = Supabase.instance.client.auth.currentUser?.id;
       final userEmail = Supabase.instance.client.auth.currentUser?.email;
@@ -55,17 +56,17 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
         throw Exception('User not authenticated');
       }
 
-      debugPrint('👤 User ID: $userId');
-      debugPrint('📧 User Email: $userEmail');
+      debugPrint('User ID: $userId');
+      debugPrint('User Email: $userEmail');
 
-      // Use IAP on iOS, Stripe on Android
-      if (Platform.isIOS) {
+      // Use IAP on iOS (mobile only), Stripe on Android and Web
+      if (!kIsWeb && Platform.isIOS) {
         await _processAppleIAPPayment(userId);
       } else {
         await _processStripePayment(userId, userEmail);
       }
     } catch (e) {
-      debugPrint('💥 Premium payment processing exception: $e');
+      debugPrint('Premium payment processing exception: $e');
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         _isProcessing = false;
@@ -84,7 +85,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
 
   /// Process payment using Apple In-App Purchase (iOS only)
   Future<void> _processAppleIAPPayment(String userId) async {
-    debugPrint('🍎 Using Apple In-App Purchase');
+    debugPrint('Using Apple In-App Purchase');
 
     final iapService = IAPService();
 
@@ -105,8 +106,8 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
       throw Exception(result['message']);
     }
 
-    debugPrint('✅ IAP purchase initiated');
-    debugPrint('⏳ Waiting for Apple payment sheet...');
+    debugPrint('IAP purchase initiated');
+    debugPrint('Waiting for Apple payment sheet...');
 
     // Purchase is now pending, Apple payment sheet will be shown
     // Result will be handled by IAP service's purchase stream
@@ -124,7 +125,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
     final isPremium = await _premiumService.checkPremiumStatus();
 
     if (isPremium) {
-      debugPrint('🎉 Premium activated via IAP!');
+      debugPrint('Premium activated via IAP!');
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -176,6 +177,68 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
       userId: userId,
       email: userEmail,
     );
+
+    // Handle web payment flow
+    if (processResult['needsWebPayment'] == true) {
+      debugPrint('🌐 Web: Showing WebPaymentForm dialog');
+      setState(() => _isProcessing = false);
+      
+      final clientSecret = processResult['clientSecret'] as String;
+      final paymentIdFromResult = processResult['paymentId'] as String;
+      final amount = processResult['amount'] as double;
+      
+      // Show web payment form in a dialog
+      if (mounted) {
+        final webPaymentResult = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 450),
+              child: WebPaymentForm(
+                clientSecret: clientSecret,
+                merchantName: 'FounderVers Premium',
+                amount: amount,
+                onSuccess: () => Navigator.of(ctx).pop(true),
+                onError: (error) {
+                  debugPrint('❌ Web payment error: $error');
+                  Navigator.of(ctx).pop(false);
+                },
+                onCancel: () => Navigator.of(ctx).pop(null),
+              ),
+            ),
+          ),
+        );
+        
+        if (webPaymentResult == true) {
+          // Payment successful - activate premium
+          debugPrint('✅ Web payment successful, activating premium...');
+          final activated = await _premiumService.completePremiumPayment(
+            paymentId: paymentIdFromResult,
+            isAnnual: _isAnnualPlan,
+          );
+          
+          if (activated && mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => PremiumPaymentSuccessPage(
+                  isAnnual: _isAnnualPlan,
+                  amount: _amount,
+                ),
+              ),
+            );
+          } else {
+            setState(() => _errorMessage = 'Failed to activate subscription');
+          }
+        } else if (webPaymentResult == false) {
+          setState(() => _errorMessage = 'Payment failed. Please try again.');
+        } else {
+          setState(() => _errorMessage = 'Payment was cancelled');
+        }
+      }
+      return;
+    }
 
     if (!processResult['success']) {
       // Check if user cancelled
@@ -315,7 +378,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: Colors.amber.withOpacity(0.15),
+                      color: Colors.amber.withValues(alpha: 0.15),
                       blurRadius: 14,
                       offset: const Offset(0, 8),
                     ),
@@ -399,7 +462,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
         foregroundColor: const Color(0xFF1A1A1A),
         elevation: 0,
       ),
-      body: Platform.isIOS
+      body: !kIsWeb && Platform.isIOS
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -442,7 +505,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.amber.withOpacity(0.3),
+                    color: Colors.amber.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -470,7 +533,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
                           'Unlock exclusive features and benefits',
                           style: TextStyle(
                             fontSize: isSmallScreen ? 9 : 12,
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                           ),
                         ),
                       ],
@@ -489,7 +552,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -555,7 +618,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -619,7 +682,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -682,7 +745,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
                         SizedBox(width: isSmallScreen ? 6 : smallSpacing),
                         Expanded(
                           child: Text(
-                            Platform.isIOS
+                            !kIsWeb && Platform.isIOS
                                 ? 'Apple will open a secure purchase sheet when you click "Subscribe Now"'
                                 : 'A secure Stripe payment screen will open when you click "Subscribe Now"',
                             style: TextStyle(
@@ -778,7 +841,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
             const SizedBox(height: 32),
 
             // IAP Diagnostics (Debug Only)
-            if (Platform.isIOS) _buildIAPDiagnostics(),
+            if (!kIsWeb && Platform.isIOS) _buildIAPDiagnostics(),
           ],
         ),
       ),
@@ -878,7 +941,7 @@ class PremiumPaymentSuccessPage extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.amber.withOpacity(0.3),
+                      color: Colors.amber.withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -923,7 +986,7 @@ class PremiumPaymentSuccessPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                     ),
                   ],

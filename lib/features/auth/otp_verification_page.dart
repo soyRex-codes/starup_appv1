@@ -124,6 +124,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
             // Email verification successful - mark as verified and go home
             await AuthService.instance.markEmailAsVerified();
             
+            if (!mounted) return;
+
             Navigator.of(context).pushNamedAndRemoveUntil(
               '/',
               (route) => false,

@@ -354,12 +354,12 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -404,14 +404,14 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            const Color(0xFFFF6B2C).withOpacity(0.1),
-                            const Color(0xFFFF6B2C).withOpacity(0.05),
+                            const Color(0xFFFF6B2C).withValues(alpha: 0.1),
+                            const Color(0xFFFF6B2C).withValues(alpha: 0.05),
                           ],
                         )),
                         child: Center(
                           child: Icon(Icons.lightbulb_outline,
                               size: 56,
-                              color: const Color(0xFFFF6B2C).withOpacity(0.3)),
+                              color: const Color(0xFFFF6B2C).withValues(alpha: 0.3)),
                         ),
                       ),
                     ),
@@ -565,7 +565,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                             padding:
                                                 const EdgeInsets.only(left: 4),
                                             child: Icon(
-                                              Icons.workspace_premium,
+                                              Icons.verified,
                                               size: 18,
                                               color: Colors.amber[600],
                                             ),
@@ -923,7 +923,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                           horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Theme.of(context).brightness == Brightness.dark 
-                                            ? Colors.white.withOpacity(0.05) 
+                                            ? Colors.white.withValues(alpha: 0.05) 
                                             : Colors.grey[100],
                                         borderRadius: BorderRadius.circular(6),
                                       ),
@@ -1157,15 +1157,15 @@ class _ModernActionButtonState extends State<_ModernActionButton>
           height: 30,
           padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
-            color: backgroundColor ?? Theme.of(context).cardColor,
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-                color: borderColor ?? Theme.of(context).dividerColor,
+                color: borderColor,
                 width: 1.5),
             boxShadow: elevation > 0
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

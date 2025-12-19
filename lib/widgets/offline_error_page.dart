@@ -42,7 +42,7 @@ class OfflineErrorPage extends StatelessWidget {
                   final connectivity = Connectivity();
                   final result = await connectivity.checkConnectivity();
                   
-                  if (result != ConnectivityResult.none) {
+                  if (!result.contains(ConnectivityResult.none)) {
                     // Connection restored, restart app
                     if (context.mounted) {
                       // Force app restart by navigating to root

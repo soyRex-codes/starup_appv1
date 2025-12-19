@@ -113,39 +113,7 @@ class _EmailConfirmationPageState extends State<EmailConfirmationPage> {
               ),
               const SizedBox(height: 12),
 
-              // Helpful note about localhost redirect
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Important Note',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'After clicking the email link, you might see a "localhost refused to connect" page in your browser. This is normal! Just return to this app and you\'ll be automatically logged in.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+
 
               // Success/Error Messages
               if (_message != null) ...[

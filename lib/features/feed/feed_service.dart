@@ -168,6 +168,9 @@ class FeedService {
           fullName: u['full_name'] as String?,
           avatarUrl: u['avatar_url'] as String?,
           emailVerified: u['email_verified'] as bool?,
+          isPremium: u['is_premium'] as bool?,
+          premiumExpiresAt:
+              _asDate(u['premium_expires_at']),
         );
       }
     }
@@ -254,6 +257,13 @@ class FeedService {
     );
 
     return posts;
+  }
+
+  DateTime? _asDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 }
 

@@ -59,9 +59,18 @@ class SplashLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const FounderVersLogo(
-      height: 120,
-      width: 120,
+    return Image.asset(
+      'lib/icons/foundervers_logo.png',
+      height: 200,
+      width: 200,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        // Fallback to smaller logo if foundervers_logo.png fails
+        return const FounderVersLogo(
+          height: 200,
+          width: 200,
+        );
+      },
     );
   }
 }

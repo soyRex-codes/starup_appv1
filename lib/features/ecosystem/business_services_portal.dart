@@ -177,12 +177,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Always allow normal pop behavior to go back to Ecosystem Applications
-        return true;
-      },
-      child: GestureDetector(
+    return GestureDetector(
         onTap: () {
           // Dismiss keyboard when tapping outside form fields
           FocusScope.of(context).unfocus();
@@ -210,15 +205,14 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
                 end: Alignment.bottomCenter,
                 colors: [
                   Theme.of(context).colorScheme.surface,
-                  Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                 ],
               ),
             ),
             child: _buildCurrentView(),
           ),
         ),
-      ),
-    );
+      );
   }
 
   String _getAppBarTitle() {
@@ -250,10 +244,10 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
             padding: const EdgeInsets.all(20),
             margin: const EdgeInsets.only(bottom: 24),
             decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withOpacity(0.1),
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFF4CAF50).withOpacity(0.3),
+                color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
               ),
             ),
             child: Column(
@@ -273,7 +267,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.7),
+                            .withValues(alpha: 0.7),
                       ),
                 ),
               ],
@@ -367,7 +361,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withOpacity(0.1),
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -390,7 +384,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
             'Thank you for your ${_getServiceTitle(_selectedService!).toLowerCase()} request. Our team will review your submission and get back to you within 24-48 hours.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
             textAlign: TextAlign.center,
           ),
@@ -513,7 +507,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
         child: Column(

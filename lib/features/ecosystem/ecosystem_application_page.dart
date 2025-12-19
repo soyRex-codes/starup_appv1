@@ -44,7 +44,10 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
       appBar: AppBar(
         title: const Text(
           'Ecosystem Applications',
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A1A1A),
+          ),
         ),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1A1A1A),
@@ -90,7 +93,7 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFFF8C42).withOpacity(0.4),
+                          color: const Color(0xFFFF8C42).withValues(alpha: 0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -103,10 +106,10 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                           height: 56,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.25),
+                            color: Colors.white.withValues(alpha: 0.25),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.4),
+                              color: Colors.white.withValues(alpha: 0.4),
                               width: 2,
                             ),
                           ),
@@ -160,10 +163,10 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF9800).withOpacity(0.1),
+                            color: const Color(0xFFFF9800).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0xFFFF9800).withOpacity(0.3),
+                              color: const Color(0xFFFF9800).withValues(alpha: 0.3),
                               width: 1,
                             ),
                           ),
@@ -217,87 +220,69 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
   }
 
   Widget _buildStatsSection(BuildContext context, double screenWidth) {
-    return Row(
-      children: [
-        Expanded(
-            child: _buildStatCard('Bring', 'Ideas to Life', Icons.people)),
-        const SizedBox(width: 10),
-        Expanded(
-            child: _buildStatCard('24/7', 'Response Time', Icons.access_time)),
-        const SizedBox(width: 10),
-        Expanded(child: _buildStatCard('100%', 'Success Rate', Icons.verified)),
-      ],
-    );
-  }
-  
-  Widget _buildStatCard(String value, String label, IconData icon) {
-    // Gradient colors for each card (orange/gold variations)
-    final gradients = {
-      'Bring': [const Color(0xFFFF6B35), const Color(0xFFFF8C42)],
-      '24/7': [const Color(0xFFFF8C42), const Color(0xFFFFA500)],
-      '100%': [const Color(0xFFFFA500), const Color(0xFFFFB347)],
-    };
-    
-    final colors = gradients[value] ?? [const Color(0xFFFF8C42), const Color(0xFFFFA500)];
-    
     return Container(
-      height: 130, // Fixed height for consistency (adjusted to prevent overflow)
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: colors,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colors[0].withOpacity(0.3),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
-              shape: BoxShape.circle,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(child: _buildCompactStatItem('Ideas to Life', Icons.lightbulb_outline)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: VerticalDivider(color: Colors.grey.withValues(alpha: 0.2), thickness: 1),
             ),
-            child: Icon(
-              icon, 
-              color: Colors.white, 
-              size: 20,
+            Expanded(child: _buildCompactStatItem('24/7 Support', Icons.access_time)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: VerticalDivider(color: Colors.grey.withValues(alpha: 0.2), thickness: 1),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              height: 1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10.5,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-              height: 1.2,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            Expanded(child: _buildCompactStatItem('100% Success', Icons.verified_user_outlined)),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildCompactStatItem(String label, IconData icon) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xFFFF9800),
+            size: 20,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A1A1A),
+            height: 1.2,
+          ),
+          maxLines: 2,
+        ),
+      ],
     );
   }
 
@@ -409,22 +394,22 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                 end: Alignment.bottomRight,
                 colors: [
                   Colors.white,
-                  Colors.white.withOpacity(0.95),
+                  Colors.white.withValues(alpha: 0.95),
                 ],
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: service.color.withOpacity(0.2),
+                color: service.color.withValues(alpha: 0.2),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: service.color.withOpacity(0.15),
+                  color: service.color.withValues(alpha: 0.15),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -445,8 +430,8 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            service.color.withOpacity(0.1),
-                            service.color.withOpacity(0.0),
+                            service.color.withValues(alpha: 0.1),
+                            service.color.withValues(alpha: 0.0),
                           ],
                         ),
                       ),
@@ -467,13 +452,13 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                           gradient: LinearGradient(
                             colors: [
                               service.color,
-                              service.color.withOpacity(0.8),
+                              service.color.withValues(alpha: 0.8),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: service.color.withOpacity(0.3),
+                              color: service.color.withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -506,13 +491,13 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                service.color.withOpacity(0.15),
-                                service.color.withOpacity(0.05),
+                                service.color.withValues(alpha: 0.15),
+                                service.color.withValues(alpha: 0.05),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: service.color.withOpacity(0.2),
+                              color: service.color.withValues(alpha: 0.2),
                               width: 1.5,
                             ),
                           ),
@@ -593,10 +578,10 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                             vertical: screenWidth > 600 ? 6 : 5,
                           ),
                           decoration: BoxDecoration(
-                            color: service.color.withOpacity(0.08),
+                            color: service.color.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: service.color.withOpacity(0.15),
+                              color: service.color.withValues(alpha: 0.15),
                             ),
                           ),
                           child: Text(
@@ -604,7 +589,7 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                             style: TextStyle(
                               fontSize: screenWidth > 600 ? 11 : 10,
                               fontWeight: FontWeight.w600,
-                              color: service.color.withOpacity(0.9),
+                              color: service.color.withValues(alpha: 0.9),
                             ),
                           ),
                         ),
@@ -617,7 +602,7 @@ class _EcosystemApplicationPageState extends State<EcosystemApplicationPage>
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: service.color.withOpacity(0.1),
+                            color: service.color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: Row(

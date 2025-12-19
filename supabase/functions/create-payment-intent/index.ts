@@ -30,6 +30,8 @@ const DYNAMIC_ORIGIN_PATTERNS = [
   /^https:\/\/[a-zA-Z0-9-]+\.foundervers\.com$/,
   /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/,
   /^https:\/\/[a-zA-Z0-9-]+\.netlify\.app$/,
+  /^http:\/\/localhost:\d+$/,  // Flutter web dev server
+  /^http:\/\/127\.0\.0\.1:\d+$/,  // Flutter web dev server (IP)
 ];
 
 function validateOrigin(request: Request): string | null {

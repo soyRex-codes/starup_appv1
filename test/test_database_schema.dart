@@ -27,10 +27,16 @@ Future<void> testDatabaseSchema() async {
   }
 
   try {
-    // Test if users table exists
-    final users = await client.from('users').select('id').limit(1);
+    // Test insert
+    await client.from('users').insert({
+      'id': 'test-user-id',
+      'email': 'test@example.com',
+    });
+
+    // Test select
+    await client.from('users').select('id').limit(1);
     if (kDebugMode) {
-      print('✅ Users table exists');
+      print('✅ Users table exists and allows insert/select');
     }
   } catch (e) {
     if (kDebugMode) {
@@ -40,8 +46,8 @@ Future<void> testDatabaseSchema() async {
 
   try {
     // Test if get_or_create_direct_conversation function exists
-    final result =
-        await client.rpc('get_or_create_direct_conversation', params: {
+    // Test if get_or_create_direct_conversation function exists
+    await client.rpc('get_or_create_direct_conversation', params: {
       'user1_id': '00000000-0000-0000-0000-000000000000',
       'user2_id': '00000000-0000-0000-0000-000000000001'
     });

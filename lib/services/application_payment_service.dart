@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:foundervers/models/payment_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/services/premium_subscription_service.dart';
+import 'package:foundervers/services/lazy_stripe_service.dart';
 
 /// Application Payment Service
 /// Handles payment processing for ecosystem applications
@@ -135,18 +137,52 @@ class ApplicationPaymentService {
       final clientSecret = response.data['clientSecret'] as String;
       final paymentIntentId = response.data['paymentIntentId'] as String;
 
+      // On Web: Return clientSecret for WebPaymentForm to handle
+      if (kIsWeb) {
+        debugPrint('🌐 Web: Returning clientSecret for WebPaymentForm');
+        return {
+          'success': true,
+          'needsWebPayment': true,
+          'clientSecret': clientSecret,
+          'paymentIntentId': paymentIntentId,
+          'paymentId': paymentId,
+          'amount': applicationFee,
+        };
+      }
+
       // Step 2: Initialize Stripe Payment Sheet
       try {
+        // Ensure Stripe is initialized (lazy, on-demand)
+        final stripeReady = await LazyStripeService.ensureInitialized();
+        if (!stripeReady) {
+          return {
+            'success': false,
+            'message': 'Payment service not available',
+            'error': 'Stripe initialization failed',
+          };
+        }
+
         await Stripe.instance.initPaymentSheet(
           paymentSheetParameters: SetupPaymentSheetParameters(
             paymentIntentClientSecret: clientSecret,
             merchantDisplayName: 'FounderVers',
             style: ThemeMode.system,
+            appearance: const PaymentSheetAppearance(
+              primaryButton: PaymentSheetPrimaryButtonAppearance(
+                colors: PaymentSheetPrimaryButtonTheme(
+                  light: PaymentSheetPrimaryButtonThemeColors(
+                    background: Color(0xFFFF6B2C),
+                    text: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            // GooglePay only works on Android - causes Platform error on Web
             googlePay: const PaymentSheetGooglePay(
               merchantCountryCode: 'US',
               testEnv: true,
+              currencyCode: 'USD',
             ),
-            // Apple Pay removed - requires merchant identifier setup
             // applePay: const PaymentSheetApplePay(
             //   merchantCountryCode: 'US',
             // ),

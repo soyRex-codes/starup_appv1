@@ -335,13 +335,15 @@ class ModerationService {
           double? threshold;
           if (k.contains('sexual/minors')) {
             threshold = 0.20;
-          } else if (k.contains('self-harm'))
+          } else if (k.contains('self-harm')) {
             threshold = 0.45;
-          else if (k.contains('hate'))
+          } else if (k.contains('hate')) {
             threshold = 0.60;
-          else if (k.contains('sexual'))
+          } else if (k.contains('sexual')) {
             threshold = 0.65;
-          else if (k.contains('violence')) threshold = 0.70;
+          } else if (k.contains('violence')) {
+            threshold = 0.70;
+          }
           if (threshold != null && score >= threshold) {
             apiFlagged = true;
             if (severeKeys.any((sev) => k.contains(sev))) {
@@ -431,15 +433,13 @@ class ModerationService {
 
     // If blocked by local filter, stop immediately (save API costs!)
     if (localFilterResult.blocked) {
-      final userMessage =
-          LocalTextFilterService.getBlockedMessage(localFilterResult);
       if (kDebugMode) {
         debugPrint(
             '🚫 LAYER 1 BLOCKED: ${localFilterResult.categories.join(", ")} '
             '(matched: ${localFilterResult.matchedTerms.take(3).join(", ")})');
-
+      }
+      return ModerationResult.blockedResult(localFilterResult.categories);
     }
-  }
 
     // If flagged for manual review, mark as pending
     if (localFilterResult.needsReview) {
@@ -637,10 +637,13 @@ class ModerationService {
         _putCache(cacheKey, blockedRes);
         return blockedRes;
       }
+
       _putCache(cacheKey, ModerationResult.approvedResult);
       return ModerationResult.approvedResult;
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Moderation exception: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ Moderation exception: $e');
+      }
       return failClosed
           ? ModerationResult.pendingResult
           : ModerationResult.approvedResult;

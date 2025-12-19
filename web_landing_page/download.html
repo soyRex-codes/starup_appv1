@@ -1,183 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="FounderVers - Connect with entrepreneurs and founders worldwide">
     <title>Download FounderVers</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* Page-specific overrides */
+        body {
+            background: var(--bg-secondary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+        .download-container {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 100px 20px 60px;
         }
 
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px 30px;
+        .download-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 60px 40px;
             max-width: 500px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: var(--shadow-lg);
             text-align: center;
         }
 
-        .logo {
-            font-size: 48px;
-            margin-bottom: 20px;
+        .logo-large {
+            font-size: 64px;
+            margin-bottom: 24px;
+            display: block;
         }
 
-        h1 {
-            color: #333;
+        .download-card h1 {
             font-size: 32px;
-            margin-bottom: 10px;
             font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-primary);
         }
 
         .tagline {
-            color: #666;
-            font-size: 16px;
-            margin-bottom: 30px;
+            color: var(--text-secondary);
+            font-size: 17px;
             line-height: 1.5;
+            margin-bottom: 40px;
         }
 
-        .download-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin: 30px 0;
-        }
-
-        .download-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 16px 24px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 16px;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .ios-btn {
-            background: #000;
-            color: white;
-        }
-
-        .android-btn {
-            background: #3DDC84;
-            color: #1a1a1a;
-        }
-
-        .icon {
-            font-size: 24px;
-        }
-
-        .features {
+        .features-list {
             margin-top: 40px;
             text-align: left;
         }
 
-        .feature {
+        .feature-item {
             display: flex;
-            align-items: start;
-            gap: 12px;
-            margin-bottom: 16px;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
-        .feature-icon {
-            font-size: 24px;
+        .feature-icon-small {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
             flex-shrink: 0;
         }
 
+        .feature-text strong {
+            display: block;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
         .feature-text {
-            color: #555;
+            color: var(--text-secondary);
             font-size: 14px;
-            line-height: 1.6;
+            line-height: 1.4;
         }
 
         .coming-soon {
             display: inline-block;
-            background: #f0f0f0;
-            color: #666;
+            background: #f5f5f7;
+            color: var(--text-secondary);
             padding: 8px 16px;
-            border-radius: 20px;
+            border-radius: 980px;
             font-size: 12px;
             font-weight: 600;
-            margin-top: 10px;
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
-            }
-
-            h1 {
-                font-size: 28px;
-            }
-
-            .tagline {
-                font-size: 14px;
-            }
+            margin-top: 20px;
         }
     </style>
+    <link rel="icon" href="icons/foundervers.png">
+    <link rel="apple-touch-icon" href="icons/foundervers.png">
+    <meta property="og:image" content="icons/foundervers.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <div class="container">
-        <div class="logo">🚀</div>
-        <h1>FounderVers</h1>
-        <p class="tagline">Connect with entrepreneurs and founders worldwide. Share ideas, collaborate, and build the future together.</p>
-
-        <div class="download-buttons">
-            <a href="#" class="download-btn ios-btn" id="ios-link">
-                <span class="icon">🍎</span>
-                <span>Download on App Store</span>
+    <!-- Navigation Bar -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="foundervers.png" alt="FounderVers Logo">
+                <span>FounderVers</span>
             </a>
-            <a href="#" class="download-btn android-btn" id="android-link">
-                <span class="icon">📱</span>
-                <span>Get it on Google Play</span>
-            </a>
+            <div class="nav-links">
+                <a href="index.html#features">Features</a>
+                <a href="index.html#download">Download</a>
+                <a href="legal.html">Privacy</a>
+            </div>
         </div>
+    </nav>
 
-        <div class="coming-soon">Coming Soon</div>
+    <div class="download-container">
+        <div class="download-card">
+            <img src="foundervers.png" alt="FounderVers Logo" class="logo-large"
+                style="width: 100px; height: auto; margin: 0 auto 24px;">
+            <h1>FounderVers</h1>
+            <p class="tagline">Connect with entrepreneurs and founders worldwide. Share ideas, collaborate, and build
+                the
+                future together.</p>
 
-        <div class="features">
-            <div class="feature">
-                <span class="feature-icon">💡</span>
-                <div class="feature-text">
-                    <strong>Share Ideas</strong><br>
-                    Post your startup ideas and get feedback from the community
-                </div>
+            <div class="download-buttons">
+                <a href="https://apps.apple.com/us/app/foundervers/id6755343289" class="download-btn primary"
+                    target="_blank">
+                    <img src="icons/app_store_logo_ios.png" alt="App Store" class="btn-icon">
+                    <span>Download on App Store</span>
+                </a>
+                <a href="https://play.google.com/store/apps/details?id=com.foundervers.mobile" class="download-btn"
+                    target="_blank">
+                    <img src="icons/google_play_store_icon.jpg" alt="Google Play" class="btn-icon">
+                    <span>Get it on Google Play</span>
+                </a>
             </div>
-            <div class="feature">
-                <span class="feature-icon">🤝</span>
-                <div class="feature-text">
-                    <strong>Find Co-founders</strong><br>
-                    Connect with like-minded entrepreneurs and build teams
+
+            <div class="coming-soon">Coming Soon</div>
+
+            <div class="features-list">
+                <div class="feature-item">
+                    <img src="icons/post.png" alt="Share Ideas" class="feature-icon-small">
+                    <div class="feature-text">
+                        <strong>Share Ideas</strong>
+                        Post your startup ideas and get feedback from the community
+                    </div>
                 </div>
-            </div>
-            <div class="feature">
-                <span class="feature-icon">💬</span>
-                <div class="feature-text">
-                    <strong>Network & Chat</strong><br>
-                    Direct messaging and global founder community
+                <div class="feature-item">
+                    <img src="icons/HR_Employeer_hiring.png" alt="Find Co-founders" class="feature-icon-small">
+                    <div class="feature-text">
+                        <strong>Find Co-founders</strong>
+                        Connect with like-minded entrepreneurs and build teams
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <img src="icons/chat.png" alt="Network & Chat" class="feature-icon-small">
+                    <div class="feature-text">
+                        <strong>Network & Chat</strong>
+                        Direct messaging and global founder community
+                    </div>
                 </div>
             </div>
         </div>
@@ -192,7 +177,7 @@
         // Check if iOS
         if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
             // TODO: Replace with actual App Store link when published
-            iosLink.href = 'https://apps.apple.com/app/foundervers/id1234567890';
+            iosLink.href = 'https://apps.apple.com/us/app/foundervers/id6755343289';
             androidLink.style.opacity = '0.5';
         }
         // Check if Android
@@ -205,7 +190,7 @@
         // Try to open app if deep link exists
         const urlParams = new URLSearchParams(window.location.search);
         const postId = window.location.pathname.match(/\/posts\/(\d+)/)?.[1];
-        
+
         if (postId) {
             // Try custom scheme first (works if app is installed)
             const deepLink = `foundervers://posts/${postId}`;
@@ -218,4 +203,5 @@
         }
     </script>
 </body>
+
 </html>

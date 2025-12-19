@@ -42,7 +42,7 @@ class _FeedOnboardingOverlayState extends State<FeedOnboardingOverlay> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (context) => OnboardingDialog(
         onComplete: () async {
           await FeedOnboardingOverlay.completeOnboarding();
@@ -158,7 +158,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -212,7 +212,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
                           width: iconSize,
                           height: iconSize,
                           decoration: BoxDecoration(
-                            color: page.iconColor.withOpacity(0.1),
+                            color: page.iconColor.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(

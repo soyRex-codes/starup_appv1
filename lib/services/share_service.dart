@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'deep_link_service.dart';
@@ -28,10 +31,38 @@ class ShareService {
       // Ensure coordinates are non-negative and within reasonable bounds
       final validatedOrigin = _validateSharePosition(sharePositionOrigin);
 
-      final result = await Share.share(
-        shareText,
-        sharePositionOrigin: validatedOrigin,
-      );
+      ShareResult result;
+
+      // Try to download and share image if available
+      XFile? imageFile;
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        try {
+          final uri = Uri.parse(imageUrl);
+          final response = await http.get(uri);
+          if (response.statusCode == 200) {
+            final tempDir = await getTemporaryDirectory();
+            final fileName = 'share_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            final file = File('${tempDir.path}/$fileName');
+            await file.writeAsBytes(response.bodyBytes);
+            imageFile = XFile(file.path, mimeType: 'image/jpeg');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Failed to download share image: $e');
+        }
+      }
+
+      if (imageFile != null) {
+        result = await Share.shareXFiles(
+          [imageFile],
+          text: shareText,
+          sharePositionOrigin: validatedOrigin,
+        );
+      } else {
+        result = await Share.share(
+          shareText,
+          sharePositionOrigin: validatedOrigin,
+        );
+      }
 
       debugPrint('Share result status: ${result.status}');
 

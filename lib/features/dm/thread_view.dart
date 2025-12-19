@@ -770,10 +770,10 @@ class _MessageBubbleState extends State<_MessageBubble> {
                 width: 200,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: widget.mine ? Colors.white.withOpacity(0.2) : Colors.grey[300],
+                  color: widget.mine ? Colors.white.withValues(alpha: 0.2) : Colors.grey[300],
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: widget.mine ? Colors.white.withOpacity(0.3) : Colors.grey[400]!,
+                    color: widget.mine ? Colors.white.withValues(alpha: 0.3) : Colors.grey[400]!,
                   ),
                 ),
                 child: Row(

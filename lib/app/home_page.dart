@@ -75,12 +75,15 @@ class _HomePageState extends State<HomePage> {
                 // Business.AI = 2
                 final isPremium =
                     await PremiumSubscriptionService().checkPremiumStatus();
-                if (!isPremium && mounted) {
+                if (!isPremium) {
+                  if (!context.mounted) return;
                   final upgrade = await PremiumUpgradeDialog.show(
                     context,
                     featureName: 'Business.AI',
                   );
-                  if (upgrade == true && mounted) {
+                  
+                  if (!context.mounted) return;
+                  if (upgrade == true) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -130,7 +133,7 @@ class _NavBar extends StatelessWidget {
         color: Theme.of(context).scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -248,7 +251,7 @@ class _AddNavBtn extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF6B2C).withOpacity(0.3),
+              color: const Color(0xFFFF6B2C).withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -291,7 +294,7 @@ class _NavBtn extends StatelessWidget {
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 color: active
-                    ? const Color.fromARGB(255, 255, 107, 44).withOpacity(0.15)
+                    ? const Color.fromARGB(255, 255, 107, 44).withValues(alpha: 0.15)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
               ),

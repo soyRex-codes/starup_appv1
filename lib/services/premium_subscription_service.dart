@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/models/premium_payment_model.dart';
+import 'package:foundervers/services/lazy_stripe_service.dart';
 
 /// Service for managing premium subscriptions
 /// Handles checking premium status, activation, and Stripe integration
@@ -235,6 +237,8 @@ class PremiumSubscriptionService {
   }
 
   /// Process premium payment using Stripe (via Edge Function)
+  /// On Web: Returns clientSecret for WebPaymentForm widget
+  /// On Mobile: Uses PaymentSheet
   Future<Map<String, dynamic>> processPayment({
     required String paymentId,
     required bool isAnnual,
@@ -275,8 +279,31 @@ class PremiumSubscriptionService {
       final clientSecret = response.data['clientSecret'] as String;
       final paymentIntentId = response.data['paymentIntentId'] as String;
 
-      // Step 2: Initialize Stripe Payment Sheet
+      // On Web: Return clientSecret for WebPaymentForm to handle
+      if (kIsWeb) {
+        debugPrint('🌐 Web: Returning clientSecret for WebPaymentForm');
+        return {
+          'success': true,
+          'needsWebPayment': true,
+          'clientSecret': clientSecret,
+          'paymentIntentId': paymentIntentId,
+          'paymentId': paymentId,
+          'amount': amount,
+        };
+      }
+
+      // On Mobile: Use PaymentSheet
       try {
+        // Ensure Stripe is initialized (lazy, on-demand)
+        final stripeReady = await LazyStripeService.ensureInitialized();
+        if (!stripeReady) {
+          return {
+            'success': false,
+            'message': 'Payment service not available',
+            'error': 'Stripe initialization failed',
+          };
+        }
+
         debugPrint('🔧 Initializing Stripe Payment Sheet...');
         debugPrint('🔑 Client Secret: ${clientSecret.substring(0, 20)}...');
 
@@ -295,12 +322,11 @@ class PremiumSubscriptionService {
                 ),
               ),
             ),
-            googlePay: PaymentSheetGooglePay(
+            googlePay: const PaymentSheetGooglePay(
               merchantCountryCode: 'US',
               testEnv: true,
               currencyCode: 'USD',
             ),
-            // Note: Apple Pay removed - only available on iOS with merchant identifier
           ),
         );
 

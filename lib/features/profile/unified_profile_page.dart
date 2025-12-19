@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:foundervers/core/storage_utils.dart';
@@ -97,11 +98,11 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
             PopupMenuButton<String>(
               onSelected: (value) async {
                 if (value == 'block') {
-                  await _confirmBlockUser(context);
+                  await _confirmBlockUser();
                 } else if (value == 'unblock') {
-                  await _confirmUnblockUser(context);
+                  await _confirmUnblockUser();
                 } else if (value == 'report') {
-                  await _showReportUserDialog(context);
+                  await _showReportUserDialog();
                 }
               },
               itemBuilder: (BuildContext context) {
@@ -201,7 +202,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
 
 
 
-  Future<void> _confirmBlockUser(BuildContext context) async {
+  Future<void> _confirmBlockUser() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -244,7 +245,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
     }
   }
 
-  Future<void> _confirmUnblockUser(BuildContext context) async {
+  Future<void> _confirmUnblockUser() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -287,7 +288,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
 
 
 
-  Future<void> _showReportUserDialog(BuildContext context) async {
+  Future<void> _showReportUserDialog() async {
     final reasonController = TextEditingController();
     String selectedReason = 'Spam';
     final reasons = [
@@ -312,7 +313,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                 const Text('Why are you reporting this user?'),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: selectedReason,
+                  initialValue: selectedReason,
                   decoration: const InputDecoration(
                     labelText: 'Reason',
                     border: OutlineInputBorder(),
@@ -510,7 +511,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                           Padding(
                             padding: const EdgeInsets.only(left: 4),
                             child: Icon(
-                              Icons.workspace_premium,
+                              Icons.verified,
                               size: 16,
                               color: Colors.amber[600],
                             ),
@@ -694,7 +695,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                     ),
                   ),
 
-                  if (!Platform.isIOS)
+                  if (kIsWeb || !Platform.isIOS)
                     TextButton(
                       onPressed: () {
                         Navigator.push(

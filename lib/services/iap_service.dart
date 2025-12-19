@@ -46,7 +46,7 @@ class IAPService {
     if (_isInitialized) return _isAvailable;
 
     try {
-      if (!Platform.isIOS) {
+      if (kIsWeb || !Platform.isIOS) {
         debugPrint('⚠️ IAP: Not on iOS, skipping initialization');
         return false;
       }
@@ -76,8 +76,7 @@ class IAPService {
 
       _isInitialized = true;
       return true;
-      _isInitialized = true;
-      return true;
+
     } catch (e) {
       _lastError = 'Initialization failed: $e';
       debugPrint('❌ IAP: $_lastError');

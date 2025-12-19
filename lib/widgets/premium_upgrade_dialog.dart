@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:foundervers/features/premium/premium_payment_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Premium upgrade dialog shown when non-premium users try to access locked features
 class PremiumUpgradeDialog extends StatefulWidget {
@@ -150,11 +152,11 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
                         SizedBox(height: spacingSmall),
                         _buildBenefit('✨', 'Business.AI assistant', benefitSize),
                         _buildBenefit('💬', 'Global Chat access', benefitSize),
-                        _buildBenefit('🎖️', 'Golden premium badge', benefitSize),
+                        _buildBenefit('👑', 'Golden premium Crown badge', benefitSize),
                         _buildBenefit('💰', '70% off ecosystem fees', benefitSize),
                         _buildBenefit('📊', 'Advanced analytics', benefitSize),
                         _buildBenefit(
-                            '🚀', 'Early access to features', benefitSize),
+'🎟️', 'Early access to features', benefitSize),
                         _buildBenefit('!', 'Priority investor access', benefitSize),
                       ],
                     ),
@@ -163,7 +165,7 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
                   SizedBox(height: spacingMedium),
 
                   // Plan Selection and Buttons
-                  if (Platform.isIOS) ...[
+                  if (!kIsWeb && Platform.isIOS) ...[
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -176,11 +178,90 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
                           const Icon(Icons.info_outline, color: Colors.grey),
                           const SizedBox(height: 8),
                           Text(
-                            'Premium subscriptions are currently not available for purchase on the iOS app.',
+                            'Premium subscriptions are currently not available for purchase on the iOS app - Coming Soon on IOS',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.grey.shade700,
                               fontSize: descSize,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          InkWell(
+                            onTap: () async {
+                              final Uri emailLaunchUri = Uri(
+                                scheme: 'mailto',
+                                path: 'foundervers@gmail.com',
+                                query: 'subject=Premium Subscription Question',
+                              );
+                              debugPrint('📧 Attempting to launch: $emailLaunchUri');
+                              try {
+                                if (await canLaunchUrl(emailLaunchUri)) {
+                                  await launchUrl(emailLaunchUri);
+                                } else {
+                                  // Fallback: try launching anyway (simulator sometimes fails check)
+                                  await launchUrl(emailLaunchUri, mode: LaunchMode.externalApplication);
+                                }
+                              } catch (e) {
+                                debugPrint('❌ Could not launch email: $e');
+                              }
+                            },
+                            child: Text(
+                              'Questions? Email: foundervers@gmail.com',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontSize: descSize * 0.9,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          InkWell(
+                            onTap: () async {
+                              final Uri websiteUri = Uri.parse('https://foundervers.com/');
+                              debugPrint('🌐 Attempting to launch: $websiteUri');
+                              try {
+                                if (await canLaunchUrl(websiteUri)) {
+                                  await launchUrl(websiteUri, mode: LaunchMode.externalApplication);
+                                } else {
+                                  await launchUrl(websiteUri, mode: LaunchMode.externalApplication);
+                                }
+                              } catch (e) {
+                                debugPrint('❌ Could not launch website: $e');
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.amber.shade300),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.language,
+                                    size: 18,
+                                    color: Colors.amber.shade700,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      'Learn more at foundervers.com',
+                                      style: TextStyle(
+                                        color: Colors.amber.shade800,
+                                        fontSize: descSize * 0.95,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -362,7 +443,7 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
                 icon: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.close, size: 20, color: Colors.black54),

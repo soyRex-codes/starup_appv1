@@ -66,6 +66,8 @@ class UserService {
             location,
             avatar_url,
             email_verified,
+            is_premium,
+            premium_expires_at,
             created_at
           ''').eq('id', userId).limit(1);
 

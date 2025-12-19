@@ -1,10 +1,15 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.foundervers.mobile",
-    "sha256_cert_fingerprints": [
-      "YOUR_RELEASE_SHA256_FINGERPRINT_HERE"
-    ]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.foundervers.mobile",
+      "sha256_cert_fingerprints": [
+        "21:B8:04:33:31:C5:8A:A5:3F:3D:B0:28:CE:4F:BA:F1:CD:A7:2B:48:4E:17:5A:20:48:C8:50:09:E5:45:EE:7E",
+        "REPLACE_WITH_YOUR_RELEASE_KEY_SHA256"
+      ]
+    }
   }
-}]
+]

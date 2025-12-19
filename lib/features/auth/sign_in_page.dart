@@ -242,17 +242,27 @@ class _SignInPageState extends State<SignInPage> {
               'Secure connection failed. Please check your network settings and try again.';
         } else if (errorStr.contains('exception:')) {
           // Clean up "Exception: " prefix from error messages
-          final cleanError =
-              e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
-          errorMessage = cleanError;
-        } else {
-          // Show the actual error for debugging but in a user-friendly way
-          if (kDebugMode) {
-            errorMessage = _isLogin
-                ? 'Sign in failed: ${e.toString()}'
-                : 'Signup failed: ${e.toString()}';
+          final cleanError = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+          
+          // CRITICAL FIX: Don't show raw AuthRetryableFetchException or SocketException details
+          if (cleanError.contains('SocketException') || 
+              cleanError.contains('AuthRetryableFetchException') ||
+              cleanError.contains('ClientException') ||
+              cleanError.contains('host lookup')) {
+            errorMessage = 'Network connection issue. Please check your internet connection.';
           } else {
-            errorMessage = _isLogin
+            errorMessage = cleanError;
+          }
+        } else {
+          // Use localized NetworkService for generic/network errors
+          // This prevents raw stack traces or sensitive URLs from showing
+          if (errorStr.contains('socketexception') || 
+              errorStr.contains('authretryablefetchexception') ||
+              errorStr.contains('failed host lookup')) {
+            errorMessage = 'Network connection issue. Please check your internet connection.';
+          } else {
+             // Fallback for completely unknown errors
+             errorMessage = _isLogin
                 ? 'Sign in failed. Please try again.'
                 : 'Unable to create account. Please try again.';
           }

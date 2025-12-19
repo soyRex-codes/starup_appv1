@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "XF5WDB46P4.com.foundervers.mobile",
+        "paths": [
+          "/posts/*",
+          "/profile/*",
+          "/feed"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "XF5WDB46P4.com.foundervers.mobile"
+    ]
+  }
+}

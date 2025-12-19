@@ -93,7 +93,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -129,10 +129,10 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(status).withOpacity(0.1),
+                        color: _getStatusColor(status).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: _getStatusColor(status).withOpacity(0.5),
+                          color: _getStatusColor(status).withValues(alpha: 0.5),
                         ),
                       ),
                       child: Text(
@@ -358,7 +358,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: _getStatusColor(status).withOpacity(0.1),
+                              color: _getStatusColor(status).withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(

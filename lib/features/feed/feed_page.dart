@@ -302,8 +302,8 @@ class FeedPageState extends State<FeedPage> {
     if (result != null) {
       setState(() {
         _categoryFilter = result!['category'];
-        _goalFilter = result!['goal'];
-        _dateRangeFilter = PostAge.fromValue(result!['dateRange'] ?? 'all');
+        _goalFilter = result['goal'];
+        _dateRangeFilter = PostAge.fromValue(result['dateRange'] ?? 'all');
       });
       _load(reset: true);
     }
