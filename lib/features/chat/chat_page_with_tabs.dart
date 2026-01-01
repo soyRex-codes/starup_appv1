@@ -55,8 +55,12 @@ class _ChatPageWithTabsState extends State<ChatPageWithTabs>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.grey[900] : Colors.white;
+    final borderColor = isDark ? Colors.grey[800]! : Colors.grey[200]!;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       body: SafeArea(
         top: true,
         bottom: false,
@@ -65,10 +69,10 @@ class _ChatPageWithTabsState extends State<ChatPageWithTabs>
             // Compact tab bar directly at top (SafeArea handles status bar)
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: bgColor,
                 border: Border(
                   bottom: BorderSide(
-                    color: Colors.grey[200]!,
+                    color: borderColor,
                     width: 1,
                   ),
                 ),

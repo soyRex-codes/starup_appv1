@@ -81,11 +81,18 @@ class _CommentInputState extends State<CommentInput> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? AppColorsDark.card : AppColors.card;
+    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
+    final bgColor = isDark ? AppColorsDark.bg : AppColors.bg;
+    final textSecondary = isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
+    final primary = isDark ? AppColorsDark.primary : AppColors.primary;
+    
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.card,
+      decoration: BoxDecoration(
+        color: cardColor,
         border: Border(
-          top: BorderSide(color: AppColors.border, width: 1),
+          top: BorderSide(color: borderColor, width: 1),
         ),
       ),
       child: Column(
@@ -101,7 +108,7 @@ class _CommentInputState extends State<CommentInput> {
             ),
 
           // Reply banner (when replying to a comment)
-          if (_isReply) _buildReplyBanner(),
+          if (_isReply) _buildReplyBanner(isDark),
 
           // Input field and submit button
           Padding(
@@ -129,24 +136,24 @@ class _CommentInputState extends State<CommentInput> {
                         hintText: _isReply
                             ? 'Write a reply...'
                             : 'Add a comment... (Select category above)',
-                        hintStyle: const TextStyle(
+                        hintStyle: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: textSecondary,
                         ),
                         filled: true,
-                        fillColor: AppColors.bg,
+                        fillColor: bgColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: const BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: const BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
+                          borderSide: BorderSide(
+                            color: primary,
                             width: 2,
                           ),
                         ),
@@ -155,7 +162,7 @@ class _CommentInputState extends State<CommentInput> {
                           vertical: 12,
                         ),
                       ),
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14, color: isDark ? AppColorsDark.textPrimary : AppColors.textPrimary),
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
@@ -183,14 +190,14 @@ class _CommentInputState extends State<CommentInput> {
                           icon: Icon(
                             Icons.send_rounded,
                             color: _canSubmit
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
+                                ? primary
+                                : textSecondary,
                           ),
                           iconSize: 24,
                           style: IconButton.styleFrom(
                             backgroundColor: _canSubmit
-                                ? AppColors.primary.withValues(alpha: 0.1)
-                                : AppColors.border.withValues(alpha: 0.3),
+                                ? primary.withValues(alpha: 0.1)
+                                : borderColor.withValues(alpha: 0.3),
                             shape: const CircleBorder(),
                           ),
                         ),
@@ -203,29 +210,35 @@ class _CommentInputState extends State<CommentInput> {
     );
   }
 
-  Widget _buildReplyBanner() {
+  Widget _buildReplyBanner(bool isDark) {
+    final primarySoft = isDark ? AppColorsDark.primarySoft : AppColors.primarySoft;
+    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
+    final primary = isDark ? AppColorsDark.primary : AppColors.primary;
+    final textPrimary = isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: const BoxDecoration(
-        color: AppColors.primarySoft,
+      decoration: BoxDecoration(
+        color: primarySoft,
         border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 1),
+          bottom: BorderSide(color: borderColor, width: 1),
         ),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.reply_rounded,
             size: 16,
-            color: AppColors.primary,
+            color: primary,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Replying to ${widget.replyingTo?.author?.displayName ?? "comment"}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textPrimary,
+                color: textPrimary,
                 fontWeight: FontWeight.w500,
               ),
               maxLines: 1,
@@ -239,7 +252,7 @@ class _CommentInputState extends State<CommentInput> {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             style: IconButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
+              foregroundColor: textSecondary,
             ),
           ),
         ],

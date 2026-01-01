@@ -202,6 +202,8 @@ class _CommentSheetState extends State<CommentSheet> {
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final sheetHeight = screenHeight; // Full screen height
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColorsDark.bg : AppColors.bg;
 
     return AnimatedPadding(
       padding: EdgeInsets.only(bottom: keyboardHeight),
@@ -209,21 +211,21 @@ class _CommentSheetState extends State<CommentSheet> {
       curve: Curves.easeOut,
       child: Container(
         height: sheetHeight,
-        decoration: const BoxDecoration(
-          color: AppColors.bg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
             // Handle bar
-            _buildHandleBar(),
+            _buildHandleBar(isDark),
 
             // Header
-            _buildHeader(),
+            _buildHeader(isDark),
 
             // Comments list
             Expanded(
-              child: _buildCommentsList(),
+              child: _buildCommentsList(isDark),
             ),
 
             // Input section
@@ -239,7 +241,8 @@ class _CommentSheetState extends State<CommentSheet> {
     );
   }
 
-  Widget _buildHandleBar() {
+  Widget _buildHandleBar(bool isDark) {
+    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Center(
@@ -247,7 +250,7 @@ class _CommentSheetState extends State<CommentSheet> {
           width: 40,
           height: 4,
           decoration: BoxDecoration(
-            color: AppColors.border,
+            color: borderColor,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -255,12 +258,16 @@ class _CommentSheetState extends State<CommentSheet> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isDark) {
+    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
+    final textPrimary = isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 1),
+          bottom: BorderSide(color: borderColor, width: 1),
         ),
       ),
       child: Row(
@@ -269,20 +276,20 @@ class _CommentSheetState extends State<CommentSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Comments',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: textPrimary,
                   ),
                 ),
                 if (_comments.isNotEmpty)
                   Text(
                     '$_totalVisibleComments ${_totalVisibleComments == 1 ? 'comment' : 'comments'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: textSecondary,
                     ),
                   ),
               ],
@@ -293,7 +300,7 @@ class _CommentSheetState extends State<CommentSheet> {
             icon: const Icon(Icons.close_rounded),
             iconSize: 24,
             style: IconButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
+              foregroundColor: textSecondary,
             ),
           ),
         ],
@@ -301,7 +308,10 @@ class _CommentSheetState extends State<CommentSheet> {
     );
   }
 
-  Widget _buildCommentsList() {
+  Widget _buildCommentsList(bool isDark) {
+    final textSecondary = isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
+    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
+    
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
@@ -321,9 +331,9 @@ class _CommentSheetState extends State<CommentSheet> {
             const SizedBox(height: 16),
             Text(
               _error!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: textSecondary,
               ),
             ),
             const SizedBox(height: 16),
@@ -344,23 +354,23 @@ class _CommentSheetState extends State<CommentSheet> {
             Icon(
               Icons.comment_outlined,
               size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              color: textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No comments yet',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                color: textSecondary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Be the first to comment!',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: textSecondary,
               ),
             ),
           ],
@@ -374,10 +384,10 @@ class _CommentSheetState extends State<CommentSheet> {
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: _comments.length,
-        separatorBuilder: (context, index) => const Divider(
+        separatorBuilder: (context, index) => Divider(
           height: 1,
           thickness: 1,
-          color: AppColors.border,
+          color: borderColor,
         ),
         itemBuilder: (context, index) {
           final comment = _comments[index];

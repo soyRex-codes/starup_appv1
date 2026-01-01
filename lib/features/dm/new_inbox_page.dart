@@ -75,17 +75,20 @@ class _NewInboxPageState extends State<NewInboxPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.grey[900] : Colors.white;
+    
     if (_me == null) {
       return const Scaffold(
         body: Center(child: Text('Please log in to view your inbox')),
       );
     }
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: null, // Remove title - already shown in tab
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: bgColor,
         elevation: 0,
         toolbarHeight: 0, // Collapse app bar completely
       ),
@@ -196,6 +199,7 @@ class _ParticipantAvatarState extends State<_ParticipantAvatar> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final initials = (_p?.name?.trim().isNotEmpty == true
         ? _p!.name!.trim()[0].toUpperCase()
         : widget.uid.substring(0, 1).toUpperCase());
@@ -216,13 +220,13 @@ class _ParticipantAvatarState extends State<_ParticipantAvatar> {
       },
       child: CircleAvatar(
         backgroundColor:
-            widget.highlight ? Colors.deepPurple : Colors.grey.shade300,
+            widget.highlight ? Colors.deepPurple : (isDark ? Colors.grey[700] : Colors.grey.shade300),
         backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
         child: avatarUrl != null
             ? null
             : Text(initials,
                 style: TextStyle(
-                    color: widget.highlight ? Colors.white : Colors.black87)),
+                    color: widget.highlight ? Colors.white : (isDark ? Colors.white70 : Colors.black87))),
       ),
     );
   }
@@ -251,14 +255,15 @@ class _ParticipantNameState extends State<_ParticipantName> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = _p?.name ?? widget.fallback;
 
     return Text(
       name,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        color: Colors.black87,
+      style: TextStyle(
+        color: isDark ? Colors.white : Colors.black87,
         fontWeight: FontWeight.w500,
       ),
     );

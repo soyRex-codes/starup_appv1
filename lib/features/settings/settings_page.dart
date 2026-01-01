@@ -19,6 +19,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final currentUser = Supabase.instance.client.auth.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -29,7 +30,7 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.all(16),
         children: [
           // Account Section
-          _buildSectionHeader('Account'),
+          _buildSectionHeader('Account', isDark: isDark),
           const SizedBox(height: 12),
 
           // User Info
@@ -37,6 +38,7 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: AppIcons.email(size: 24),
             title: 'Email',
             subtitle: currentUser?.email ?? 'Not available',
+            isDark: isDark,
           ),
 
           const SizedBox(height: 8),
@@ -46,12 +48,13 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: currentUser?.createdAt != null
                 ? _formatDateFromString(currentUser!.createdAt)
                 : 'Not available',
+            isDark: isDark,
           ),
 
           const SizedBox(height: 24),
 
           // Privacy & Security Section
-          _buildSectionHeader('Privacy & Security'),
+          _buildSectionHeader('Privacy & Security', isDark: isDark),
           const SizedBox(height: 12),
 
           // Blocked Users
@@ -59,6 +62,7 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: const Icon(Icons.block, size: 24),
             title: 'Blocked Users',
             subtitle: 'Manage blocked users',
+            isDark: isDark,
             onTap: () {
               Navigator.push(
                 context,
@@ -76,18 +80,20 @@ class _SettingsPageState extends State<SettingsPage> {
             title: 'Delete Account',
             subtitle: 'Permanently delete your account and all data',
             onTap: _showDeleteAccountDialog,
+            isDark: isDark,
           ),
 
           const SizedBox(height: 24),
 
           // App Information
-          _buildSectionHeader('App Information'),
+          _buildSectionHeader('App Information', isDark: isDark),
           const SizedBox(height: 12),
 
           _buildInfoTile(
             icon: AppIcons.info(size: 24),
             title: 'Version',
             subtitle: '1.0.0',
+            isDark: isDark,
           ),
 
           const SizedBox(height: 40),
@@ -109,15 +115,15 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, {required bool isDark}) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          color: isDark ? Colors.white : Colors.black87,
         ),
       ),
     );
@@ -127,6 +133,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required Widget icon,
     required String title,
     required String subtitle,
+    required bool isDark,
     VoidCallback? onTap,
   }) {
     return InkWell(
@@ -135,9 +142,9 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: isDark ? Colors.grey[850] : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey.shade200),
         ),
         child: Row(
           children: [
@@ -149,16 +156,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: isDark ? Colors.grey[400] : Colors.grey.shade600,
                       fontSize: 14,
                     ),
                   ),
@@ -166,7 +174,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             if (onTap != null)
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+              Icon(Icons.chevron_right, color: isDark ? Colors.grey[500] : Colors.grey.shade400),
           ],
         ),
       ),
@@ -178,6 +186,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    required bool isDark,
   }) {
     return InkWell(
       onTap: onTap,
@@ -185,9 +194,9 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.red.shade50,
+          color: isDark ? Colors.red.shade900.withValues(alpha: 0.3) : Colors.red.shade50,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.shade200),
+          border: Border.all(color: isDark ? Colors.red.shade700 : Colors.red.shade200),
         ),
         child: Row(
           children: [
@@ -202,7 +211,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Colors.red.shade700,
+                      color: isDark ? Colors.red.shade300 : Colors.red.shade700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -210,7 +219,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     subtitle,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.red.shade600,
+                      color: isDark ? Colors.red.shade400 : Colors.red.shade600,
                     ),
                   ),
                 ],
@@ -218,7 +227,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             Icon(
               Icons.chevron_right,
-              color: Colors.red.shade400,
+              color: isDark ? Colors.red.shade400 : Colors.red.shade400,
             ),
           ],
         ),

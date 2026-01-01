@@ -11,6 +11,7 @@ import 'package:foundervers/features/admin/services/admin_auth_service.dart';
 import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/features/premium/premium_payment_page.dart';
 import 'package:foundervers/services/premium_subscription_service.dart';
+import 'package:foundervers/app/theme.dart';
 
 /// Main menu drawer - slides in from right side
 /// Provides navigation to all major app sections
@@ -19,7 +20,14 @@ class AppMenuDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColorsDark.bg : AppColors.bg;
+    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
+    final textSecondary = isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
+    final iconColor = isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
+    
     return Drawer(
+      backgroundColor: bgColor,
       child: SafeArea(
         child: Column(
           children: [
@@ -29,8 +37,9 @@ class AppMenuDrawer extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
                   _MenuAction(
-                    icon: AppIcons.profile(size: 22),
+                    icon: AppIcons.profile(size: 22, color: iconColor),
                     label: 'Profile & Account',
+                    isDark: isDark,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.of(context).push(
@@ -42,8 +51,9 @@ class AppMenuDrawer extends StatelessWidget {
                   ),
 
                   _MenuAction(
-                    icon: const Icon(Icons.business_center_outlined, size: 22),
+                    icon: Icon(Icons.business_center_outlined, size: 22, color: isDark ? AppColorsDark.textPrimary : AppColors.textPrimary),
                     label: 'My Business Applications',
+                    isDark: isDark,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.of(context).push(
@@ -66,12 +76,13 @@ class AppMenuDrawer extends StatelessWidget {
                             size: 22,
                             color: isPremium
                                 ? Colors.amber.shade700
-                                : const Color(0xFF8B4513),
+                                : (isDark ? AppColorsDark.textSecondary : const Color(0xFF8B4513)),
                           ),
                           label: isPremium
                               ? 'Premium Member ✓'
                               : 'Upgrade to Premium',
                           labelColor: isPremium ? Colors.amber.shade700 : null,
+                          isDark: isDark,
                           onTap: () {
                             Navigator.pop(context);
                             Navigator.of(context).push(
@@ -85,7 +96,7 @@ class AppMenuDrawer extends StatelessWidget {
                       },
                     ),
 
-                  const Divider(height: 1),
+                  Divider(height: 1, color: borderColor),
 
                   // Admin Dashboard - only for admins
                   FutureBuilder<bool>(
@@ -94,7 +105,7 @@ class AppMenuDrawer extends StatelessWidget {
                       if (snapshot.data == true) {
                         return Column(
                           children: [
-                            const Divider(height: 1),
+                            Divider(height: 1, color: borderColor),
                             _MenuAction(
                               icon: const Icon(
                                 Icons.admin_panel_settings,
@@ -103,6 +114,7 @@ class AppMenuDrawer extends StatelessWidget {
                               ),
                               label: 'Admin Dashboard',
                               labelColor: const Color(0xFFFF5722),
+                              isDark: isDark,
                               onTap: () {
                                 Navigator.pop(context);
                                 Navigator.of(context).push(
@@ -112,7 +124,7 @@ class AppMenuDrawer extends StatelessWidget {
                                 );
                               },
                             ),
-                            const Divider(height: 1),
+                            Divider(height: 1, color: borderColor),
                           ],
                         );
                       }
@@ -121,8 +133,9 @@ class AppMenuDrawer extends StatelessWidget {
                   ),
 
                   _MenuAction(
-                    icon: AppIcons.about(size: 22),
+                    icon: AppIcons.about(size: 22, color: iconColor),
                     label: 'About FounderVers',
+                    isDark: isDark,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.of(context).push(
@@ -133,11 +146,12 @@ class AppMenuDrawer extends StatelessWidget {
                     },
                   ),
 
-                  const Divider(height: 1),
+                  Divider(height: 1, color: borderColor),
 
                   _MenuAction(
-                    icon: AppIcons.settings(size: 22),
+                    icon: AppIcons.settings(size: 22, color: iconColor),
                     label: 'Settings',
+                    isDark: isDark,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.of(context).push(
@@ -148,8 +162,9 @@ class AppMenuDrawer extends StatelessWidget {
                     },
                   ),
                   _MenuAction(
-                    icon: AppIcons.help(size: 22),
+                    icon: AppIcons.help(size: 22, color: iconColor),
                     label: 'Help & Support',
+                    isDark: isDark,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.of(context).push(
@@ -164,14 +179,14 @@ class AppMenuDrawer extends StatelessWidget {
             ),
 
             // Footer with version info
-            const Divider(height: 1),
+            Divider(height: 1, color: borderColor),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
                 'FounderVers v1.0.0',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[500],
+                  color: textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -189,16 +204,20 @@ class _MenuAction extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final Color? labelColor;
+  final bool isDark;
 
   const _MenuAction({
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.isDark,
     this.labelColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final textPrimary = isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
+    
     return ListTile(
       leading: icon,
       title: Text(
@@ -206,7 +225,7 @@ class _MenuAction extends StatelessWidget {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: labelColor,
+          color: labelColor ?? textPrimary,
         ),
       ),
       onTap: onTap,

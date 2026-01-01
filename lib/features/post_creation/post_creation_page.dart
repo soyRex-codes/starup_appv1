@@ -478,7 +478,14 @@ class _PostCreationPageState extends State<PostCreationPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.isEdit ? 'Edit Post' : 'Share Your Business Idea'),
+          title: const FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'Share Startup Idea',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          centerTitle: true,
           actions: [
             if (!_saving)
               IconButton(
@@ -493,6 +500,18 @@ class _PostCreationPageState extends State<PostCreationPage> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
+              // Context header to explain the form
+              const Padding(
+                padding: EdgeInsets.only(bottom: 20),
+                child: Text(
+                  'Pitch your business vision to the community. Get feedback, funding, and find teammates.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                    height: 1.4,
+                  ),
+                ),
+              ),
               _Label('Your Name'),
               TextFormField(
                 initialValue: name,
@@ -654,19 +673,30 @@ class _PickerField extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F6FC),
-          border: Border.all(color: const Color(0xFFE2D9F3)),
+          color: isDark ? Colors.grey[850] : const Color(0xFFF8F6FC),
+          border: Border.all(
+            color: isDark ? Colors.grey[700]! : const Color(0xFFE2D9F3),
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+            ),
             Transform.rotate(
                 angle: 3.14159, child: AppIcons.backArrow(size: 20)),
           ],
@@ -694,16 +724,17 @@ class _MediaPickerBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: saving ? null : onAdd,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFFCFAFE),
+          color: isDark ? Colors.grey[850] : const Color(0xFFFCFAFE),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: const Color(0xFFE0CFF7),
+              color: isDark ? Colors.grey[700]! : const Color(0xFFE0CFF7),
               style: BorderStyle.solid,
               width: 1,
               strokeAlign: BorderSide.strokeAlignOutside),
@@ -717,8 +748,11 @@ class _MediaPickerBox extends StatelessWidget {
                 files.isEmpty
                     ? 'Tap to add media'
                     : 'Tap to add / replace (${files.length}/6)',
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                )),
             const SizedBox(height: 12),
             if (files.isNotEmpty)
               Wrap(

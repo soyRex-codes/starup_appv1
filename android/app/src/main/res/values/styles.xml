@@ -18,5 +18,9 @@
          This Theme is only used starting with V2 of Flutter's Android embedding. -->
     <style name="NormalTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="android:windowBackground">?android:colorBackground</item>
+        <!-- Required for Stripe SDK -->
+        <item name="colorPrimary">@color/stripe_primary</item>
+        <item name="colorPrimaryDark">@color/stripe_primary_dark</item>
+        <item name="colorAccent">@color/stripe_accent</item>
     </style>
 </resources>

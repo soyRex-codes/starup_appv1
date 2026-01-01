@@ -43,6 +43,13 @@ class _ThreadViewState extends State<ThreadView> {
   final _picker = ImagePicker();
   bool _uploading = false;
   
+  // Staged media for preview before sending
+  Uint8List? _stagedMediaBytes;
+  String? _stagedFileName;
+  String? _stagedFileExt;
+  String? _stagedMessageType; // 'image' or 'file'
+  int? _stagedFileSize;
+  
   static const int _maxFileSize = 10 * 1024 * 1024; // 10MB
 
   @override
@@ -121,32 +128,56 @@ class _ThreadViewState extends State<ThreadView> {
 
   Future<void> _send() async {
     final text = _input.text.trim();
-    if (text.isEmpty || _me == null) return;
+    // Guard: Must have either media or text
+    if (_stagedMediaBytes == null && text.isEmpty) return;
+    if (_me == null) return;
+    
+    // Prevent multiple clicks
+    if (_sending) return;
+
     setState(() {
       _sending = true;
     });
+
     try {
-      final optimistic = ChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        conversationId: widget.thread.threadId,
-        senderId: _me.id,
-        content: text,
-        createdAt: DateTime.now(),
-        messageType: 'text',
-      );
-      setState(() {
-        _messages.add(optimistic);
-      });
-      _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      _input.clear();
-      // Dismiss keyboard after sending message
+      // Dismiss keyboard
       FocusScope.of(context).unfocus();
-      final persisted = await _msgRepo.send(
-          threadId: widget.thread.threadId, senderId: _me.id, body: text);
-      setState(() {
-        final idx = _messages.indexWhere((m) => m.id == optimistic.id);
-        if (idx != -1) _messages[idx] = persisted;
-      });
+
+      // 1. Send Staged Media if present
+      if (_stagedMediaBytes != null) {
+        await _uploadAndSend(
+          bytes: _stagedMediaBytes!,
+          fileName: _stagedFileName!,
+          fileExt: _stagedFileExt!,
+          messageType: _stagedMessageType!,
+          fileSize: _stagedFileSize!,
+        );
+        _clearStagedMedia();
+      }
+
+      // 2. Send Text if present
+      if (text.isNotEmpty) {
+        final optimistic = ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          conversationId: widget.thread.threadId,
+          senderId: _me.id,
+          content: text,
+          createdAt: DateTime.now(),
+          messageType: 'text',
+        );
+        setState(() {
+          _messages.add(optimistic);
+        });
+        _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        _input.clear();
+        
+        final persisted = await _msgRepo.send(
+            threadId: widget.thread.threadId, senderId: _me.id, body: text);
+        setState(() {
+          final idx = _messages.indexWhere((m) => m.id == optimistic.id);
+          if (idx != -1) _messages[idx] = persisted;
+        });
+      }
     } catch (_) {
     } finally {
       if (mounted) {
@@ -157,7 +188,7 @@ class _ThreadViewState extends State<ThreadView> {
     }
   }
 
-  Future<void> _pickAndSendImage() async {
+  Future<void> _pickImage() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -166,11 +197,7 @@ class _ThreadViewState extends State<ThreadView> {
       
       if (image == null) return;
 
-      setState(() {
-        _uploading = true;
-      });
-      
-      // Compress image before upload
+      // Compress image for staging
       final originalFile = File(image.path);
       final compressedFile = await MediaCompressionService.instance.compressImage(
         originalFile,
@@ -178,21 +205,20 @@ class _ThreadViewState extends State<ThreadView> {
       );
       
       final bytes = await compressedFile.readAsBytes();
-      // Extension might change (e.g. to .jpg), so get it from compressed file
       final fileExt = compressedFile.path.split('.').last;
+      final fileSize = await compressedFile.length();
       
-      await _uploadAndSend(
-        bytes: bytes,
-        fileName: '${DateTime.now().millisecondsSinceEpoch}.$fileExt',
-        fileExt: fileExt,
-        messageType: 'image',
-        fileSize: await compressedFile.length(),
-      );
-    } catch (e) {
       if (mounted) {
         setState(() {
-          _uploading = false;
+          _stagedMediaBytes = bytes;
+          _stagedFileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+          _stagedFileExt = fileExt;
+          _stagedMessageType = 'image';
+          _stagedFileSize = fileSize;
         });
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to pick image: $e')),
         );
@@ -200,7 +226,7 @@ class _ThreadViewState extends State<ThreadView> {
     }
   }
 
-  Future<void> _pickAndSendFile() async {
+  Future<void> _pickFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -210,20 +236,11 @@ class _ThreadViewState extends State<ThreadView> {
       if (result == null || result.files.isEmpty) return;
       final file = result.files.first;
       
-      setState(() {
-        _uploading = true;
-      });
-      
       if (file.size > _maxFileSize) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('File too large (Max 10MB)')),
           );
-        }
-        if (mounted) {
-          setState(() {
-            _uploading = false;
-          });
         }
         return;
       }
@@ -231,23 +248,32 @@ class _ThreadViewState extends State<ThreadView> {
       final bytes = file.bytes ?? await File(file.path!).readAsBytes();
       final fileExt = file.extension ?? 'file';
 
-      await _uploadAndSend(
-        bytes: bytes,
-        fileName: file.name,
-        fileExt: fileExt,
-        messageType: 'file',
-        fileSize: file.size,
-      );
-    } catch (e) {
       if (mounted) {
         setState(() {
-          _uploading = false;
+          _stagedMediaBytes = bytes;
+          _stagedFileName = file.name;
+          _stagedFileExt = fileExt;
+          _stagedMessageType = 'file';
+          _stagedFileSize = file.size;
         });
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to pick file: $e')),
         );
       }
     }
+  }
+
+  void _clearStagedMedia() {
+    setState(() {
+      _stagedMediaBytes = null;
+      _stagedFileName = null;
+      _stagedFileExt = null;
+      _stagedMessageType = null;
+      _stagedFileSize = null;
+    });
   }
 
   Future<void> _uploadAndSend({
@@ -339,13 +365,14 @@ class _ThreadViewState extends State<ThreadView> {
   }
 
   void _showAttachmentOptions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[850] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Column(
@@ -353,18 +380,18 @@ class _ThreadViewState extends State<ThreadView> {
             children: [
               ListTile(
                 leading: const Icon(Icons.photo_library, color: Colors.purple),
-                title: const Text('Photo Gallery'),
+                title: Text('Photo Gallery', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickAndSendImage();
+                  _pickImage();
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.description, color: Colors.blue),
-                title: const Text('Document'),
+                title: Text('Document', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickAndSendFile();
+                  _pickFile();
                 },
               ),
               const SizedBox(height: 8),
@@ -547,7 +574,57 @@ class _ThreadViewState extends State<ThreadView> {
           ),
           SafeArea(
             top: false,
-            child: Row(children: [
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_stagedMediaBytes != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    color: Theme.of(context).cardColor,
+                    child: Row(
+                      children: [
+                        if (_stagedMessageType == 'image')
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.memory(_stagedMediaBytes!, width: 60, height: 60, fit: BoxFit.cover),
+                          )
+                        else
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.description, color: Colors.blue, size: 30),
+                          ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _stagedFileName ?? 'File',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              if (_stagedFileSize != null)
+                                Text(
+                                  '${(_stagedFileSize! / 1024).toStringAsFixed(1)} KB',
+                                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: _clearStagedMedia,
+                        ),
+                      ],
+                    ),
+                  ),
+                Row(children: [
               Expanded(
                 child: Padding(
                   padding:
@@ -593,6 +670,8 @@ class _ThreadViewState extends State<ThreadView> {
                 onPressed: _sending ? null : _send,
               )
             ]),
+              ],
+            ),
           )
         ]),
       ),

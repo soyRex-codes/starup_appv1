@@ -26,6 +26,10 @@ class CommentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentUser = Supabase.instance.client.auth.currentUser;
     final isOwnComment = currentUser?.id == comment.authorId;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
+    final textPrimary = isDark ? AppColorsDark.textPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColorsDark.textSecondary : AppColors.textSecondary;
 
     return Container(
       padding: EdgeInsets.only(
@@ -36,8 +40,8 @@ class CommentCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         border: isReply
-            ? const Border(
-                left: BorderSide(color: AppColors.border, width: 2),
+            ? Border(
+                left: BorderSide(color: borderColor, width: 2),
               )
             : null,
       ),
@@ -71,10 +75,10 @@ class CommentCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: Text(
                             comment.author?.displayName ?? 'Unknown User',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: textPrimary,
                             ),
                           ),
                         ),
@@ -82,9 +86,9 @@ class CommentCard extends StatelessWidget {
                     ),
                     Text(
                       timeago.format(comment.createdAt, locale: 'en_short'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textSecondary,
+                        color: textSecondary,
                       ),
                     ),
                   ],
@@ -101,20 +105,20 @@ class CommentCard extends StatelessWidget {
                 // Comment content (selectable for better UX)
                 SelectableText(
                   comment.content,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textPrimary,
+                    color: textPrimary,
                     height: 1.4,
                   ),
                 ),
 
                 if (comment.wasEdited) ...[
                   const SizedBox(height: 3),
-                  const Text(
+                  Text(
                     '(edited)',
                     style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.textSecondary,
+                      color: textSecondary,
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -135,17 +139,17 @@ class CommentCard extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.reply_rounded,
                               size: 15,
-                              color: AppColors.textSecondary,
+                              color: textSecondary,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               'Reply',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textSecondary,
+                                color: textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

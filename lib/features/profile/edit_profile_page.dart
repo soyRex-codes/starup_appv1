@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:foundervers/features/auth/user_service.dart';
 import 'package:foundervers/core/storage_utils.dart';
 import 'package:foundervers/core/env.dart';
@@ -108,9 +109,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
 
       if (image != null) {
-        setState(() {
-          _newAvatarFile = image;
-        });
+        // Open cropper for the selected image
+        final croppedFile = await _cropImage(image.path);
+        if (croppedFile != null) {
+          setState(() {
+            _newAvatarFile = XFile(croppedFile.path);
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -119,6 +124,32 @@ class _EditProfilePageState extends State<EditProfilePage> {
         );
       }
     }
+  }
+
+  /// Crop the selected image using native cropper
+  Future<CroppedFile?> _cropImage(String imagePath) async {
+    return await ImageCropper().cropImage(
+      sourcePath: imagePath,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressQuality: 85,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Profile Photo',
+          toolbarColor: Theme.of(context).primaryColor,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+          cropStyle: CropStyle.circle,
+        ),
+        IOSUiSettings(
+          title: 'Crop Profile Photo',
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+          cropStyle: CropStyle.circle,
+        ),
+      ],
+    );
   }
 
   void _showImageSourceDialog() {

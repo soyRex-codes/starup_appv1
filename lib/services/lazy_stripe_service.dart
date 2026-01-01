@@ -1,4 +1,4 @@
-import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart' as dotenv;
 
@@ -14,12 +14,16 @@ class LazyStripeService {
     if (_isInitialized) return true;
 
     try {
-      final stripePublishableKey =
-          dotenv.dotenv.maybeGet('STRIPE_PUBLISHABLE_KEY') ??
-              const String.fromEnvironment('STRIPE_PUBLISHABLE_KEY');
+      // Try dotenv first (from .env.mobile asset)
+      final dotenvKey = dotenv.dotenv.maybeGet('STRIPE_PUBLISHABLE_KEY');
+      // Then try compile-time constant (from --dart-define)
+      const compileTimeKey = String.fromEnvironment('STRIPE_PUBLISHABLE_KEY');
+      
+      final stripePublishableKey = dotenvKey ?? 
+          (compileTimeKey.isNotEmpty ? compileTimeKey : null);
 
-      if (stripePublishableKey.isEmpty) {
-        log('⚠️ Stripe publishable key not found');
+      if (stripePublishableKey == null || stripePublishableKey.isEmpty) {
+        if (kDebugMode) debugPrint('⚠️ Stripe publishable key not found');
         return false;
       }
 
@@ -27,10 +31,9 @@ class LazyStripeService {
       await Stripe.instance.applySettings();
 
       _isInitialized = true;
-      log('✅ Stripe initialized (lazy, on-demand)');
       return true;
     } catch (e) {
-      log('❌ Stripe initialization failed: $e');
+      if (kDebugMode) debugPrint('❌ Stripe initialization failed: $e');
       return false;
     }
   }

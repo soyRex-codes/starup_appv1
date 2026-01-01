@@ -8,6 +8,8 @@ class HelpSupportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Help & Support'),
@@ -17,75 +19,84 @@ class HelpSupportPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // FAQ Section
-          _buildSectionHeader('Frequently Asked Questions'),
+          _buildSectionHeader('Frequently Asked Questions', isDark: isDark),
           const SizedBox(height: 16),
 
           _buildFAQItem(
             question: 'How do I create my first post?',
             answer:
                 'Tap the "+" button in the bottom navigation bar, fill in your post details including title, description, and category. You can also add images to showcase your idea or project.',
+            isDark: isDark,
           ),
 
           _buildFAQItem(
             question: 'How do I connect with other founders?',
             answer:
                 'You can connect with founders by:\n• Messaging them directly from their profile\n• Participating in Global Chat\n• Responding to posts with collaboration requests\n• Using action buttons on posts (Invest, Collaborate, Contact)',
+            isDark: isDark,
           ),
 
           _buildFAQItem(
             question: 'What are the different post categories?',
             answer:
                 'FounderVers supports various categories including Technology, Finance, Marketing, Healthcare, E-commerce, and more. Choose the category that best fits your startup or idea.',
+            isDark: isDark,
           ),
 
           _buildFAQItem(
             question: 'How does the messaging system work?',
             answer:
                 'The app has two messaging systems:\n• Direct Messages (DMs) - Private conversations with other founders\n• Global Chat - Community-wide discussions where all founders can participate',
+            isDark: isDark,
           ),
 
           _buildFAQItem(
             question: 'Can I edit or delete my posts?',
             answer:
                 'Yes! You can edit or delete your posts by tapping the three-dot menu on your post cards. Only you can modify your own posts.',
+            isDark: isDark,
           ),
 
           _buildFAQItem(
             question: 'How do I update my profile?',
             answer:
                 'Go to Menu → Profile & Account to update your profile information, bio, company details, and profile picture.',
+            isDark: isDark,
           ),
 
           _buildFAQItem(
             question: 'What is the Suggestions Inbox?',
             answer:
                 'The Suggestions Inbox contains ideas and feedback from other founders on your posts. You can review, accept, or respond to suggestions to improve your projects.',
+            isDark: isDark,
           ),
 
           _buildFAQItem(
             question: 'How do I delete my account?',
             answer:
                 'Go to Menu → Settings → Delete Account. This will permanently remove all your data including posts, messages, and profile information. This action cannot be undone.',
+            isDark: isDark,
           ),
 
           _buildFAQItem(
             question: 'Is my data secure?',
             answer:
                 'Yes, we use enterprise-grade security measures and follow industry best practices for data protection. Your personal information and conversations are encrypted and secure.',
+            isDark: isDark,
           ),
 
           const SizedBox(height: 32),
 
           // Contact Support Section
-          _buildSectionHeader('Need More Help?'),
+          _buildSectionHeader('Need More Help?', isDark: isDark),
           const SizedBox(height: 16),
 
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: isDark ? Colors.blue.shade900.withValues(alpha: 0.3) : Colors.blue.shade50,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
+              border: Border.all(color: isDark ? Colors.blue.shade700 : Colors.blue.shade200),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,15 +111,15 @@ class HelpSupportPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade700,
+                        color: isDark ? Colors.blue.shade300 : Colors.blue.shade700,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'For personalized assistance or technical issues that aren\'t covered in our FAQ, our support team is here to help.',
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : Colors.black87),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -132,13 +143,14 @@ class HelpSupportPage extends StatelessWidget {
           const SizedBox(height: 24),
 
           // App Information
-          _buildSectionHeader('App Information'),
+          _buildSectionHeader('App Information', isDark: isDark),
           const SizedBox(height: 16),
 
           _buildInfoTile(
             icon: AppIcons.info(size: 24),
             title: 'Version',
             subtitle: '1.0.0',
+            isDark: isDark,
           ),
 
           const SizedBox(height: 8),
@@ -147,43 +159,45 @@ class HelpSupportPage extends StatelessWidget {
             title: 'About FounderVers',
             subtitle:
                 'A platform connecting entrepreneurs and founders worldwide',
+            isDark: isDark,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+
+  Widget _buildSectionHeader(String title, {required bool isDark}) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
-          color: Colors.black87,
+          color: isDark ? Colors.white : Colors.black87,
         ),
       ),
     );
   }
 
-  Widget _buildFAQItem({required String question, required String answer}) {
+  Widget _buildFAQItem({required String question, required String answer, required bool isDark}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isDark ? Colors.grey[850] : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey.shade200),
       ),
       child: Theme(
         data: ThemeData().copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           title: Text(
             question,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
           children: [
@@ -193,7 +207,7 @@ class HelpSupportPage extends StatelessWidget {
                 answer,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade700,
+                  color: isDark ? Colors.grey[400] : Colors.grey.shade700,
                   height: 1.4,
                 ),
               ),
@@ -208,13 +222,14 @@ class HelpSupportPage extends StatelessWidget {
     required Widget icon,
     required String title,
     required String subtitle,
+    required bool isDark,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isDark ? Colors.grey[850] : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey.shade200),
       ),
       child: Row(
         children: [
@@ -226,9 +241,10 @@ class HelpSupportPage extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -236,7 +252,7 @@ class HelpSupportPage extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey[400] : Colors.grey.shade600,
                   ),
                 ),
               ],

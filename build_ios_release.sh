@@ -97,18 +97,29 @@ pod install
 cd ..
 print_success "iOS dependencies installed"
 
-# Step 7: Build iOS release
+# Step 7: Extract Stripe publishable key from .env.production
 echo ""
-echo "🔨 Step 7: Building iOS release..."
+echo "🔑 Step 7: Extracting Stripe publishable key..."
+STRIPE_PK=$(grep "^STRIPE_PUBLISHABLE_KEY=" .env.production | cut -d'=' -f2 | tr -d '\r\n"' )
+if [ -z "$STRIPE_PK" ]; then
+    print_error "STRIPE_PUBLISHABLE_KEY not found in .env.production!"
+    exit 1
+fi
+print_success "Stripe key extracted (${STRIPE_PK:0:12}...)"
+
+# Step 8: Build iOS release with dart-define
+echo ""
+echo "🔨 Step 8: Building iOS release..."
 echo "This may take several minutes..."
-if flutter build ios --release --no-codesign; then
+if flutter build ios --release --no-codesign \
+    --dart-define=STRIPE_PUBLISHABLE_KEY="$STRIPE_PK"; then
     print_success "iOS release build complete!"
 else
     print_error "iOS build failed!"
     exit 1
 fi
 
-# Step 8: Summary
+# Step 9: Summary
 echo ""
 echo "========================================"
 echo "✅ Build Complete!"

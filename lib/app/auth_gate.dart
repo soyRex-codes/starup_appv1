@@ -131,7 +131,9 @@ Future<void> _postAuthHousekeeping(User user, BuildContext context) async {
       name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? '',
       username: user.email?.split('@')[0],
       fullName: user.userMetadata?['full_name'],
-      avatarUrl: user.userMetadata?['avatar_url'],
+      // NOTE: avatarUrl intentionally NOT passed here - profile data should 
+      // be managed separately from auth flow to prevent overwriting user's 
+      // custom avatar with null from auth metadata
       emailVerified: user.emailConfirmedAt != null,
       updateLastLoginOnlyIfExists: false,
     );

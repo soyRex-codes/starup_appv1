@@ -29,7 +29,9 @@ class UserService {
         'name': name,
         'username': username,
         'full_name': fullName,
-        'avatar_url': avatarUrl,
+        // Only include avatar_url if explicitly provided (patch semantics)
+        // This prevents accidentally overwriting user's avatar with null
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
         'email_verified': emailVerified,
         'last_login_at': DateTime.now().toIso8601String(),
       });

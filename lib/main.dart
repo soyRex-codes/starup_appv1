@@ -15,7 +15,7 @@ void main() async {
   try {
     await dotenv.dotenv.load(fileName: '.env.mobile');
   } catch (e) {
-    // Ignore - env file may not exist in production
+    // Silently continue - will fallback to String.fromEnvironment
   }
 
   // FAST: Enable screenshots (~10ms)

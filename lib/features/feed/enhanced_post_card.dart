@@ -907,8 +907,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                           fontSize: 14,
                                           color: Theme.of(context).brightness ==
                                                   Brightness.dark
-                                              ? const Color(0xFF4FC3F7)
-                                              : Theme.of(context).primaryColor,
+                                              ? const Color(0xFFFF8C5A) // Orange for dark mode
+                                              : const Color(0xFFFF6B35), // Orange accent for light mode
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -965,7 +965,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                 fit: FlexFit.loose,
                                 child: _ModernActionButton(
                                   label: 'Invest',
-                                  icon: AppIcons.money(size: 16),
+                                  icon: AppIcons.money(size: 16, color: const Color.fromARGB(255, 54, 209, 101)),
                                   variant: ActionButtonVariant.primary,
                                   onPressed: () =>
                                       _handleActionButton('invest'),
@@ -976,7 +976,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                 fit: FlexFit.loose,
                                 child: _ModernActionButton(
                                   label: 'Collab',
-                                  icon: AppIcons.collab(size: 16),
+                                  icon: AppIcons.collab(size: 16, color: const Color.fromARGB(255, 15, 209, 219)),
                                   variant: ActionButtonVariant.secondary,
                                   onPressed: () =>
                                       _handleActionButton('collab'),
