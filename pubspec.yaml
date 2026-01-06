@@ -72,6 +72,7 @@ dependencies:
   permission_handler: ^11.3.1  # Permission management
 
   shared_preferences: any
+  flutter_linkify: ^6.0.0  # Clickable links in post descriptions
   firebase_messaging: ^16.0.4
   firebase_core: ^4.2.1
 dev_dependencies:

@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/services/supa.dart';
 import 'package:foundervers/models/post.dart';
 import 'package:foundervers/features/post_creation/post_service.dart';
 import 'package:foundervers/core/cache/feed_cache.dart';
+import 'package:foundervers/features/feed/feed_history_service.dart';
 
 import 'package:foundervers/services/user_blocking_service.dart';
 import 'package:foundervers/services/post_counts_manager.dart';
@@ -14,8 +17,8 @@ class FeedService {
   final UserBlockingService _blockingService = UserBlockingService();
 
   Future<List<PostModel>> fetchPosts({
-    String? category,
-    String? goal,
+    List<String>? categories,
+    List<String>? goals,
     String? search,
     String? dateRange,
     int limit = 20,
@@ -27,8 +30,8 @@ class FeedService {
     // Check cache first (unless forcing refresh)
     if (!forceRefresh) {
       final cacheResult = _cache.get(
-        category: category,
-        goal: goal,
+        categories: categories,
+        goals: goals,
         search: search,
         dateRange: dateRange,
         offset: offset,
@@ -75,12 +78,22 @@ class FeedService {
       q = q.filter('user_id', 'not.in', blockedFilter);
     }
 
-    // Apply filters
-    if (category != null && category.isNotEmpty) {
-      q = q.eq('category', category);
+    // Apply filters - OR logic for multi-select
+    if (categories != null && categories.isNotEmpty) {
+      if (categories.length == 1) {
+        q = q.eq('category', categories.first);
+      } else {
+        final values = '(${categories.map((c) => '"$c"').join(',')})';
+        q = q.filter('category', 'in', values);
+      }
     }
-    if (goal != null && goal.isNotEmpty) {
-      q = q.eq('post_goal', goal);
+    if (goals != null && goals.isNotEmpty) {
+      if (goals.length == 1) {
+        q = q.eq('post_goal', goals.first);
+      } else {
+        final values = '(${goals.map((g) => '"$g"').join(',')})';
+        q = q.filter('post_goal', 'in', values);
+      }
     }
 
     // Apply search filter using PostgreSQL's text search
@@ -175,10 +188,36 @@ class FeedService {
       }
     }
 
-    final posts = rawPosts
+    var posts = rawPosts
         .map((r) =>
             PostModel.fromJson(r).copyWith(author: authors[r['user_id']]))
         .toList();
+
+    // ========== SMART PRIORITY SHUFFLE ==========
+    // Only apply to first page (offset=0) and not during forceRefresh
+    if (offset == 0 && !forceRefresh) {
+      final historyService = FeedHistoryService.instance;
+      final unseenPosts = <PostModel>[];
+      final seenPosts = <PostModel>[];
+
+      for (final post in posts) {
+        if (historyService.isSeen(post.id)) {
+          seenPosts.add(post);
+        } else {
+          unseenPosts.add(post);
+        }
+      }
+
+      if (unseenPosts.isEmpty && seenPosts.isNotEmpty) {
+        // Stale state: shuffle seen posts to feel fresh
+        seenPosts.shuffle(Random());
+        posts = seenPosts;
+      } else {
+        // Normal state: unseen first (chronological), then seen
+        posts = [...unseenPosts, ...seenPosts];
+      }
+    }
+    // ========== END SMART SHUFFLE ==========
 
     // Sync counts to PostCountsManager for global state management
     final countsMap = <int, PostCounts>{};
@@ -192,8 +231,8 @@ class FeedService {
 
     // Cache the results for future use
     _cache.put(
-      category: category,
-      goal: goal,
+      categories: categories,
+      goals: goals,
       search: search,
       dateRange: dateRange,
       offset: offset,
@@ -224,22 +263,22 @@ class FeedService {
   }
 
   /// Clear cache when posts are modified
-  void invalidateCache({String? category, String? goal}) {
-    _cache.invalidate(category: category, goal: goal);
+  void invalidateCache({List<String>? categories, List<String>? goals}) {
+    _cache.invalidate(categories: categories, goals: goals);
   }
 
   /// Force refresh and update cache
   Future<List<PostModel>> refreshPosts({
-    String? category,
-    String? goal,
+    List<String>? categories,
+    List<String>? goals,
     String? search,
     String? dateRange,
     int limit = 20,
     int offset = 0,
   }) async {
     final posts = await fetchPosts(
-      category: category,
-      goal: goal,
+      categories: categories,
+      goals: goals,
       search: search,
       dateRange: dateRange,
       limit: limit,
@@ -249,8 +288,8 @@ class FeedService {
 
     // Update cache with fresh data
     _cache.put(
-      category: category,
-      goal: goal,
+      categories: categories,
+      goals: goals,
       search: search,
       offset: offset,
       posts: posts,

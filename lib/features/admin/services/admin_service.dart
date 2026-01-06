@@ -60,6 +60,58 @@ class AdminService {
     }
   }
 
+  // Pending Posts Moderation
+  /// Get all posts with moderation_status = 'pending'
+  static Future<List<Map<String, dynamic>>> getPendingPosts() async {
+    try {
+      final posts = await _client
+          .from('posts')
+          .select('''
+            *,
+            user:users(id, name, email),
+            media(*)
+          ''')
+          .eq('moderation_status', 'pending')
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(posts);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Get pending posts error: $e');
+      rethrow;
+    }
+  }
+
+  /// Approve a pending post (makes it visible in feed)
+  static Future<void> approvePost(int postId) async {
+    try {
+      await AdminAuthService.logAdminAction('approve_post', {
+        'post_id': postId,
+      });
+      await _client.from('posts').update({
+        'moderation_status': 'approved',
+      }).eq('id', postId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Approve post error: $e');
+      rethrow;
+    }
+  }
+
+  /// Reject a pending post (hides it from feed)
+  static Future<void> rejectPost(int postId, String reason) async {
+    try {
+      await AdminAuthService.logAdminAction('reject_post', {
+        'post_id': postId,
+        'reason': reason,
+      });
+      await _client.from('posts').update({
+        'moderation_status': 'rejected',
+        'status': 'rejected',
+      }).eq('id', postId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Reject post error: $e');
+      rethrow;
+    }
+  }
+
   // User Management
   static Future<List<Map<String, dynamic>>> getAllUsers({
     int limit = 50,

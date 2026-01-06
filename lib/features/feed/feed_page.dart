@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:foundervers/core/env.dart';
 import 'package:foundervers/core/visibility.dart';
 import 'package:foundervers/features/feed/feed_service.dart';
+import 'package:foundervers/features/feed/feed_history_service.dart';
 import 'package:foundervers/models/post.dart';
 import 'package:foundervers/models/post_age.dart';
 import 'package:foundervers/core/constants.dart';
@@ -35,9 +36,9 @@ class FeedPageState extends State<FeedPage> {
   bool _loadingMore = false;
   String? _error;
   final List<PostModel> _posts = [];
-  String? _categoryFilter; // null = All
+  List<String> _categoryFilters = []; // empty = All
   String _search = '';
-  String? _goalFilter; // null = all goals
+  List<String> _goalFilters = []; // empty = all goals
   PostAge _dateRangeFilter = PostAge.all; // Date range filter
   final _scrollCtrl = ScrollController();
   Timer? _searchTimer; // Debounce timer for search
@@ -156,8 +157,8 @@ class FeedPageState extends State<FeedPage> {
 
     try {
       final newPosts = await _svc.fetchPosts(
-        category: _categoryFilter,
-        goal: _goalFilter,
+        categories: _categoryFilters,
+        goals: _goalFilters,
         search: _search.trim().isNotEmpty ? _search.trim() : null,
         dateRange: _dateRangeFilter.value,
         limit: _limit,
@@ -177,6 +178,11 @@ class FeedPageState extends State<FeedPage> {
         _posts.addAll(filtered);
         _offset += _limit;
       });
+
+      // Mark posts as seen for Smart Feed algorithm
+      if (filtered.isNotEmpty) {
+        FeedHistoryService.instance.markAsSeen(filtered.map((p) => p.id).toList());
+      }
 
       // Schedule background refresh if cache was stale
       if (shouldScheduleBackgroundRefresh) {
@@ -214,8 +220,8 @@ class FeedPageState extends State<FeedPage> {
     try {
       // Fetch fresh data silently (no loading indicator)
       final newPosts = await _svc.fetchPosts(
-        category: _categoryFilter,
-        goal: _goalFilter,
+        categories: _categoryFilters,
+        goals: _goalFilters,
         search: _search.trim().isNotEmpty ? _search.trim() : null,
         dateRange: _dateRangeFilter.value,
         limit: _limit,
@@ -276,8 +282,8 @@ class FeedPageState extends State<FeedPage> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: FilterSheet(
-                initialCategory: _categoryFilter,
-                initialGoal: _goalFilter,
+                initialCategories: _categoryFilters,
+                initialGoals: _goalFilters,
                 initialDateRange: _dateRangeFilter,
               ),
             ),
@@ -292,8 +298,8 @@ class FeedPageState extends State<FeedPage> {
         useRootNavigator: true,
         backgroundColor: Colors.transparent,
         builder: (context) => FilterSheet(
-          initialCategory: _categoryFilter,
-          initialGoal: _goalFilter,
+          initialCategories: _categoryFilters,
+          initialGoals: _goalFilters,
           initialDateRange: _dateRangeFilter,
         ),
       );
@@ -301,8 +307,8 @@ class FeedPageState extends State<FeedPage> {
 
     if (result != null) {
       setState(() {
-        _categoryFilter = result!['category'];
-        _goalFilter = result['goal'];
+        _categoryFilters = List<String>.from(result!['categories'] ?? []);
+        _goalFilters = List<String>.from(result['goals'] ?? []);
         _dateRangeFilter = PostAge.fromValue(result['dateRange'] ?? 'all');
       });
       _load(reset: true);
@@ -311,11 +317,15 @@ class FeedPageState extends State<FeedPage> {
 
   String _getFilterSummary() {
     final parts = <String>[];
-    if (_categoryFilter != null) {
-      parts.add(_formatCategoryLabel(_categoryFilter!));
+    if (_categoryFilters.isNotEmpty) {
+      parts.add(_categoryFilters.length == 1
+          ? _formatCategoryLabel(_categoryFilters.first)
+          : 'Categories (${_categoryFilters.length})');
     }
-    if (_goalFilter != null) {
-      parts.add(_formatGoalLabel(_goalFilter!));
+    if (_goalFilters.isNotEmpty) {
+      parts.add(_goalFilters.length == 1
+          ? _formatGoalLabel(_goalFilters.first)
+          : 'Goals (${_goalFilters.length})');
     }
     if (_dateRangeFilter != PostAge.all) {
       parts.add(_dateRangeFilter.label);
@@ -401,8 +411,8 @@ class FeedPageState extends State<FeedPage> {
   Future<void> _refreshFeed() async {
     // Use force refresh to bypass cache
     await _svc.refreshPosts(
-      category: _categoryFilter,
-      goal: _goalFilter,
+      categories: _categoryFilters,
+      goals: _goalFilters,
       search: _search.trim().isNotEmpty ? _search.trim() : null,
       dateRange: _dateRangeFilter.value,
       limit: _limit,
@@ -413,6 +423,8 @@ class FeedPageState extends State<FeedPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isLargeScreen = MediaQuery.of(context).size.width > 600;
+
     // No more client-side filtering - all filtering is now server-side
     final displayPosts = _posts;
 
@@ -441,9 +453,9 @@ class FeedPageState extends State<FeedPage> {
                     onFilterTap: _openFilterSheet,
                     onSearchFocusChanged: _handleSearchFocusChanged,
                     hasActiveFilters:
-                        _categoryFilter != null || _goalFilter != null,
+                        _categoryFilters.isNotEmpty || _goalFilters.isNotEmpty,
                     filterSummary:
-                        (_categoryFilter != null || _goalFilter != null)
+                        (_categoryFilters.isNotEmpty || _goalFilters.isNotEmpty)
                             ? _getFilterSummary()
                             : null,
                   ),
@@ -506,22 +518,32 @@ class FeedPageState extends State<FeedPage> {
                                 ? AppConstants.goalLabel(p.postGoal!,
                                     customDescription: p.postGoalDescription)
                                 : null;
+                            final postCard = EnhancedPostCard(
+                              post: p,
+                              meUid: _me?.id,
+                              subtitle: subtitle,
+                              goalLabel: goalLabel,
+                              onEdited: () => _load(reset: true),
+                              onDeleted: () {
+                                setState(() =>
+                                    _posts.removeWhere((pp) => pp.id == p.id));
+                              },
+                            );
+
                             return Padding(
                               padding: EdgeInsets.only(
                                 top: i == 0 ? 8 : 0,
                                 bottom: 12,
                               ),
-                              child: EnhancedPostCard(
-                                post: p,
-                                meUid: _me?.id,
-                                subtitle: subtitle,
-                                goalLabel: goalLabel,
-                                onEdited: () => _load(reset: true),
-                                onDeleted: () {
-                                  setState(() => _posts
-                                      .removeWhere((pp) => pp.id == p.id));
-                                },
-                              ),
+                              child: isLargeScreen
+                                  ? Center(
+                                      child: ConstrainedBox(
+                                        constraints:
+                                            const BoxConstraints(maxWidth: 700),
+                                        child: postCard,
+                                      ),
+                                    )
+                                  : postCard,
                             );
                           },
                         ),

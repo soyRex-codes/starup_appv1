@@ -211,7 +211,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
         itemCount: _posts.length,
         itemBuilder: (context, index) {
           final post = _posts[index];
-          return EnhancedPostCard(
+          final postCard = EnhancedPostCard(
             key: ValueKey('saved_post_${post.id}'),
             post: post,
             meUid: _currentUserId,
@@ -220,6 +220,15 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
             onEdited: _handlePostEdited,
             onDeleted: _handlePostDeleted,
           );
+          final isLargeScreen = MediaQuery.of(context).size.width > 600;
+          return isLargeScreen
+              ? Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 700),
+                    child: postCard,
+                  ),
+                )
+              : postCard;
         },
       ),
     );

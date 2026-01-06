@@ -87,21 +87,32 @@ class _SinglePostFeedPageState extends State<SinglePostFeedPage> {
             customDescription: _post.postGoalDescription)
         : null;
 
+    final isLargeScreen = MediaQuery.of(context).size.width > 600;
+
+    final postCard = EnhancedPostCard(
+      post: _post,
+      meUid: _me?.id,
+      subtitle: subtitle,
+      goalLabel: goalLabel,
+      onEdited: _handlePostEdited,
+      onDeleted: _handlePostDeleted,
+      isDetailView: true, // Enable detail view mode
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Post'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 20),
-        child: EnhancedPostCard(
-          post: _post,
-          meUid: _me?.id,
-          subtitle: subtitle,
-          goalLabel: goalLabel,
-          onEdited: _handlePostEdited,
-          onDeleted: _handlePostDeleted,
-          isDetailView: true, // Enable detail view mode
-        ),
+        child: isLargeScreen
+            ? Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 700),
+                  child: postCard,
+                ),
+              )
+            : postCard,
       ),
     );
   }

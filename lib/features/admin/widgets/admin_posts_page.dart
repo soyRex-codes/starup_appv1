@@ -441,16 +441,19 @@ class _AdminPostsPageState extends State<AdminPostsPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => FilterSheet(
-        initialCategory: _categoryFilter,
-        initialGoal: _goalFilter,
+        initialCategories: _categoryFilter != null ? [_categoryFilter!] : [],
+        initialGoals: _goalFilter != null ? [_goalFilter!] : [],
         initialDateRange: _dateRangeFilter,
       ),
     );
 
     if (result != null) {
       setState(() {
-        _categoryFilter = result['category'];
-        _goalFilter = result['goal'];
+        // Convert list results back to single value for client-side filtering
+        final categories = List<String>.from(result['categories'] ?? []);
+        final goals = List<String>.from(result['goals'] ?? []);
+        _categoryFilter = categories.isNotEmpty ? categories.first : null;
+        _goalFilter = goals.isNotEmpty ? goals.first : null;
         _dateRangeFilter = PostAge.fromValue(result['dateRange'] ?? 'all');
       });
     }

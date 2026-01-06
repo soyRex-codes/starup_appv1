@@ -4,14 +4,14 @@ import 'package:foundervers/services/user_report_service.dart';
 import 'package:foundervers/features/admin/services/admin_service.dart';
 import 'package:foundervers/features/admin/widgets/report_card.dart';
 
-/// Admin page for reviewing reports (Posts & Users)
+/// Admin page for reviewing reports (Posts & Users) and pending moderation
 class AdminReportsPage extends StatelessWidget {
   const AdminReportsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Reports'),
@@ -19,6 +19,7 @@ class AdminReportsPage extends StatelessWidget {
             tabs: [
               Tab(text: 'Post Reports'),
               Tab(text: 'User Reports'),
+              Tab(text: 'Pending Posts'),
             ],
           ),
         ),
@@ -26,12 +27,14 @@ class AdminReportsPage extends StatelessWidget {
           children: [
             _PostReportsTab(),
             _UserReportsTab(),
+            _PendingPostsTab(),
           ],
         ),
       ),
     );
   }
 }
+
 
 class _PostReportsTab extends StatefulWidget {
   const _PostReportsTab();
@@ -451,5 +454,255 @@ class _UserReportsTabState extends State<_UserReportsTab> {
         },
       ),
     );
+  }
+}
+
+// ============================================================================
+// PENDING POSTS TAB - For approving/rejecting posts awaiting moderation
+// ============================================================================
+
+class _PendingPostsTab extends StatefulWidget {
+  const _PendingPostsTab();
+
+  @override
+  State<_PendingPostsTab> createState() => _PendingPostsTabState();
+}
+
+class _PendingPostsTabState extends State<_PendingPostsTab> {
+  List<Map<String, dynamic>> _posts = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPendingPosts();
+  }
+
+  Future<void> _loadPendingPosts() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+
+    try {
+      final posts = await AdminService.getPendingPosts();
+      if (mounted) {
+        setState(() {
+          _posts = posts;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load pending posts: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _approvePost(int postId) async {
+    try {
+      await AdminService.approvePost(postId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Post approved successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadPendingPosts();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to approve post: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _rejectPost(int postId) async {
+    final reasonController = TextEditingController();
+    
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reject Post'),
+        content: TextField(
+          controller: reasonController,
+          decoration: const InputDecoration(
+            labelText: 'Reason for rejection',
+            hintText: 'Enter reason...',
+          ),
+          maxLines: 2,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, reasonController.text),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Reject'),
+          ),
+        ],
+      ),
+    );
+
+    if (reason != null && reason.isNotEmpty) {
+      try {
+        await AdminService.rejectPost(postId, reason);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Post rejected'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          _loadPendingPosts();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to reject post: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+
+    if (_posts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check_circle, size: 64, color: Colors.green),
+            const SizedBox(height: 16),
+            const Text('No posts pending review!',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _loadPendingPosts,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadPendingPosts,
+      child: ListView.builder(
+        itemCount: _posts.length,
+        padding: const EdgeInsets.all(16),
+        itemBuilder: (context, index) {
+          final post = _posts[index];
+          final user = post['user'] as Map<String, dynamic>? ?? {};
+          
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Post Title
+                  Text(
+                    post['title'] ?? 'Untitled',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Author info
+                  Row(
+                    children: [
+                      const Icon(Icons.person, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        'by ${user['name'] ?? 'Unknown'} (${user['email'] ?? 'No email'})',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Description preview
+                  if (post['description'] != null && 
+                      post['description'].toString().isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        post['description'].toString().length > 200
+                            ? '${post['description'].toString().substring(0, 200)}...'
+                            : post['description'].toString(),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  
+                  // Created date
+                  Text(
+                    'Created: ${_formatDate(post['created_at'])}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Action buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => _rejectPost(post['id'] as int),
+                        icon: const Icon(Icons.close, size: 18),
+                        label: const Text('Reject'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: () => _approvePost(post['id'] as int),
+                        icon: const Icon(Icons.check, size: 18),
+                        label: const Text('Approve'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return 'Unknown';
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'Invalid date';
+    }
   }
 }

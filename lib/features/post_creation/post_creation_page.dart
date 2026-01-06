@@ -44,20 +44,24 @@ class _PostCreationPageState extends State<PostCreationPage> {
     try {
       setState(() => _error = null);
       
-      // Request photo permission before accessing media
-      if (!kIsWeb) {
+      // Desktop platforms (macOS/Windows/Linux) don't need permission_handler
+      // - permission_handler doesn't support desktop
+      // - Desktop OS handles file permissions at system level via file picker
+      final isDesktop = !kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux);
+      
+      // Request photo permission before accessing media (mobile only)
+      if (!kIsWeb && !isDesktop) {
         final hasPermission = await PermissionsHelper.requestPhotoPermission(context);
         if (!hasPermission) {
           setState(() => _error = 'Photo permission is required to select media.');
           return;
         }
       }
-
+      // Use FileType.any for desktop to avoid picker failures
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
-        type: FileType.media,
-        allowedExtensions: null,
-        withData: kIsWeb, // Enable bytes for web platform
+        type: isDesktop ? FileType.any : FileType.media,
+        withData: kIsWeb,
       );
 
       if (result != null && result.files.isNotEmpty) {
@@ -294,19 +298,12 @@ class _PostCreationPageState extends State<PostCreationPage> {
 
               if (_compressionService.isImage(file) ||
                   _compressionService.isVideo(file)) {
-                debugPrint('🔄 Compressing ${f.name} before upload...');
                 final compressedFile = await _compressionService.compressFile(
                   file,
                   imageQuality: 70, // Medium quality (recommended)
                 );
                 fileToUpload = compressedFile;
                 finalFileSize = await compressedFile.length();
-
-                if (finalFileSize < fileSize) {
-                  final savings = ((fileSize - finalFileSize) / fileSize * 100);
-                  debugPrint(
-                      '✅ Compressed: ${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB → ${(finalFileSize / 1024 / 1024).toStringAsFixed(1)}MB (${savings.toStringAsFixed(1)}% saved)');
-                }
               }
 
               // Use streaming upload for large files (>5MB) to prevent memory issues

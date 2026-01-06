@@ -7,13 +7,13 @@ import 'package:foundervers/models/post_age.dart';
 class FilterSheet extends StatefulWidget {
   const FilterSheet({
     super.key,
-    this.initialCategory,
-    this.initialGoal,
+    this.initialCategories,
+    this.initialGoals,
     this.initialDateRange,
   });
 
-  final String? initialCategory;
-  final String? initialGoal;
+  final List<String>? initialCategories;
+  final List<String>? initialGoals;
   final PostAge? initialDateRange;
 
   @override
@@ -21,15 +21,15 @@ class FilterSheet extends StatefulWidget {
 }
 
 class _FilterSheetState extends State<FilterSheet> {
-  String? _selectedCategory;
-  String? _selectedGoal;
+  Set<String> _selectedCategories = {};
+  Set<String> _selectedGoals = {};
   PostAge _selectedDateRange = PostAge.all;
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.initialCategory;
-    _selectedGoal = widget.initialGoal;
+    _selectedCategories = Set<String>.from(widget.initialCategories ?? []);
+    _selectedGoals = Set<String>.from(widget.initialGoals ?? []);
     _selectedDateRange = widget.initialDateRange ?? PostAge.all;
   }
 
@@ -72,6 +72,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   style: TextStyle(
                     fontSize: titleFontSize,
                     fontWeight: FontWeight.w600,
+                    color: Colors.grey[900], // Always dark for white background
                   ),
                 ),
                 Row(
@@ -131,12 +132,11 @@ class _FilterSheetState extends State<FilterSheet> {
           ),
           const Divider(height: 1),
 
-          // Date Range Row (NEW)
+          // Date Range Row
           _buildDateRangeRow(
               isSmallScreen, screenWidth, dateLabelFontSize, dateChipFontSize),
 
           // Filter Content
-          // Content
           Expanded(
             child: Row(
               children: [
@@ -145,7 +145,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Section Header
+                      // Section Header with count
                       Container(
                         padding: EdgeInsets.fromLTRB(
                           screenWidth < 360 ? 16 : 20,
@@ -167,6 +167,51 @@ class _FilterSheetState extends State<FilterSheet> {
                                 color: Colors.grey[700],
                               ),
                             ),
+                            if (_selectedCategories.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${_selectedCategories.length}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            // Select All / Clear button
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  if (_selectedCategories.length ==
+                                      AppConstants.industryCategories.length) {
+                                    _selectedCategories.clear();
+                                  } else {
+                                    _selectedCategories = Set<String>.from(
+                                        AppConstants.industryCategories);
+                                  }
+                                });
+                              },
+                              child: Text(
+                                _selectedCategories.length ==
+                                        AppConstants.industryCategories.length
+                                    ? 'Clear'
+                                    : 'All',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -177,31 +222,25 @@ class _FilterSheetState extends State<FilterSheet> {
                             horizontal: screenWidth < 360 ? 12 : 16,
                           ),
                           children: [
-                            _FilterOption(
-                              label: 'All Categories',
-                              isSelected: _selectedCategory == null,
-                              isCompact: true,
-                              fontSize: optionFontSize,
-                              onTap: () {
-                                setState(() {
-                                  _selectedCategory = null;
-                                });
-                              },
-                            ),
-                            SizedBox(height: isSmallScreen ? 4 : 6),
                             ...AppConstants.industryCategories.map((category) {
+                              final isSelected =
+                                  _selectedCategories.contains(category);
                               return Padding(
                                 padding: EdgeInsets.only(
                                   bottom: isSmallScreen ? 4 : 6,
                                 ),
-                                child: _FilterOption(
+                                child: _MultiSelectOption(
                                   label: _getCategoryDisplayName(category),
-                                  isSelected: _selectedCategory == category,
+                                  isSelected: isSelected,
                                   isCompact: true,
                                   fontSize: optionFontSize,
                                   onTap: () {
                                     setState(() {
-                                      _selectedCategory = category;
+                                      if (isSelected) {
+                                        _selectedCategories.remove(category);
+                                      } else {
+                                        _selectedCategories.add(category);
+                                      }
                                     });
                                   },
                                 ),
@@ -228,7 +267,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Section Header
+                      // Section Header with count
                       Container(
                         padding: EdgeInsets.fromLTRB(
                           screenWidth < 360 ? 16 : 20,
@@ -250,6 +289,51 @@ class _FilterSheetState extends State<FilterSheet> {
                                 color: Colors.grey[700],
                               ),
                             ),
+                            if (_selectedGoals.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${_selectedGoals.length}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            // Select All / Clear button
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  if (_selectedGoals.length ==
+                                      AppConstants.postGoals.length) {
+                                    _selectedGoals.clear();
+                                  } else {
+                                    _selectedGoals = Set<String>.from(
+                                        AppConstants.postGoals);
+                                  }
+                                });
+                              },
+                              child: Text(
+                                _selectedGoals.length ==
+                                        AppConstants.postGoals.length
+                                    ? 'Clear'
+                                    : 'All',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -260,29 +344,29 @@ class _FilterSheetState extends State<FilterSheet> {
                             horizontal: screenWidth < 360 ? 12 : 16,
                           ),
                           children: [
-                            _FilterOption(
-                              label: 'All Goals',
-                              isSelected: _selectedGoal == null,
-                              isCompact: true,
-                              fontSize: optionFontSize,
-                              onTap: () => setState(() => _selectedGoal = null),
-                            ),
-                            SizedBox(height: isSmallScreen ? 4 : 6),
-                            ...AppConstants.postGoals.map(
-                              (goal) => Padding(
+                            ...AppConstants.postGoals.map((goal) {
+                              final isSelected = _selectedGoals.contains(goal);
+                              return Padding(
                                 padding: EdgeInsets.only(
                                   bottom: isSmallScreen ? 4 : 6,
                                 ),
-                                child: _FilterOption(
+                                child: _MultiSelectOption(
                                   label: _getShortGoalLabel(goal),
-                                  isSelected: _selectedGoal == goal,
+                                  isSelected: isSelected,
                                   isCompact: true,
                                   fontSize: optionFontSize,
-                                  onTap: () =>
-                                      setState(() => _selectedGoal = goal),
+                                  onTap: () {
+                                    setState(() {
+                                      if (isSelected) {
+                                        _selectedGoals.remove(goal);
+                                      } else {
+                                        _selectedGoals.add(goal);
+                                      }
+                                    });
+                                  },
                                 ),
-                              ),
-                            ),
+                              );
+                            }),
                           ],
                         ),
                       ),
@@ -309,14 +393,13 @@ class _FilterSheetState extends State<FilterSheet> {
               top: false,
               child: Row(
                 children: [
-                  // Apply button takes full width when no filters, or most space when filters exist
                   Expanded(
                     flex: _hasActiveFilters() ? 3 : 1,
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context, {
-                          'category': _selectedCategory,
-                          'goal': _selectedGoal,
+                          'categories': _selectedCategories.toList(),
+                          'goals': _selectedGoals.toList(),
                           'dateRange': _selectedDateRange.value,
                         });
                       },
@@ -464,28 +547,36 @@ class _FilterSheetState extends State<FilterSheet> {
   }
 
   bool _hasActiveFilters() {
-    return _selectedCategory != null ||
-        _selectedGoal != null ||
+    return _selectedCategories.isNotEmpty ||
+        _selectedGoals.isNotEmpty ||
         _selectedDateRange != PostAge.all;
   }
 
   void _clearFilters() {
     // Clear filters and immediately apply (close sheet)
     Navigator.pop(context, {
-      'category': null,
-      'goal': null,
+      'categories': <String>[],
+      'goals': <String>[],
       'dateRange': PostAge.all.value,
     });
   }
 
   String _getApplyButtonText() {
     final filters = <String>[];
-    if (_selectedCategory != null) filters.add('Category');
-    if (_selectedGoal != null) filters.add('Goal');
+    if (_selectedCategories.isNotEmpty) {
+      filters.add(_selectedCategories.length == 1
+          ? 'Category'
+          : 'Categories (${_selectedCategories.length})');
+    }
+    if (_selectedGoals.isNotEmpty) {
+      filters.add(_selectedGoals.length == 1
+          ? 'Goal'
+          : 'Goals (${_selectedGoals.length})');
+    }
     if (_selectedDateRange != PostAge.all) filters.add('Date');
 
     if (filters.isEmpty) return 'Show All Posts';
-    return 'Apply ${filters.join(' + ')} Filter${filters.length > 1 ? 's' : ''}';
+    return 'Apply ${filters.join(' + ')}';
   }
 
   String _getCategoryDisplayName(String category) {
@@ -508,8 +599,9 @@ class _FilterSheetState extends State<FilterSheet> {
   }
 }
 
-class _FilterOption extends StatelessWidget {
-  const _FilterOption({
+/// Multi-select option widget with checkbox-style UI
+class _MultiSelectOption extends StatelessWidget {
+  const _MultiSelectOption({
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -545,15 +637,27 @@ class _FilterOption extends StatelessWidget {
         ),
         child: Row(
           children: [
-            if (isSelected)
-              AppIcons.success(
-                size: isCompact ? 14 : 18,
-              )
-            else
-              AppIcons.circle(
-                size: isCompact ? 14 : 18,
+            // Checkbox icon
+            Container(
+              width: isCompact ? 18 : 22,
+              height: isCompact ? 18 : 22,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : Colors.grey[400]!,
+                  width: 1.5,
+                ),
               ),
-            SizedBox(width: isCompact ? 6 : 12),
+              child: isSelected
+                  ? Icon(
+                      Icons.check,
+                      size: isCompact ? 12 : 14,
+                      color: Colors.white,
+                    )
+                  : null,
+            ),
+            SizedBox(width: isCompact ? 8 : 12),
             Expanded(
               child: Text(
                 label,

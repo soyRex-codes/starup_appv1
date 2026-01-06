@@ -86,15 +86,21 @@ class FeedCache {
 
   /// Generate cache key from search/filter parameters
   String _generateKey({
-    String? category,
-    String? goal,
+    List<String>? categories,
+    List<String>? goals,
     String? search,
     String? dateRange,
     int offset = 0,
   }) {
     final parts = <String>[];
-    if (category != null) parts.add('cat:$category');
-    if (goal != null) parts.add('goal:$goal');
+    if (categories != null && categories.isNotEmpty) {
+      final sorted = List<String>.from(categories)..sort();
+      parts.add('cats:${sorted.join(',')}');
+    }
+    if (goals != null && goals.isNotEmpty) {
+      final sorted = List<String>.from(goals)..sort();
+      parts.add('goals:${sorted.join(',')}');
+    }
     if (search != null && search.isNotEmpty) {
       parts.add('search:${search.toLowerCase()}');
     }
@@ -108,15 +114,15 @@ class FeedCache {
   /// Get cached posts if available and not expired
   /// Returns cached data even if stale (for instant UI), sets needsRefresh flag
   CacheResult? get({
-    String? category,
-    String? goal,
+    List<String>? categories,
+    List<String>? goals,
     String? search,
     String? dateRange,
     int offset = 0,
   }) {
     final key = _generateKey(
-      category: category,
-      goal: goal,
+      categories: categories,
+      goals: goals,
       search: search,
       dateRange: dateRange,
       offset: offset,
@@ -129,7 +135,8 @@ class FeedCache {
     }
 
     final age = DateTime.now().difference(cached.timestamp);
-    final smartTTL = _getSmartTTL(category, search);
+    final smartTTL = _getSmartTTL(
+        categories?.isNotEmpty == true ? categories!.first : null, search);
 
     // Check if needs background refresh (older than 3 minutes)
     final needsRefresh = age > _backgroundRefreshThreshold;
@@ -156,16 +163,16 @@ class FeedCache {
 
   /// Store posts in cache
   void put({
-    String? category,
-    String? goal,
+    List<String>? categories,
+    List<String>? goals,
     String? search,
     String? dateRange,
     int offset = 0,
     required List<PostModel> posts,
   }) {
     final key = _generateKey(
-      category: category,
-      goal: goal,
+      categories: categories,
+      goals: goals,
       search: search,
       dateRange: dateRange,
       offset: offset,
@@ -190,9 +197,11 @@ class FeedCache {
   }
 
   /// Invalidate cache entries by category
-  void invalidate({String? category, String? goal, String? search}) {
+  void invalidate({List<String>? categories, List<String>? goals, String? search}) {
     // If no filters provided, clear everything to ensure consistency
-    if (category == null && goal == null && search == null) {
+    if ((categories == null || categories.isEmpty) && 
+        (goals == null || goals.isEmpty) && 
+        search == null) {
       clear();
       return;
     }
@@ -202,11 +211,21 @@ class FeedCache {
     for (final key in _cache.keys) {
       bool shouldRemove = false;
 
-      if (category != null && key.contains('cat:$category')) {
-        shouldRemove = true;
+      if (categories != null && categories.isNotEmpty) {
+        for (final cat in categories) {
+          if (key.contains(cat)) {
+            shouldRemove = true;
+            break;
+          }
+        }
       }
-      if (goal != null && key.contains('goal:$goal')) {
-        shouldRemove = true;
+      if (goals != null && goals.isNotEmpty) {
+        for (final goal in goals) {
+          if (key.contains(goal)) {
+            shouldRemove = true;
+            break;
+          }
+        }
       }
       if (search != null && key.contains('search:${search.toLowerCase()}')) {
         shouldRemove = true;
@@ -259,15 +278,15 @@ class FeedCache {
 
   /// Check if cache contains a specific key
   bool containsKey({
-    String? category,
-    String? goal,
+    List<String>? categories,
+    List<String>? goals,
     String? search,
     String? dateRange,
     int offset = 0,
   }) {
     final key = _generateKey(
-      category: category,
-      goal: goal,
+      categories: categories,
+      goals: goals,
       search: search,
       dateRange: dateRange,
       offset: offset,

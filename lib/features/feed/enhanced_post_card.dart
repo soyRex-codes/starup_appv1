@@ -23,6 +23,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:foundervers/widgets/report_post_dialog.dart';
 import 'package:foundervers/services/view_analytics_service.dart';
 import 'package:foundervers/services/post_counts_manager.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class EnhancedPostCard extends StatefulWidget {
   const EnhancedPostCard({
@@ -303,36 +305,26 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
       builder: (ctx) {
         return GestureDetector(
           onTap: () => FocusScope.of(ctx).unfocus(),
-          child: DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: 0.8,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            builder: (sheetContext, scrollController) {
-              final theme = Theme.of(sheetContext);
-              return Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                  boxShadow: const [
-                    BoxShadow(
-                      blurRadius: 12,
-                      offset: Offset(0, -4),
-                      color: Color(0x1F000000),
-                    ),
-                  ],
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              boxShadow: const [
+                BoxShadow(
+                  blurRadius: 12,
+                  offset: Offset(0, -4),
+                  color: Color(0x1F000000),
                 ),
-                child: SafeArea(
-                  top: false,
-                  child: SuggestionForm(
-                    postId: widget.post.id,
-                    postTitle: widget.post.title,
-                    scrollController: scrollController,
-                  ),
-                ),
-              );
-            },
+              ],
+            ),
+            child: SafeArea(
+              top: false,
+              child: SuggestionForm(
+                postId: widget.post.id,
+                postTitle: widget.post.title,
+              ),
+            ),
           ),
         );
       },
@@ -868,14 +860,20 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
 
                         const SizedBox(height: 6),
 
-                        // Expandable Description
+                        // Expandable Description with Clickable Links
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _isDescriptionExpanded
+                            Linkify(
+                              text: _isDescriptionExpanded
                                   ? (widget.post.description ?? '').trim()
                                   : _truncatedDescription,
+                              onOpen: (link) async {
+                                final uri = Uri.parse(link.url);
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                }
+                              },
                               style: TextStyle(
                                 fontSize: 14,
                                 height: 1.35,
@@ -883,6 +881,13 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                     .textTheme
                                     .bodyMedium
                                     ?.color,
+                              ),
+                              linkStyle: TextStyle(
+                                fontSize: 14,
+                                height: 1.35,
+                                color: const Color(0xFFFF6B2C),
+                                decoration: TextDecoration.underline,
+                                decorationColor: const Color(0xFFFF6B2C),
                               ),
                             ),
                             if (_shouldShowSeeMore || ((_counts?.views ?? widget.post.views) > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id.toString()) > 0)) ...[

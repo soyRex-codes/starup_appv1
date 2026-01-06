@@ -10,6 +10,7 @@ import 'package:foundervers/services/iap_service.dart';
 import 'package:foundervers/widgets/foundervers_logo.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:foundervers/services/push_notification_service.dart';
+import 'package:foundervers/features/feed/feed_history_service.dart';
 
 /// Handles async initialization of Supabase while showing loading UI.
 /// Defers Firebase/Push notifications until after first frame.
@@ -80,6 +81,14 @@ class _AppInitializerState extends State<AppInitializer> {
       log('✅ Firebase initialized (deferred)');
     } catch (e) {
       log('⚠️ Firebase initialization failed: $e');
+    }
+
+    // Feed History Service (for smart feed shuffle)
+    try {
+      await FeedHistoryService.instance.init();
+      log('✅ FeedHistoryService initialized (deferred)');
+    } catch (e) {
+      log('⚠️ FeedHistoryService initialization failed: $e');
     }
 
     // Push Notifications

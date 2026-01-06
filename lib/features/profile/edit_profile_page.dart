@@ -109,12 +109,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
 
       if (image != null) {
-        // Open cropper for the selected image
-        final croppedFile = await _cropImage(image.path);
-        if (croppedFile != null) {
+        // Skip cropping on desktop platforms (macOS/Windows/Linux) as image_cropper support varies
+        final isDesktop = !kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux);
+
+        if (isDesktop) {
+          // Use original image without cropping
           setState(() {
-            _newAvatarFile = XFile(croppedFile.path);
+            _newAvatarFile = image;
           });
+        } else {
+          // Open cropper for the selected image (Mobile/Web)
+          final croppedFile = await _cropImage(image.path);
+          if (croppedFile != null) {
+            setState(() {
+              _newAvatarFile = XFile(croppedFile.path);
+            });
+          }
         }
       }
     } catch (e) {
@@ -231,7 +241,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final urlWithCacheBust =
           '$baseUrl?t=${DateTime.now().millisecondsSinceEpoch}';
 
-      debugPrint('✅ Avatar uploaded successfully: $urlWithCacheBust');
+      // Avatar uploaded successfully
       return urlWithCacheBust;
     } catch (e) {
       if (mounted) {
@@ -239,7 +249,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           SnackBar(content: Text('Error uploading avatar: $e')),
         );
       }
-      debugPrint('❌ Avatar upload failed: $e');
+      // Avatar upload failed
       return _currentAvatarUrl;
     }
   }
@@ -266,7 +276,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       // Clear cached images to force reload
       if (_newAvatarFile != null) {
-        debugPrint('🔄 Clearing image cache to reload avatar');
+        // Clear image cache to reload avatar
         PaintingBinding.instance.imageCache.clear();
         PaintingBinding.instance.imageCache.clearLiveImages();
       }

@@ -40,8 +40,8 @@ class _HomePageState extends State<HomePage> {
         },
       ),
       const EcosystemApplicationPage(),
-      const BusinessAIPage(),
       const ChatPageWithTabs(),
+      const BusinessAIPage(),
     ];
     // Initialize unread controller once user is available (Firebase auth already initialized earlier in app start)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,8 +71,8 @@ class _HomePageState extends State<HomePage> {
             index: _index,
             onTap: (i) async {
               // Check if trying to access Business.AI (premium feature)
-              if (i == 2) {
-                // Business.AI = 2
+              if (i == 3) {
+                // Business.AI = 3 (was 2, swapped with Chat)
                 final isPremium =
                     await PremiumSubscriptionService().checkPremiumStatus();
                 if (!isPremium) {
@@ -177,13 +177,6 @@ class _NavBar extends StatelessWidget {
                 iconSize: 22,
               ),
               _AddNavBtn(onTap: onAdd),
-              _NavBtn(
-                label: 'Business.AI',
-                icon: const Icon(Icons.auto_awesome, size: 22),
-                active: index == 2,
-                onTap: () => onTap(2),
-                iconSize: 22,
-              ),
               ValueListenableBuilder<int>(
                 valueListenable: DmUnreadController.instance.unread,
                 builder: (context, unread, _) => _NavBtn(
@@ -219,10 +212,17 @@ class _NavBar extends StatelessWidget {
                         ),
                     ],
                   ),
-                  active: index == 3,
-                  onTap: () => onTap(3),
+                  active: index == 2,
+                  onTap: () => onTap(2),
                   iconSize: 22,
                 ),
+              ),
+              _NavBtn(
+                label: 'Business.AI',
+                icon: const Icon(Icons.auto_awesome, size: 22),
+                active: index == 3,
+                onTap: () => onTap(3),
+                iconSize: 22,
               ),
             ],
           ),
