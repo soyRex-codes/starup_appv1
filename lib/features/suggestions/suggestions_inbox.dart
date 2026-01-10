@@ -10,10 +10,14 @@ class SuggestionsInbox extends StatefulWidget {
   State<SuggestionsInbox> createState() => _SuggestionsInboxState();
 }
 
-class _SuggestionsInboxState extends State<SuggestionsInbox> {
+class _SuggestionsInboxState extends State<SuggestionsInbox>
+    with AutomaticKeepAliveClientMixin {
   List<Map<String, dynamic>> _suggestions = [];
   bool _isLoading = true;
   String _filter = 'all'; // 'all', 'unread', 'read'
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -332,6 +336,7 @@ class _SuggestionsInboxState extends State<SuggestionsInbox> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Suggestions Inbox'),

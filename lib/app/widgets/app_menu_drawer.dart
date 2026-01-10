@@ -15,8 +15,28 @@ import 'package:foundervers/app/theme.dart';
 
 /// Main menu drawer - slides in from right side
 /// Provides navigation to all major app sections
-class AppMenuDrawer extends StatelessWidget {
+class AppMenuDrawer extends StatefulWidget {
   const AppMenuDrawer({super.key});
+
+  @override
+  State<AppMenuDrawer> createState() => _AppMenuDrawerState();
+}
+
+class _AppMenuDrawerState extends State<AppMenuDrawer> {
+  late Future<bool> _premiumFuture;
+  late Future<bool> _adminFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _premiumFuture = PremiumSubscriptionService().checkPremiumStatus();
+    _adminFuture = AdminAuthService.isCurrentUserAdmin();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +87,7 @@ class AppMenuDrawer extends StatelessWidget {
                   // Premium Subscription (Hidden on iOS, visible on Web and Android)
                   if (kIsWeb || !Platform.isIOS)
                     FutureBuilder<bool>(
-                      future: PremiumSubscriptionService().checkPremiumStatus(),
+                      future: _premiumFuture,
                       builder: (context, snapshot) {
                         final isPremium = snapshot.data ?? false;
                         return _MenuAction(
@@ -100,7 +120,7 @@ class AppMenuDrawer extends StatelessWidget {
 
                   // Admin Dashboard - only for admins
                   FutureBuilder<bool>(
-                    future: AdminAuthService.isCurrentUserAdmin(),
+                    future: _adminFuture,
                     builder: (context, snapshot) {
                       if (snapshot.data == true) {
                         return Column(

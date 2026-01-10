@@ -11,7 +11,7 @@ import 'package:foundervers/core/constants.dart';
 import 'package:foundervers/app/widgets/filter_sheet.dart';
 import 'package:foundervers/features/feed/enhanced_post_card.dart';
 import 'package:foundervers/features/onboarding/feed_onboarding_overlay.dart';
-import 'package:foundervers/app/widgets/app_menu_drawer.dart';
+
 import 'package:foundervers/services/user_blocking_service.dart';
 import 'package:foundervers/app/widgets/error_state_widget.dart';
 
@@ -421,6 +421,8 @@ class FeedPageState extends State<FeedPage> {
     _load(reset: true);
   }
 
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
     final isLargeScreen = MediaQuery.of(context).size.width > 600;
@@ -429,7 +431,9 @@ class FeedPageState extends State<FeedPage> {
     final displayPosts = _posts;
 
     final mainContent = Scaffold(
-      endDrawer: const AppMenuDrawer(),
+      key: _scaffoldKey,
+      // Note: endDrawer removed - menu is now opened via Navigator.push in app_header.dart
+      // to bypass the iPadOS 26 barrier dismissible bug (Flutter issue #177992)
       body: Column(
         children: [
           // Fixed Header with auto-hide animation

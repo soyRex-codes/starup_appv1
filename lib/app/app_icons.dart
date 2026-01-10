@@ -18,7 +18,7 @@ class AppIcons {
   // Commonly used icons as helpers
   static Image feed({double? size}) => asset('home.png', size: size);
   static Image appLogo({double? size}) =>
-      asset('foundrVers_logo.png', size: size);
+      asset('foundervers_logo.png', size: size);
   static Image chat({double? size}) => asset('chat.png', size: size);
   // Global community chat icon (bottom nav)
   static Image globalChat({double? size}) =>

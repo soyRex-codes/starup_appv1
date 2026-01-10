@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:foundervers/features/notifications/notifications.dart';
 import 'package:foundervers/widgets/foundervers_logo.dart';
 import 'package:foundervers/services/notification_service.dart';
+import 'package:foundervers/app/widgets/app_menu_drawer.dart';
 
 /// Reusable sticky style header combining logo, search bar, category menu & goal chips.
 class AppHeader extends StatefulWidget {
@@ -251,11 +252,32 @@ class _AppHeaderState extends State<AppHeader> {
             ),
           ),
         const SizedBox(width: 8),
-
-        // Menu button
+        // Menu button - iPadOS 26 workaround: Use page navigation instead of drawer
+        // to avoid the phantom tap bug (Flutter issue #177992)
         IconButton(
           onPressed: () {
-            Scaffold.of(context).openEndDrawer();
+            Navigator.of(context).push(
+              PageRouteBuilder(
+                opaque: false,
+                barrierDismissible: false, // Must be false on iPadOS 26 due to phantom tap bug
+                barrierColor: Colors.black54,
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return const _MenuPageWrapper();
+                },
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    )),
+                    child: child,
+                  );
+                },
+              ),
+            );
           },
           constraints: const BoxConstraints(
             minWidth: 36,
@@ -413,3 +435,53 @@ class _AppHeaderState extends State<AppHeader> {
     );
   }
 }
+
+/// Wrapper for menu panel that replaces the drawer on iPadOS 26+
+/// Uses TapRegion workaround from Stack Overflow to prevent phantom tap dismissal
+/// (Flutter issue #177992)
+class _MenuPageWrapper extends StatefulWidget {
+  const _MenuPageWrapper();
+
+  @override
+  State<_MenuPageWrapper> createState() => _MenuPageWrapperState();
+}
+
+class _MenuPageWrapperState extends State<_MenuPageWrapper> {
+  late DateTime _openedAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _openedAt = DateTime.now();
+  }
+
+  void _handleTapOutside() {
+    // iPadOS 26 workaround: Ignore taps that occur within 500ms of opening
+    // This prevents the phantom "tap up" event from immediately closing the menu
+    final elapsed = DateTime.now().difference(_openedAt).inMilliseconds;
+    if (elapsed > 500) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final drawerWidth = screenWidth > 600 ? 304.0 : screenWidth * 0.80;
+    
+    return TapRegion(
+      onTapOutside: (_) => _handleTapOutside(),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: SizedBox(
+          width: drawerWidth,
+          child: Material(
+            elevation: 16,
+            child: const AppMenuDrawer(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

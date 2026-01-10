@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,87 +10,152 @@ import 'package:foundervers/services/bookmark_service.dart';
 import 'package:foundervers/services/notification_service.dart';
 import 'package:foundervers/services/premium_subscription_service.dart';
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: Supabase.instance.client.auth.onAuthStateChange,
-      builder: (context, snapshot) {
-        // Handle initial loading
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SplashLogo(),
-                  const SizedBox(height: 24),
-                  const CircularProgressIndicator(),
-                ],
-              ),
-            ),
-          );
-        }
+  State<AuthGate> createState() => _AuthGateState();
+}
 
-        // Handle connection error - show offline page
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.wifi_off,
-                      size: 100,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      'No Internet Connection',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Please connect to the internet and try again.',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 48),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // Force re-render to retry connection
-                        (context as Element).markNeedsBuild();
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Try Again'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
+class _AuthGateState extends State<AuthGate> {
+  bool? _isAuthenticated;
+  bool _isLoading = true;
+  String? _error;
+  StreamSubscription<AuthState>? _authSubscription;
 
-        final session = snapshot.data?.session;
-        if (session == null) return const SignInPage();
+  @override
+  void initState() {
+    super.initState();
+    _initializeAuth();
+  }
 
-        // On auth state change, ensure profile row exists and check suspension
+  Future<void> _initializeAuth() async {
+    // Check initial session
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      setState(() {
+        _isAuthenticated = session != null;
+        _isLoading = false;
+        _error = null;
+      });
+
+      if (session != null) {
         _postAuthHousekeeping(session.user, context);
-        return const HomePage();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Unable to connect. Please check your internet connection.';
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    // Listen for changes
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        final AuthChangeEvent event = data.event;
+        final Session? session = data.session;
+        
+        final bool isAuth = session != null;
+
+        if (_isAuthenticated != isAuth) {
+          // Status changed (Login or Logout)
+          if (mounted) {
+            setState(() {
+              _isAuthenticated = isAuth;
+              _error = null;
+            });
+          }
+        }
+
+        // Run housekeeping only on explicit sign-in
+        if (event == AuthChangeEvent.signedIn && session != null) {
+          _postAuthHousekeeping(session.user, context);
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          setState(() {
+            _error = 'Connection lost. Please check your internet connection.';
+          });
+        }
       },
     );
+  }
+
+  void _retry() {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    _authSubscription?.cancel();
+    _initializeAuth();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SplashLogo(),
+              const SizedBox(height: 24),
+              const CircularProgressIndicator(),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Handle connection error - show offline page
+    if (_error != null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.wifi_off, size: 64, color: Colors.grey),
+                const SizedBox(height: 24),
+                Text(
+                  'Connection Error',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _retry,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_isAuthenticated == true) {
+      return const HomePage();
+    } else {
+      return const SignInPage();
+    }
   }
 }
 
