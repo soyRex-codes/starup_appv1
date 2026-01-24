@@ -150,14 +150,13 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
                           ),
                         ),
                         SizedBox(height: spacingSmall),
-                        _buildBenefit('✨', 'Business.AI assistant', benefitSize),
-                        _buildBenefit('💬', 'Global Chat access', benefitSize),
-                        _buildBenefit('👑', 'Golden premium Crown badge', benefitSize),
-                        _buildBenefit('💰', '70% off ecosystem fees', benefitSize),
-                        _buildBenefit('📊', 'Advanced analytics', benefitSize),
-                        _buildBenefit(
-'🎟️', 'Early access to features', benefitSize),
-                        _buildBenefit('!', 'Priority investor access', benefitSize),
+                        _buildBenefit(Icons.auto_awesome, 'Business.AI assistant', benefitSize),
+                        _buildBenefit(Icons.chat_bubble_outline, 'Global Chat access', benefitSize),
+                        _buildBenefit(Icons.workspace_premium, 'Golden premium Crown badge', benefitSize),
+                        _buildBenefit(Icons.price_change_outlined, '70% off ecosystem fees', benefitSize),
+                        _buildBenefit(Icons.analytics_outlined, 'Advanced analytics', benefitSize),
+                        _buildBenefit(Icons.local_activity_outlined, 'Early access to features', benefitSize),
+                        _buildBenefit(Icons.priority_high, 'Priority investor access', benefitSize),
                       ],
                     ),
                   ),
@@ -193,7 +192,7 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
                                 path: 'foundervers@gmail.com',
                                 query: 'subject=Premium Subscription Question',
                               );
-                              debugPrint('📧 Attempting to launch: $emailLaunchUri');
+                              debugPrint('Attempting to launch: $emailLaunchUri');
                               try {
                                 if (await canLaunchUrl(emailLaunchUri)) {
                                   await launchUrl(emailLaunchUri);
@@ -202,7 +201,7 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
                                   await launchUrl(emailLaunchUri, mode: LaunchMode.externalApplication);
                                 }
                               } catch (e) {
-                                debugPrint('❌ Could not launch email: $e');
+                                debugPrint('Could not launch email: $e');
                               }
                             },
                             child: Text(
@@ -220,7 +219,7 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
                           InkWell(
                             onTap: () async {
                               final Uri websiteUri = Uri.parse('https://foundervers.com/');
-                              debugPrint('🌐 Attempting to launch: $websiteUri');
+                              debugPrint('Attempting to launch: $websiteUri');
                               try {
                                 if (await canLaunchUrl(websiteUri)) {
                                   await launchUrl(websiteUri, mode: LaunchMode.externalApplication);
@@ -228,7 +227,7 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
                                   await launchUrl(websiteUri, mode: LaunchMode.externalApplication);
                                 }
                               } catch (e) {
-                                debugPrint('❌ Could not launch website: $e');
+                                debugPrint('Could not launch website: $e');
                               }
                             },
                             borderRadius: BorderRadius.circular(8),
@@ -456,15 +455,16 @@ class _PremiumUpgradeDialogState extends State<PremiumUpgradeDialog> {
     );
   }
 
-  Widget _buildBenefit(String emoji, String text, double fontSize) {
+  Widget _buildBenefit(IconData icon, String text, double fontSize) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            emoji,
-            style: TextStyle(fontSize: fontSize + 1),
+          Icon(
+            icon,
+            size: fontSize + 4,
+            color: Colors.amber.shade700,
           ),
           const SizedBox(width: 8),
           Expanded(

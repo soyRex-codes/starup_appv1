@@ -110,7 +110,7 @@ class GPTTextModerationService {
     // Check if API key is configured
     if (_apiKey.isEmpty) {
       if (kDebugMode) {
-        debugPrint('⚠️ OpenAI API key not configured - approving content');
+        debugPrint('OpenAI API key not configured - approving content');
       }
       return GPTModerationResult.approvedResult;
     }
@@ -120,7 +120,7 @@ class GPTTextModerationService {
     final cached = _getCached(cacheKey);
     if (cached != null) {
       if (kDebugMode) {
-        debugPrint('🗂️ GPT moderation cache hit (blocked=${cached.blocked})');
+        debugPrint('GPT moderation cache hit (blocked=${cached.blocked})');
       }
       return cached;
     }
@@ -128,7 +128,7 @@ class GPTTextModerationService {
     // Check rate limits
     if (_underCooldown()) {
       if (kDebugMode) {
-        debugPrint('⏳ GPT moderation cooldown active');
+        debugPrint('GPT moderation cooldown active');
       }
       return failClosed
           ? GPTModerationResult.pendingResult
@@ -137,7 +137,7 @@ class GPTTextModerationService {
 
     if (_wouldExceedRateLimit()) {
       if (kDebugMode) {
-        debugPrint('⏳ GPT moderation rate limit');
+        debugPrint('GPT moderation rate limit');
       }
       return failClosed
           ? GPTModerationResult.pendingResult
@@ -146,7 +146,7 @@ class GPTTextModerationService {
 
     try {
       if (kDebugMode) {
-        debugPrint('🔍 GPT: Moderating $contentType (${trimmed.length} chars)');
+        debugPrint('GPT: Moderating $contentType (${trimmed.length} chars)');
       }
 
       final systemPrompt = _buildSystemPrompt(contentType);
@@ -175,7 +175,7 @@ class GPTTextModerationService {
       if (response.statusCode == 429) {
         _cooldownUntil = DateTime.now().add(const Duration(seconds: 30));
         if (kDebugMode) {
-          debugPrint('⏳ GPT rate limit (429)');
+          debugPrint('GPT rate limit (429)');
         }
         return failClosed
             ? GPTModerationResult.pendingResult
@@ -184,7 +184,7 @@ class GPTTextModerationService {
 
       if (response.statusCode != 200) {
         if (kDebugMode) {
-          debugPrint('❌ GPT moderation error: ${response.statusCode}');
+          debugPrint('GPT moderation error: ${response.statusCode}');
         }
         return failClosed
             ? GPTModerationResult.pendingResult
@@ -213,7 +213,7 @@ class GPTTextModerationService {
       if (shouldBlock) {
         if (kDebugMode) {
           debugPrint(
-              '🚫 GPT BLOCKED $contentType: $categories (severity: $severity)');
+              'GPT BLOCKED $contentType: $categories (severity: $severity)');
         }
         final blockedResult = GPTModerationResult.blockedResult(
           categories,
@@ -225,13 +225,13 @@ class GPTTextModerationService {
       }
 
       if (kDebugMode) {
-        debugPrint('✅ GPT approved $contentType');
+        debugPrint('GPT approved $contentType');
       }
       _putCache(cacheKey, GPTModerationResult.approvedResult);
       return GPTModerationResult.approvedResult;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ GPT moderation exception: $e');
+        debugPrint('GPT moderation exception: $e');
       }
       return failClosed
           ? GPTModerationResult.pendingResult

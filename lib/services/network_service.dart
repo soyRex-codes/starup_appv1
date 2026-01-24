@@ -14,11 +14,11 @@ class NetworkService {
       // First, try to resolve DNS
       final addresses = await InternetAddress.lookup('google.com');
       if (addresses.isNotEmpty && addresses[0].rawAddress.isNotEmpty) {
-        if (kDebugMode) debugPrint('✅ DNS resolution working');
+        if (kDebugMode) debugPrint('DNS resolution working');
         return true;
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ DNS resolution failed: $e');
+      if (kDebugMode) debugPrint('DNS resolution failed: $e');
     }
     return false;
   }
@@ -32,7 +32,7 @@ class NetworkService {
   }) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        if (kDebugMode) debugPrint('🔄 Supabase init attempt $attempt/$maxRetries');
+        if (kDebugMode) debugPrint('Supabase init attempt $attempt/$maxRetries');
         
         await Supabase.initialize(
           url: url,
@@ -46,14 +46,14 @@ class NetworkService {
         final client = Supabase.instance.client;
         await client.from('users').select('id').limit(1);
         
-        if (kDebugMode) debugPrint('✅ Supabase initialized successfully');
+        if (kDebugMode) debugPrint('Supabase initialized successfully');
         return true;
         
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('❌ Supabase init attempt $attempt failed: $e');
+          debugPrint('Supabase init attempt $attempt failed: $e');
           if (e.toString().contains('SocketException')) {
-            debugPrint('🔍 Network/DNS issue detected - will retry');
+            debugPrint('Network/DNS issue detected - will retry');
           }
         }
         
@@ -64,7 +64,7 @@ class NetworkService {
       }
     }
     
-    if (kDebugMode) debugPrint('❌ All Supabase init attempts failed');
+    if (kDebugMode) debugPrint('All Supabase init attempts failed');
     return false;
   }
 
@@ -75,7 +75,7 @@ class NetworkService {
       await client.from('users').select('id').limit(1);
       return true;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Supabase connection test failed: $e');
+      if (kDebugMode) debugPrint('Supabase connection test failed: $e');
       return false;
     }
   }

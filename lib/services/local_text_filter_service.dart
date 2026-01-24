@@ -168,7 +168,7 @@ class LocalTextFilterService {
 
     if (blocked || needsReview || categories.isNotEmpty) {
       debugPrint(
-          '🔍 Local Filter: ${blocked ? "BLOCKED" : needsReview ? "FLAGGED" : "DETECTED"} '
+          'Local Filter: ${blocked ? "BLOCKED" : needsReview ? "FLAGGED" : "DETECTED"} '
           '(severity: $highestSeverity, categories: ${categories.join(", ")}, '
           'matched: ${matchedTerms.take(3).join(", ")}${matchedTerms.length > 3 ? "..." : ""})');
     }

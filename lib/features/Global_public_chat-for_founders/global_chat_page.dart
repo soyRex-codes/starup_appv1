@@ -34,11 +34,11 @@ class _GlobalChatPageState extends State<GlobalChatPage> {
     // Check cache first
     final cached = _cache.get();
     if (cached != null) {
-      debugPrint('📦 Global Chat Cache HIT - ${cached.length} messages');
+      debugPrint('Global Chat Cache HIT - ${cached.length} messages');
       return; // Use real-time stream with cached data
     }
 
-    debugPrint('📭 Global Chat Cache MISS - fetching from database');
+    debugPrint('Global Chat Cache MISS - fetching from database');
 
     // Fetch from database
     try {

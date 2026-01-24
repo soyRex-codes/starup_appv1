@@ -35,7 +35,7 @@ class PushNotificationService {
       provisional: false,
     );
 
-    debugPrint('🔔 User granted permission: ${settings.authorizationStatus}');
+    debugPrint('User granted permission: ${settings.authorizationStatus}');
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       // 2. Setup Local Notifications (for foreground alerts)
@@ -50,7 +50,7 @@ class PushNotificationService {
       // 5. Check if app was launched from a terminated state by tapping a notification
       final initialMessage = await _fcm.getInitialMessage();
       if (initialMessage != null) {
-        debugPrint('🔔 App launched from notification: ${initialMessage.data}');
+        debugPrint('App launched from notification: ${initialMessage.data}');
         // Delay navigation until the app is fully initialized
         Future.delayed(const Duration(milliseconds: 500), () {
           _handleMessageOpenedApp(initialMessage);
@@ -66,11 +66,11 @@ class PushNotificationService {
       // 7. Subscribe to Broadcast Topic
       // For iOS, wait a bit to ensure APNs token is fully registered with Firebase
       if (!kIsWeb && Platform.isIOS) {
-        debugPrint('🔔 Waiting for APNs token to register with Firebase...');
+        debugPrint('Waiting for APNs token to register with Firebase...');
         await Future.delayed(const Duration(seconds: 3));
       }
       await _fcm.subscribeToTopic('all_users');
-      debugPrint('🔔 Subscribed to topic: all_users');
+      debugPrint('Subscribed to topic: all_users');
 
       _initialized = true;
     }
@@ -90,7 +90,7 @@ class PushNotificationService {
       const InitializationSettings(android: androidSettings, iOS: iosSettings),
       onDidReceiveNotificationResponse: (details) {
         // Handle local notification tap - navigate to notifications page
-        debugPrint('🔔 Local notification tapped: ${details.payload}');
+        debugPrint('Local notification tapped: ${details.payload}');
         navigatorKey.currentState?.push(
           MaterialPageRoute(builder: (_) => const NotificationsPage()),
         );
@@ -121,27 +121,27 @@ class PushNotificationService {
       if (!kIsWeb && Platform.isIOS) {
         String? apnsToken = await _fcm.getAPNSToken();
         if (apnsToken == null) {
-          debugPrint('🔔 Waiting for APNs token...');
+          debugPrint('Waiting for APNs token...');
           await Future.delayed(const Duration(seconds: 1));
           apnsToken = await _fcm.getAPNSToken();
           if (apnsToken == null) {
-            debugPrint('🔔 Waiting for APNs token (retry 2)...');
+            debugPrint('Waiting for APNs token (retry 2)...');
             await Future.delayed(const Duration(seconds: 2));
             apnsToken = await _fcm.getAPNSToken();
           }
         }
         if (apnsToken == null) {
-          debugPrint('❌ APNs token not available after retries. Push notifications may not work.');
+          debugPrint('APNs token not available after retries. Push notifications may not work.');
           return;
         }
-        debugPrint('🔔 APNs Token: $apnsToken');
+        debugPrint('APNs Token: $apnsToken');
       }
 
 
 
       final token = await _fcm.getToken();
       if (token != null) {
-        debugPrint('🔔 FCM Token: $token');
+        debugPrint('FCM Token: $token');
         final user = Supabase.instance.client.auth.currentUser;
         if (user != null) {
           await _deviceService.registerToken(
@@ -152,13 +152,13 @@ class PushNotificationService {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error saving FCM token: $e');
+      debugPrint('Error saving FCM token: $e');
     }
   }
 
   /// Handle token refresh
   Future<void> _onTokenRefresh(String newToken) async {
-    debugPrint('🔔 FCM Token Refreshed: $newToken');
+    debugPrint('FCM Token Refreshed: $newToken');
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       await _deviceService.registerToken(
@@ -171,7 +171,7 @@ class PushNotificationService {
 
   /// Handle incoming foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('🔔 Foreground Message: ${message.notification?.title}');
+    debugPrint('Foreground Message: ${message.notification?.title}');
 
     final notification = message.notification;
     // final android = message.notification?.android;
@@ -201,7 +201,7 @@ class PushNotificationService {
 
   /// Handle notification tap when app is in background
   void _handleMessageOpenedApp(RemoteMessage message) {
-    debugPrint('🔔 Message opened from background: ${message.data}');
+    debugPrint('Message opened from background: ${message.data}');
     
     // Navigate to notifications page
     navigatorKey.currentState?.push(

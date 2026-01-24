@@ -30,7 +30,7 @@
 
 3. **Configure Supabase Backend:**
    - Create a new Supabase project at [supabase.com](https://supabase.com)
-   - Navigate to Settings → API to find your project URL and anon key
+   - Navigate to Settings -> API to find your project URL and anon key
    - Update your environment configuration with Supabase credentials
    - Run the database schema: `scripts/apply_schema.sh`
 
@@ -85,7 +85,7 @@ chmod +x scripts/migrate_db.sh
 
 **Current Version**: 1.0.0+1 | **Last Updated**: September 23, 2025
 
-## 📋 Table of Contents
+## Table of Contents
 
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
@@ -99,27 +99,27 @@ chmod +x scripts/migrate_db.sh
 10. [Troubleshooting](#troubleshooting)
 11. [Contributing](#contributing)
 
-## 📱 Project Overview
+## Project Overview
 
 FounderVers Mobile is a Flutter-based mobile application that brings the core functionality of the FounderVers platform to iOS and Android devices. It enables entrepreneurs to create posts, discover funding opportunities, build teams, and communicate through an integrated messaging system.
 
 ### Key Features
 
-- **� Post Creation & Management**: Full CRUD operations with media support (images/videos up to 50MB)
-- **📋 Categorized Feed**: Browse posts by categories with intelligent caching system (70%+ hit rate)
-- **🎯 Goal-Based Filtering**: Filter by funding, partnership, hiring, and custom goals
-- **🔍 Advanced Search**: Real-time search with caching optimization
-- **👤 User Profiles**: Complete profile management with avatar support
-- **💬 Real-time Messaging**: Direct messaging with typing indicators and read receipts
-- **🌐 Global Chat**: Real-time founder community discussions
-- **🏢 Ecosystem Applications**: Business services portal with professional service connections
-- **� Suggestion System**: Simplified read/unread inbox for user feedback
-- **📧 Email Notifications**: Production-ready email system for business applications
-- **�🔒 Secure Authentication**: Password reset with OTP verification system
-- **🎨 Modern UI**: Material Design 3 with logo-inspired orange/yellow brand theme
-- **⚡ Performance**: Advanced caching system, database optimization, smart TTL
-- **📱 Mobile-First**: Optimized navigation with Feed → Ecosystem → Create → Global → DMs layout
-- **🛡️ Security**: Row Level Security (RLS) policies and secure data handling
+- **Post Creation & Management**: Full CRUD operations with media support (images/videos up to 50MB)
+- **Categorized Feed**: Browse posts by categories with intelligent caching system (70%+ hit rate)
+- **Goal-Based Filtering**: Filter by funding, partnership, hiring, and custom goals
+- **Advanced Search**: Real-time search with caching optimization
+- **User Profiles**: Complete profile management with avatar support
+- **Real-time Messaging**: Direct messaging with typing indicators and read receipts
+- **Global Chat**: Real-time founder community discussions
+- **Ecosystem Applications**: Business services portal with professional service connections
+- **Suggestion System**: Simplified read/unread inbox for user feedback
+- **Email Notifications**: Production-ready email system for business applications
+- **Secure Authentication**: Password reset with OTP verification system
+- **Modern UI**: Material Design 3 with logo-inspired orange/yellow brand theme
+- **Performance**: Advanced caching system, database optimization, smart TTL
+- **Mobile-First**: Optimized navigation with Feed -> Ecosystem -> Create -> Global -> DMs layout
+- **Security**: Row Level Security (RLS) policies and secure data handling
 
 ### Tech Stack
 
@@ -138,7 +138,7 @@ FounderVers Mobile is a Flutter-based mobile application that brings the core fu
 | **Testing** | Flutter Test | Unit + Integration |
 | **Security** | Row Level Security | Database-level policies |
 
-## 🏗️ Architecture
+## Architecture
 
 ### Project Structure
 
@@ -181,8 +181,8 @@ lib/
 The app features a bottom navigation bar with optimized UX flow:
 
 ```
-Feed → Ecosystem → Create → Global → DMs
- ↓        ↓         ↓        ↓      ↓
+Feed -> Ecosystem -> Create -> Global -> DMs
+ |        |         |        |      |
 Posts   Business  Content  Chat   Messages
         Services  Creation
 ```
@@ -206,23 +206,23 @@ Posts   Business  Content  Chat   Messages
 ### Data Flow
 
 ```
-UI Components → Cache Layer → Services → Supabase Client → PostgreSQL Database
-     ↑              ↑            ↑           ↑                    ↑
+UI Components -> Cache Layer -> Services -> Supabase Client -> PostgreSQL Database
+     ^              ^            ^           ^                    ^
    State      LRU Cache    Models    Real-time       Row Level Security
-                           ↑                              ↑
+                           ^                              ^
                     Feed Cache              Security Policies
                   (70%+ hit rate)          (User isolation)
 ```
 
 ### Performance Architecture
 
-- **Multi-Layer Caching**: Memory cache → Disk cache → Database
+- **Multi-Layer Caching**: Memory cache -> Disk cache -> Database
 - **Adaptive Cache Sizing**: Based on device capability (30-75 entries)
 - **Smart TTL**: Content-aware expiration (search: 2min, trending: 3min, category: 8min)
 - **Connection Pooling**: Optimized database connection management
 - **Real-time Optimization**: Efficient subscription management
 
-## 🔧 Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 
@@ -285,7 +285,7 @@ UI Components → Cache Layer → Services → Supabase Client → PostgreSQL Da
    WHERE table_schema = 'public';
    ```
 
-## 💻 Development Guide
+## Development Guide
 
 ### Code Style & Conventions
 
@@ -477,7 +477,7 @@ class _FeedPageState extends State<FeedPage> {
 - Use weak references for callbacks
 - Implement proper lifecycle management
 
-## 🗃️ Database Schema
+## Database Schema
 
 **Current Schema**: 540 lines | **Tables**: 8 core tables | **Indexes**: 12 optimized indexes | **Functions**: 8 helper functions
 
@@ -709,7 +709,7 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-## 📡 API Documentation
+## API Documentation
 
 **Current Services**: 6 core services | **Cache Integration**: Feed caching | **Real-time**: WebSocket subscriptions
 
@@ -977,7 +977,7 @@ class FeedCache {
 }
 ```
 
-## 🎨 UI/UX Guidelines
+## UI/UX Guidelines
 
 ### Design System
 
@@ -1148,7 +1148,7 @@ InkWell(
 )
 ```
 
-## 🧪 Testing & Quality Assurance
+## Testing & Quality Assurance
 
 ### Comprehensive Test Suite
 The app maintains high-quality standards through extensive testing:
@@ -1301,7 +1301,7 @@ flutter test --coverage
 lcov --summary coverage/lcov.info
 ```
 
-## 🚀 Deployment
+## Deployment
 
 ### Build Configuration
 
@@ -1316,7 +1316,7 @@ flutter build ios --release --no-codesign
 
 # Archive in Xcode
 open ios/Runner.xcworkspace
-# Product → Archive → Distribute App
+# Product -> Archive -> Distribute App
 ```
 
 #### Android Build
@@ -1392,7 +1392,7 @@ jobs:
       # Additional iOS deployment steps
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -1496,7 +1496,7 @@ WHERE mean_exec_time > 1000
 ORDER BY mean_exec_time DESC;
 ```
 
-## 🤝 Contributing
+## Contributing
 
 ### Development Workflow
 
@@ -1559,11 +1559,11 @@ Closes #123
 
 ---
 
-## 📄 License
+## License
 
 This project is proprietary and confidential. All rights reserved.
 
-## 📞 Support
+## Support
 
 - **Documentation**: [Internal Wiki](https://wiki.company.com/foundervers-mobile)
 - **Bug Reports**: [GitHub Issues](https://github.com/soyRex-codes/mobile_app_foundervers/issues)

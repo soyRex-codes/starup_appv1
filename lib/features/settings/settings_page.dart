@@ -92,7 +92,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _buildInfoTile(
             icon: AppIcons.info(size: 24),
             title: 'Version',
-            subtitle: '1.0.0',
+            subtitle: '1.2.0',
             isDark: isDark,
           ),
 

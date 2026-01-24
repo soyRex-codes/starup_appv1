@@ -4,7 +4,7 @@
 [![Dart](https://img.shields.io/badge/Dart-3.0+-blue.svg)](https://dart.dev)
 [![License](https://img.shields.io/badge/License-Private-red.svg)]()
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Clone the repository
@@ -22,7 +22,7 @@ cp .env.mobile.example .env.mobile
 flutter run
 ```
 
-## 📋 Table of Contents
+## Table of Contents
 
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
@@ -36,24 +36,24 @@ flutter run
 10. [Troubleshooting](#troubleshooting)
 11. [Contributing](#contributing)
 
-## 📱 Project Overview
+## Project Overview
 
 FounderVers Mobile is a Flutter-based mobile application that brings the core functionality of the FounderVers platform to iOS and Android devices. It enables entrepreneurs to create posts, discover funding opportunities, build teams, and communicate through an integrated messaging system.
 
 ### Key Features
 
-- **🔐 Authentication**: Secure mobile-first authentication with OTP verification
-- **📝 Post Creation**: Create, edit, and manage startup posts with media support
-- **💰 Funding Goals**: Set and track funding objectives with goal-based filtering
-- **👥 Team Building**: Find co-founders and team members through ecosystem
-- **💬 Real-time Messaging**: Direct messaging with typing indicators and unread badges
-- **🌐 Global Chat**: Community discussions for all founders
-- **🏢 Ecosystem Applications**: Business services portal with professional connections
-- **💡 Simplified Suggestions**: Read/unread feedback system with email-like workflow
-- **📧 Email Notifications**: Production-ready email system for business applications
-- **🎨 Modern UI**: Logo-inspired orange/yellow Material Design 3 theme
-- **⚡ Performance**: Advanced caching system with 70%+ hit rate
-- **🔍 Smart Filtering**: Filter posts by category, goals, and real-time search
+- **Authentication**: Secure mobile-first authentication with OTP verification
+- **Post Creation**: Create, edit, and manage startup posts with media support
+- **Funding Goals**: Set and track funding objectives with goal-based filtering
+- **Team Building**: Find co-founders and team members through ecosystem
+- **Real-time Messaging**: Direct messaging with typing indicators and unread badges
+- **Global Chat**: Community discussions for all founders
+- **Ecosystem Applications**: Business services portal with professional connections
+- **Simplified Suggestions**: Read/unread feedback system with email-like workflow
+- **Email Notifications**: Production-ready email system for business applications
+- **Modern UI**: Logo-inspired orange/yellow Material Design 3 theme
+- **Performance**: Advanced caching system with 70%+ hit rate
+- **Smart Filtering**: Filter posts by category, goals, and real-time search
 
 ### Tech Stack
 
@@ -69,7 +69,7 @@ FounderVers Mobile is a Flutter-based mobile application that brings the core fu
 | **Navigation** | Flutter Navigator |
 | **Testing** | Flutter Test Framework |
 
-## 🏗️ Architecture
+## Architecture
 
 ### Project Structure
 
@@ -114,7 +114,7 @@ UI Components → Services → Supabase Client → PostgreSQL Database
    State         Models      Auth          Row Level Security
 ```
 
-## 🔧 Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 
@@ -177,7 +177,7 @@ UI Components → Services → Supabase Client → PostgreSQL Database
    WHERE table_schema = 'public';
    ```
 
-## 💻 Development Guide
+## Development Guide
 
 ### Code Style & Conventions
 
@@ -369,7 +369,7 @@ class _FeedPageState extends State<FeedPage> {
 - Use weak references for callbacks
 - Implement proper lifecycle management
 
-## 🗃️ Database Schema
+## Database Schema
 
 ### Core Tables
 
@@ -512,7 +512,7 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-## 📡 API Documentation
+## API Documentation
 
 ### Authentication Service
 
@@ -646,7 +646,7 @@ Future<List<ConversationModel>> getConversations() async {
 }
 ```
 
-## 🎨 UI/UX Guidelines
+## UI/UX Guidelines
 
 ### Design System
 

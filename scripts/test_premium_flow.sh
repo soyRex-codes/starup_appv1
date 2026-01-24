@@ -3,7 +3,7 @@
 # Premium Subscription Flow Test Script
 # Tests the complete premium subscription implementation
 
-echo "🧪 Testing Premium Subscription System"
+echo "Testing Premium Subscription System"
 echo "========================================"
 echo ""
 
@@ -23,25 +23,25 @@ test_check() {
     local result=$2
     
     if [ $result -eq 0 ]; then
-        echo -e "${GREEN}✅ PASS${NC}: $test_name"
+        echo -e "${GREEN}PASS${NC}: $test_name"
     else
-        echo -e "${RED}❌ FAIL${NC}: $test_name"
+        echo -e "${RED}FAIL${NC}: $test_name"
         ERRORS=$((ERRORS + 1))
     fi
 }
 
 test_warning() {
     local test_name=$1
-    echo -e "${YELLOW}⚠️  WARN${NC}: $test_name"
+    echo -e "${YELLOW}WARN${NC}: $test_name"
     WARNINGS=$((WARNINGS + 1))
 }
 
 test_info() {
     local message=$1
-    echo -e "${BLUE}ℹ️  INFO${NC}: $message"
+    echo -e "${BLUE}INFO${NC}: $message"
 }
 
-echo "📁 Phase 1: Checking File Structure"
+echo "Phase 1: Checking File Structure"
 echo "-----------------------------------"
 
 # Check migration files
@@ -140,7 +140,7 @@ fi
 
 # Check navigation integration
 echo ""
-echo "🧭 Phase 3: Checking Navigation Integration"
+echo "Phase 3: Checking Navigation Integration"
 echo "-------------------------------------------"
 
 if grep -q "PremiumUpgradeDialog.show" lib/app/home_page.dart 2>/dev/null; then
@@ -157,7 +157,7 @@ fi
 
 # Check badge implementation
 echo ""
-echo "🎖️  Phase 4: Checking Badge Implementation"
+echo "Phase 4: Checking Badge Implementation"
 echo "------------------------------------------"
 
 if grep -q "workspace_premium" lib/features/feed/enhanced_post_card.dart 2>/dev/null; then
@@ -174,7 +174,7 @@ fi
 
 # Check discount implementation
 echo ""
-echo "💰 Phase 5: Checking Ecosystem Discount"
+echo "Phase 5: Checking Ecosystem Discount"
 echo "----------------------------------------"
 
 if grep -q "getApplicationFee" lib/services/application_payment_service.dart 2>/dev/null; then
@@ -191,7 +191,7 @@ fi
 
 # Check Edge Function configuration
 echo ""
-echo "⚙️  Phase 6: Checking Edge Function Configuration"
+echo "Phase 6: Checking Edge Function Configuration"
 echo "-------------------------------------------------"
 
 # Check metadata in create-premium-subscription
@@ -216,7 +216,7 @@ fi
 
 # Run Dart analysis
 echo ""
-echo "🔍 Phase 7: Running Static Analysis"
+echo "Phase 7: Running Static Analysis"
 echo "------------------------------------"
 
 test_info "Running dart analyze on premium files..."
@@ -259,7 +259,7 @@ fi
 
 # Check for proper imports
 echo ""
-echo "📦 Phase 8: Checking Dependencies"
+echo "Phase 8: Checking Dependencies"
 echo "----------------------------------"
 
 if grep -q "flutter_stripe" pubspec.yaml; then
@@ -270,7 +270,7 @@ fi
 
 # Database schema validation
 echo ""
-echo "🗄️  Phase 9: Validating Database Schema"
+echo "Phase 9: Validating Database Schema"
 echo "----------------------------------------"
 
 # Check premium_payments table structure
@@ -314,7 +314,7 @@ fi
 
 # Pricing validation
 echo ""
-echo "💵 Phase 10: Validating Pricing"
+echo "Phase 10: Validating Pricing"
 echo "--------------------------------"
 
 if grep -q "19.99" lib/services/premium_subscription_service.dart; then
@@ -338,26 +338,26 @@ fi
 # Final Summary
 echo ""
 echo "================================================"
-echo "📊 TEST SUMMARY"
+echo "TEST SUMMARY"
 echo "================================================"
 echo ""
 
 TOTAL_TESTS=$((ERRORS + WARNINGS))
 
 if [ $ERRORS -eq 0 ]; then
-    echo -e "${GREEN}✅ ALL TESTS PASSED!${NC}"
+    echo -e "${GREEN}ALL TESTS PASSED!${NC}"
     echo ""
     echo "Your premium subscription system is ready for deployment!"
     echo ""
     echo "Next steps:"
-    echo "1. ✅ Deploy Edge Functions (if not done)"
-    echo "2. ✅ Apply database migrations"
-    echo "3. ✅ Configure Stripe webhooks"
-    echo "4. 🧪 Test with real payment: 4242 4242 4242 4242"
+    echo "1. Deploy Edge Functions (if not done)"
+    echo "2. Apply database migrations"
+    echo "3. Configure Stripe webhooks"
+    echo "4. Test with real payment: 4242 4242 4242 4242"
     echo ""
     exit 0
 else
-    echo -e "${RED}❌ TESTS FAILED${NC}"
+    echo -e "${RED}TESTS FAILED${NC}"
     echo ""
     echo "Errors found: $ERRORS"
     echo "Warnings: $WARNINGS"

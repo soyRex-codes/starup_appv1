@@ -108,7 +108,7 @@ class BusinessApplicationService {
         );
       } catch (emailError) {
         // Log but don't fail the submission if email fails
-        if (kDebugMode) debugPrint('⚠️ Failed to send confirmation email: $emailError');
+        if (kDebugMode) debugPrint('Failed to send confirmation email: $emailError');
       }
       */
 

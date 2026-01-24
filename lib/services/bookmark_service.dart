@@ -26,12 +26,12 @@ class BookmarkService {
   void clearCache() {
     _cachedBookmarkIds = null;
     _cachedPosts = null;
-    debugPrint('🧹 Bookmark cache cleared');
+    debugPrint('Bookmark cache cleared');
   }
 
   /// Force refresh cache from database
   Future<void> refreshCache() async {
-    debugPrint('🔄 Refreshing bookmark cache...');
+    debugPrint('Refreshing bookmark cache...');
     _cachedBookmarkIds = null;
     await _ensureCacheLoaded();
   }
@@ -57,9 +57,9 @@ class BookmarkService {
           response.map((item) => item['post_id'] as int).toSet();
 
       debugPrint(
-          '✅ Bookmark cache loaded: ${_cachedBookmarkIds!.length} bookmarks (cached forever)');
+          'Bookmark cache loaded: ${_cachedBookmarkIds!.length} bookmarks (cached forever)');
     } catch (e) {
-      debugPrint('❌ Error loading bookmark cache: $e');
+      debugPrint('Error loading bookmark cache: $e');
       _cachedBookmarkIds = {};
     }
   }
@@ -74,7 +74,7 @@ class BookmarkService {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) {
-        debugPrint('❌ Cannot bookmark: User not authenticated');
+        debugPrint('Cannot bookmark: User not authenticated');
         return false;
       }
 
@@ -93,22 +93,22 @@ class BookmarkService {
       // Invalidate posts cache since we added a new bookmark
       _cachedPosts = null;
 
-      debugPrint('✅ Bookmark added for post $postId (cache invalidated)');
+      debugPrint('Bookmark added for post $postId (cache invalidated)');
       return true;
     } on PostgrestException catch (e) {
       // Error code 23505 = unique constraint violation (already bookmarked)
       if (e.code == '23505') {
-        debugPrint('⚠️ Post $postId already bookmarked');
+        debugPrint('Post $postId already bookmarked');
         // Still add to cache in case it was missing
         _cachedBookmarkIds?.add(postId);
         return false;
       }
-      debugPrint('❌ Error adding bookmark: ${e.message}');
+      debugPrint('Error adding bookmark: ${e.message}');
       // Rollback optimistic update
       _cachedBookmarkIds?.remove(postId);
       return false;
     } catch (e) {
-      debugPrint('❌ Error adding bookmark: $e');
+      debugPrint('Error adding bookmark: $e');
       // Rollback optimistic update
       _cachedBookmarkIds?.remove(postId);
       return false;
@@ -121,7 +121,7 @@ class BookmarkService {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) {
-        debugPrint('❌ Cannot remove bookmark: User not authenticated');
+        debugPrint('Cannot remove bookmark: User not authenticated');
         return false;
       }
 
@@ -138,10 +138,10 @@ class BookmarkService {
       // Invalidate posts cache since we removed a bookmark
       _cachedPosts = null;
 
-      debugPrint('✅ Bookmark removed for post $postId (cache invalidated)');
+      debugPrint('Bookmark removed for post $postId (cache invalidated)');
       return true;
     } catch (e) {
-      debugPrint('❌ Error removing bookmark: $e');
+      debugPrint('Error removing bookmark: $e');
       // Rollback optimistic update
       _cachedBookmarkIds?.add(postId);
       return false;
@@ -186,14 +186,14 @@ class BookmarkService {
     // Return cached posts if loaded and not forcing refresh
     if (!forceRefresh && offset == 0 && _cachedPosts != null) {
       debugPrint(
-          '📦 Returning cached bookmarked posts (${_cachedPosts!.length} posts) - NEVER EXPIRES');
+          'Returning cached bookmarked posts (${_cachedPosts!.length} posts) - NEVER EXPIRES');
       return _cachedPosts!;
     }
 
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) {
-        debugPrint('❌ Cannot get bookmarks: User not authenticated');
+        debugPrint('Cannot get bookmarks: User not authenticated');
         return [];
       }
 
@@ -239,7 +239,7 @@ class BookmarkService {
             final postData = item['posts'] as Map<String, dynamic>;
             posts.add(PostModel.fromJson(postData));
           } catch (e) {
-            debugPrint('⚠️ Error parsing post: $e');
+            debugPrint('Error parsing post: $e');
           }
         }
       }
@@ -280,7 +280,7 @@ class BookmarkService {
             }
           }
         } catch (e) {
-          debugPrint('⚠️ Error enriching bookmarked posts with authors: $e');
+          debugPrint('Error enriching bookmarked posts with authors: $e');
         }
       }
 
@@ -290,10 +290,10 @@ class BookmarkService {
       }
 
       debugPrint(
-          '✅ Fetched ${posts.length} bookmarked posts from DB (cached forever)');
+          'Fetched ${posts.length} bookmarked posts from DB (cached forever)');
       return posts;
     } catch (e) {
-      debugPrint('❌ Error fetching bookmarked posts: $e');
+      debugPrint('Error fetching bookmarked posts: $e');
       return [];
     }
   }
@@ -306,7 +306,7 @@ class BookmarkService {
 
       return response.length;
     } catch (e) {
-      debugPrint('❌ Error getting bookmark count: $e');
+      debugPrint('Error getting bookmark count: $e');
       return 0;
     }
   }
@@ -330,10 +330,10 @@ class BookmarkService {
       _cachedBookmarkIds?.clear();
       _cachedPosts = null;
 
-      debugPrint('✅ All bookmarks cleared (cache cleared)');
+      debugPrint('All bookmarks cleared (cache cleared)');
       return true;
     } catch (e) {
-      debugPrint('❌ Error clearing bookmarks: $e');
+      debugPrint('Error clearing bookmarks: $e');
       return false;
     }
   }
@@ -372,7 +372,7 @@ class BookmarkService {
         );
       }
     } catch (e) {
-      debugPrint('⚠️ Failed to send bookmark notification: $e');
+      debugPrint('Failed to send bookmark notification: $e');
       // Don't throw - notification failure shouldn't break bookmark functionality
     }
   }

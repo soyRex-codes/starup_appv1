@@ -183,8 +183,8 @@ class ThreadRepository {
               .map((p) => (p as Map<String, dynamic>)['user_id'] as String)
               .toList();
           
-          debugPrint('📊 Conversation $conversationId: participantIds = $participantIds');
-          debugPrint('📊 ViewerID = $viewerId');
+          debugPrint('Conversation $conversationId: participantIds = $participantIds');
+          debugPrint('ViewerID = $viewerId');
         
           final summary = ThreadSummary.fromData(
             conversationId: conversationId,
@@ -201,7 +201,7 @@ class ThreadRepository {
 
           summaries.add(summary);
         } catch (e) {
-          debugPrint('⚠️  Error fetching participants for conversation $conversationId: $e');
+          debugPrint('Error fetching participants for conversation $conversationId: $e');
           // Skip this conversation if we can't fetch participants
           continue;
         }

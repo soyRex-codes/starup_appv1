@@ -1,12 +1,12 @@
 # FounderVers Mobile Design System
 
-## 🎨 Material Design 3 Implementation
+## Material Design 3 Implementation
 
 **Design System Version**: Material Design 3 (Material You)  
 **Flutter Version**: 3.24.0+  
 **Theme System**: Dynamic color schemes with brand consistency
 
-## 🌈 Color Palette & Theming
+## Color Palette & Theming
 
 ### **Material Design 3 Color System**
 
@@ -62,7 +62,7 @@ extension AppColors on ColorScheme {
 }
 ```
 
-## 🎨 Typography System
+## Typography System
 
 ### **Material Design 3 Type Scale**
 
@@ -128,7 +128,7 @@ class AppTextTheme {
 }
 ```
 
-## 🧩 Component Design System
+## Component Design System
 
 ### **Button System**
 
@@ -198,7 +198,7 @@ Card(
 )
 ```
 
-## 📐 Layout & Spacing System
+## Layout & Spacing System
 
 ### **Material Design 3 Spacing Scale**
 
@@ -230,7 +230,7 @@ class AppLayout {
 }
 ```
 
-## 🎯 Component Usage Guidelines
+## Component Usage Guidelines
 
 ### **Investment-Related Actions**
 - **Color**: Primary (orange)
@@ -261,12 +261,12 @@ class AppLayout {
 
 ### DO NOT Use Orange For
 
-- ❌ **Error states** → Use `Colors.red` or `AppColors.danger`
-- ❌ **Success confirmations** → Use `Colors.green`
-- ❌ **Warning alerts** → Use `Colors.amber`
-- ❌ **Neutral/disabled states** → Use `Colors.grey`
+- Error states -> Use `Colors.red` or `AppColors.danger`
+- Success confirmations -> Use `Colors.green`
+- Warning alerts -> Use `Colors.amber`
+- Neutral/disabled states -> Use `Colors.grey`
 
-## 🧩 Component Specifications
+## Component Specifications
 
 ### Action Buttons
 
@@ -339,7 +339,7 @@ InputDecorationTheme(
 )
 ```
 
-## 📱 Responsive Design
+## Responsive Design
 
 ### Action Button Optimization
 
@@ -372,7 +372,7 @@ Flexible(
 )
 ```
 
-## 🌟 Brand Alignment
+## Brand Alignment
 
 ### Logo Color Extraction
 
@@ -395,7 +395,7 @@ The color scheme is directly inspired by the FounderVers logo:
 3. **Deep Orange**: Tertiary actions (suggest, feedback)
 4. **Warm Backgrounds**: Supporting, non-distracting context
 
-## 🔧 Implementation Examples
+## Implementation Examples
 
 ### Theme Integration
 
@@ -439,7 +439,7 @@ RefreshIndicator(
 )
 ```
 
-## 📋 Quality Checklist
+## Quality Checklist
 
 ### Before Using Colors
 

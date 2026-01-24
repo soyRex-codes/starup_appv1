@@ -184,7 +184,7 @@ class _PostReportsTabState extends State<_PostReportsTab> {
                     ),
                   )
                 : Text(
-                    '⚠️ Post has been deleted',
+                    'Post has been deleted',
                     style: TextStyle(
                         color: Colors.orange[700], fontWeight: FontWeight.w600),
                   ),
@@ -397,7 +397,7 @@ class _UserReportsTabState extends State<_UserReportsTab> {
                     ),
                   )
                 : Text(
-                    '⚠️ User not found',
+                    'User not found',
                     style: TextStyle(
                         color: Colors.orange[700], fontWeight: FontWeight.w600),
                   ),

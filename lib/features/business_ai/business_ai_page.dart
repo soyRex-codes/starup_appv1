@@ -1,14 +1,132 @@
 import 'package:flutter/material.dart';
+import 'package:foundervers/services/premium_subscription_service.dart';
+import 'package:foundervers/widgets/premium_upgrade_dialog.dart';
 
-/// BusinessAI Chatbot - Coming Soon Page
-class BusinessAIPage extends StatelessWidget {
+/// BusinessAI Chatbot - Premium Feature with Lock Screen
+class BusinessAIPage extends StatefulWidget {
   const BusinessAIPage({super.key});
 
   @override
+  State<BusinessAIPage> createState() => _BusinessAIPageState();
+}
+
+class _BusinessAIPageState extends State<BusinessAIPage> {
+  bool? _isPremium;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPremium();
+  }
+
+  Future<void> _checkPremium() async {
+    final isPremium = await PremiumSubscriptionService().checkPremiumStatus();
+    if (mounted) {
+      setState(() {
+        _isPremium = isPremium;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Business.AI'),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Show lock screen for non-premium users
+    if (_isPremium != true) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Business.AI'),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B4513).withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.lock_outline,
+                    size: 48,
+                    color: Color(0xFF8B4513),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Business.AI is Locked',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Get AI-powered business insights and guidance! This is a premium feature exclusive to our premium members.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await PremiumUpgradeDialog.show(
+                        context,
+                        featureName: 'Business.AI',
+                      );
+                      _checkPremium(); // Re-check after returning from dialog
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B4513),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                    ),
+                    child: const Text(
+                      'Unlock Premium',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Premium user - show actual Business.AI content
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BusinessAI'),
+        title: const Text('Business.AI'),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -29,7 +147,7 @@ class BusinessAIPage extends StatelessWidget {
 
             // Title
             Text(
-              'BusinessAI Chatbot',
+              'Business.AI Assistant',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).primaryColor,

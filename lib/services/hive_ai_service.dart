@@ -132,7 +132,7 @@ class HiveAIService {
     if (_apiKey.isEmpty) {
       if (kDebugMode) {
         debugPrint(
-          '⚠️ Hive AI API key not configured - approving image by default',
+          'Hive AI API key not configured - approving image by default',
         );
       }
       return HiveAIModerationResult.approvedResult;
@@ -144,7 +144,7 @@ class HiveAIService {
     if (cached != null) {
       if (kDebugMode) {
         debugPrint(
-          '🗂️ Hive AI cache hit for image (blocked=${cached.blocked})',
+          'Hive AI cache hit for image (blocked=${cached.blocked})',
         );
       }
       return cached;
@@ -153,14 +153,14 @@ class HiveAIService {
     // Check rate limits
     if (_underCooldown()) {
       if (kDebugMode) {
-        debugPrint('⏳ Hive AI cooldown active - approving image');
+        debugPrint('Hive AI cooldown active - approving image');
       }
       return HiveAIModerationResult.approvedResult;
     }
 
     if (_wouldExceedRateLimit()) {
       if (kDebugMode) {
-        debugPrint('⏳ Hive AI rate limit - approving image');
+        debugPrint('Hive AI rate limit - approving image');
       }
       return HiveAIModerationResult.approvedResult;
     }
@@ -168,17 +168,17 @@ class HiveAIService {
     try {
       if (kDebugMode) {
         debugPrint(
-          '🔍 Hive AI: Moderating image: ${imageUrl.substring(0, 50)}...',
+          'Hive AI: Moderating image: ${imageUrl.substring(0, 50)}...',
         );
         debugPrint(
-          '🔑 Hive AI API key configured: ${_apiKey.isNotEmpty ? "YES (${_apiKey.length} chars)" : "NO"}',
+          'Hive AI API key configured: ${_apiKey.isNotEmpty ? "YES (${_apiKey.length} chars)" : "NO"}',
         );
       }
 
       // Hive AI v3 API - Download image and send as base64
       // Note: v3 API requires image data, not just URL
       if (kDebugMode) {
-        debugPrint('📥 Downloading image from Supabase...');
+        debugPrint('Downloading image from Supabase...');
       }
 
       final imageResponse = await http
@@ -187,7 +187,7 @@ class HiveAIService {
 
       if (imageResponse.statusCode != 200) {
         if (kDebugMode) {
-          debugPrint('❌ Failed to download image: ${imageResponse.statusCode}');
+          debugPrint('Failed to download image: ${imageResponse.statusCode}');
         }
         return HiveAIModerationResult.approvedResult;
       }
@@ -199,7 +199,7 @@ class HiveAIService {
       if (imageBytes.length > maxImageSize) {
         if (kDebugMode) {
           debugPrint(
-            '⚠️ Image too large (${(imageBytes.length / 1024 / 1024).toStringAsFixed(2)}MB) - skipping moderation',
+            'Image too large (${(imageBytes.length / 1024 / 1024).toStringAsFixed(2)}MB) - skipping moderation',
           );
         }
         return HiveAIModerationResult.approvedResult;
@@ -209,7 +209,7 @@ class HiveAIService {
 
       if (kDebugMode) {
         debugPrint(
-          '✅ Image downloaded (${(imageBytes.length / 1024).toStringAsFixed(1)}KB, base64: ${base64Image.length} chars)',
+          'Image downloaded (${(imageBytes.length / 1024).toStringAsFixed(1)}KB, base64: ${base64Image.length} chars)',
         );
       }
 
@@ -230,7 +230,7 @@ class HiveAIService {
       });
 
       if (kDebugMode) {
-        debugPrint('📤 Sending to Hive AI v3 API (media_type: $mediaType)...');
+        debugPrint('Sending to Hive AI v3 API (media_type: $mediaType)...');
         debugPrint('   URL: $_baseUrl');
         debugPrint('   Payload size: ${requestBody.length} bytes');
         debugPrint('   Authorization: token ${_apiKey.substring(0, 10)}...');
@@ -251,14 +251,14 @@ class HiveAIService {
         const Duration(seconds: 30), // Increased timeout for large images
         onTimeout: () {
           if (kDebugMode) {
-            debugPrint('⏰ Hive AI request timed out after 30s');
+            debugPrint('Hive AI request timed out after 30s');
           }
           throw http.ClientException('Request timeout');
         },
       );
 
       if (kDebugMode) {
-        debugPrint('📨 Hive AI response: ${response.statusCode}');
+        debugPrint('Hive AI response: ${response.statusCode}');
       }
 
       _registerApiCall();
@@ -266,7 +266,7 @@ class HiveAIService {
       if (response.statusCode == 429) {
         _cooldownUntil = DateTime.now().add(const Duration(seconds: 30));
         if (kDebugMode) {
-          debugPrint('⏳ Hive AI rate limit (429) - setting cooldown');
+          debugPrint('Hive AI rate limit (429) - setting cooldown');
         }
         return HiveAIModerationResult.approvedResult;
       }
@@ -274,7 +274,7 @@ class HiveAIService {
       if (response.statusCode != 200) {
         if (kDebugMode) {
           debugPrint(
-            '❌ Hive AI error: ${response.statusCode} - ${response.body}',
+            'Hive AI error: ${response.statusCode} - ${response.body}',
           );
         }
         return HiveAIModerationResult.approvedResult;
@@ -287,7 +287,7 @@ class HiveAIService {
       final media = result['media'] as List?;
       if (media == null || media.isEmpty) {
         if (kDebugMode) {
-          debugPrint('⚠️ Hive AI: No media in response');
+          debugPrint('Hive AI: No media in response');
         }
         return HiveAIModerationResult.approvedResult;
       }
@@ -297,7 +297,7 @@ class HiveAIService {
 
       if (status != 'success') {
         if (kDebugMode) {
-          debugPrint('⚠️ Hive AI: Processing failed - status: $status');
+          debugPrint('Hive AI: Processing failed - status: $status');
         }
         return HiveAIModerationResult.approvedResult;
       }
@@ -305,7 +305,7 @@ class HiveAIService {
       final classes = firstMedia['classes'] as Map<String, dynamic>?;
       if (classes == null || classes.isEmpty) {
         if (kDebugMode) {
-          debugPrint('⚠️ Hive AI: No classes in response');
+          debugPrint('Hive AI: No classes in response');
         }
         return HiveAIModerationResult.approvedResult;
       }
@@ -327,7 +327,7 @@ class HiveAIService {
 
       if (reasons.isNotEmpty) {
         if (kDebugMode) {
-          debugPrint('🚫 Hive AI BLOCKED image: ${reasons.join(', ')}');
+          debugPrint('Hive AI BLOCKED image: ${reasons.join(', ')}');
         }
         final blockedResult = HiveAIModerationResult.blockedResult(
           reasons,
@@ -339,13 +339,13 @@ class HiveAIService {
       }
 
       if (kDebugMode) {
-        debugPrint('✅ Hive AI approved image');
+        debugPrint('Hive AI approved image');
       }
       _putCache(cacheKey, HiveAIModerationResult.approvedResult);
       return HiveAIModerationResult.approvedResult;
     } on http.ClientException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Hive AI network error: $e');
+        debugPrint('Hive AI network error: $e');
         debugPrint('   This usually means:');
         debugPrint('   1. No internet connection');
         debugPrint('   2. Hive AI API is down');
@@ -356,13 +356,13 @@ class HiveAIService {
       return HiveAIModerationResult.approvedResult;
     } on FormatException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Hive AI JSON parsing error: $e');
+        debugPrint('Hive AI JSON parsing error: $e');
         debugPrint('   Response format may have changed');
       }
       return HiveAIModerationResult.approvedResult;
     } catch (e, stackTrace) {
       if (kDebugMode) {
-        debugPrint('❌ Hive AI unexpected exception: $e');
+        debugPrint('Hive AI unexpected exception: $e');
         debugPrint('   Stack trace: $stackTrace');
       }
       // Fail open for availability

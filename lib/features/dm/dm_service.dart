@@ -77,7 +77,7 @@ class DMService {
         final cacheAge = DateTime.now().difference(_conversationsCacheTime!);
         if (cacheAge < _conversationsCacheTTL) {
           debugPrint(
-              '✅ Using cached conversations (${cacheAge.inSeconds}s old)');
+              'Using cached conversations (${cacheAge.inSeconds}s old)');
           return _cachedConversations!;
         }
       }
@@ -233,11 +233,11 @@ class DMService {
       if (!forceRefresh && offset == 0) {
         final cached = _messageCache.get(conversationId);
         if (cached != null) {
-          debugPrint('📦 DM Cache HIT for conversation: $conversationId');
+          debugPrint('DM Cache HIT for conversation: $conversationId');
           _messagesController.add(cached);
           return cached;
         }
-        debugPrint('📭 DM Cache MISS for conversation: $conversationId');
+        debugPrint('DM Cache MISS for conversation: $conversationId');
       }
 
       final response = await _supabase
@@ -284,7 +284,7 @@ class DMService {
       final shouldBlock = moderationResult.blocked;
 
       if (shouldBlock) {
-        debugPrint('🚫 Message blocked by moderation');
+        debugPrint('Message blocked by moderation');
         throw Exception('Message violates community guidelines');
       }
 
@@ -472,7 +472,7 @@ class DMService {
       _conversationsCacheTime = null;
 
       debugPrint(
-          '✅ Batch marked ${conversationIds.length} conversations as read');
+          'Batch marked ${conversationIds.length} conversations as read');
     } catch (e) {
       debugPrint('Error batch marking as read: $e');
     }
@@ -553,7 +553,7 @@ class DMService {
 
   /// Set up conversation subscription for real-time updates
   ///
-  /// ⚠️ REAL-TIME STATUS: INACTIVE (Table not in publications)
+  /// REAL-TIME STATUS: INACTIVE (Table not in publications)
   /// The 'conversations' table is NOT enabled in Supabase real-time publications.
   /// Only these 3 tables are enabled: chat_messages, messages, oauth_authorizations
   ///
@@ -586,7 +586,7 @@ class DMService {
 
   /// Subscribe to messages for a specific conversation
   ///
-  /// ✅ REAL-TIME STATUS: ACTIVE (Table is in publications)
+  /// REAL-TIME STATUS: ACTIVE (Table is in publications)
   /// The 'messages' table IS enabled in Supabase real-time publications.
   /// This subscription receives live events when new messages are inserted.
   ///

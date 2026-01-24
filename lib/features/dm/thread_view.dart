@@ -319,7 +319,7 @@ class _ThreadViewState extends State<ThreadView> {
       };
 
       // 4. Send Message
-      final content = messageType == 'image' ? '📷 Image' : '📎 $fileName';
+      final content = messageType == 'image' ? 'Image' : '$fileName';
       
       final optimistic = ChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -403,7 +403,7 @@ class _ThreadViewState extends State<ThreadView> {
   }
 
   void _attachRealtime() {
-    // ⚠️ REAL-TIME STATUS: INACTIVE (Table doesn't exist)
+    // REAL-TIME STATUS: INACTIVE (Table doesn't exist)
     //
     // CONFUSION ALERT: This code references 'dm_messages' table which DOESN'T EXIST!
     //
@@ -420,7 +420,7 @@ class _ThreadViewState extends State<ThreadView> {
     // - Real-time is bonus feature, not required
     //
     // Correct implementation would subscribe to 'messages' table (which IS enabled):
-    // table: 'messages'  // ✅ This table exists and is in publications
+    // table: 'messages'  // This table exists and is in publications
     // filter: conversation_id = widget.thread.threadId
     //
     // Safe to leave as-is (no performance impact), but could be updated to use
@@ -430,11 +430,11 @@ class _ThreadViewState extends State<ThreadView> {
     _channel!.onPostgresChanges(
       event: PostgresChangeEvent.insert,
       schema: 'public',
-      table: 'messages', // ✅ Correct table name
+      table: 'messages', // Correct table name
       // Filter for only messages in this thread
       filter: PostgresChangeFilter(
         type: PostgresChangeFilterType.eq,
-        column: 'conversation_id', // ✅ Correct column name
+        column: 'conversation_id', // Correct column name
         value: widget.thread.threadId,
       ),
       callback: (payload) {

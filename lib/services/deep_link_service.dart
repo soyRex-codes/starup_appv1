@@ -24,14 +24,14 @@ class DeepLinkService {
 
   /// Initialize deep link service
   static Future<void> initialize(BuildContext context) async {
-    debugPrint('🔗 DeepLinkService: initialize() called');
+    debugPrint('DeepLinkService: initialize() called');
     _context = context;
     _appLinks = AppLinks();
 
     // Listen for incoming links when app is already running
     _appLinks.uriLinkStream.listen(
       (Uri uri) {
-        debugPrint('🔗 DeepLinkService: uriLinkStream fired with: $uri');
+        debugPrint('DeepLinkService: uriLinkStream fired with: $uri');
         handleIncomingLink(uri);
       },
       onError: (err) => debugPrint('Deep link error: $err'),
@@ -44,13 +44,13 @@ class DeepLinkService {
   /// Handle initial link (app opened from link)
   static Future<void> _handleInitialLink() async {
     try {
-      debugPrint('🔗 DeepLinkService: _handleInitialLink() checking...');
+      debugPrint('DeepLinkService: _handleInitialLink() checking...');
       final initialLink = await _appLinks.getInitialLink();
       if (initialLink != null) {
-        debugPrint('🔗 DeepLinkService: Found initial link: $initialLink');
+        debugPrint('DeepLinkService: Found initial link: $initialLink');
         await handleIncomingLink(initialLink);
       } else {
-        debugPrint('🔗 DeepLinkService: No initial link found');
+        debugPrint('DeepLinkService: No initial link found');
       }
     } catch (e) {
       debugPrint('Failed to get initial link: $e');
@@ -72,7 +72,7 @@ class DeepLinkService {
     if (_lastHandledLink == linkString && 
         _lastHandledTime != null &&
         now.difference(_lastHandledTime!) < _duplicateThreshold) {
-      debugPrint('⏭️ Skipping duplicate link (already handled): $linkString');
+      debugPrint('Skipping duplicate link (already handled): $linkString');
       return;
     }
     
@@ -80,7 +80,7 @@ class DeepLinkService {
     _lastHandledLink = linkString;
     _lastHandledTime = now;
 
-    debugPrint('🔗 Handling incoming link: ${link.toString()}');
+    debugPrint('Handling incoming link: ${link.toString()}');
 
     try {
       final normalizedSegments = _normalizeSegments(link);
@@ -127,7 +127,7 @@ class DeepLinkService {
       return;
     }
 
-    debugPrint('📱 Navigating to post $postId');
+    debugPrint('Navigating to post $postId');
 
     try {
       // Fetch the post from Supabase
@@ -162,7 +162,7 @@ class DeepLinkService {
     }
 
     final userId = pathSegments[1];
-    debugPrint('👤 Navigating to profile $userId');
+    debugPrint('Navigating to profile $userId');
 
     // Navigate to UnifiedProfilePage using MaterialPageRoute
     if (_context != null) {
@@ -255,7 +255,7 @@ class DeepLinkService {
   /// Test deep link functionality (development only)
   static Future<void> testDeepLink(String testUrl) async {
     if (!const bool.fromEnvironment('dart.vm.product')) {
-      debugPrint('🧪 Testing deep link: $testUrl');
+      debugPrint('Testing deep link: $testUrl');
       await handleIncomingLink(Uri.parse(testUrl));
     }
   }

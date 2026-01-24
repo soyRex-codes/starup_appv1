@@ -37,12 +37,12 @@ class PostReportService {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
-        debugPrint('❌ Cannot report: User not authenticated');
+        debugPrint('Cannot report: User not authenticated');
         return false;
       }
 
       if (!reportReasons.contains(reason)) {
-        debugPrint('❌ Invalid report reason: $reason');
+        debugPrint('Invalid report reason: $reason');
         return false;
       }
 
@@ -55,18 +55,18 @@ class PostReportService {
         'status': 'pending',
       });
 
-      debugPrint('✅ Post reported successfully: $postId');
+      debugPrint('Post reported successfully: $postId');
       return true;
     } on PostgrestException catch (e) {
       // Handle duplicate report (user already reported this post)
       if (e.code == '23505') {
-        debugPrint('⚠️ User has already reported this post');
+        debugPrint('User has already reported this post');
         return false;
       }
-      debugPrint('❌ Error reporting post: ${e.message}');
+      debugPrint('Error reporting post: ${e.message}');
       return false;
     } catch (e) {
-      debugPrint('❌ Error reporting post: $e');
+      debugPrint('Error reporting post: $e');
       return false;
     }
   }
@@ -86,7 +86,7 @@ class PostReportService {
 
       return result != null;
     } catch (e) {
-      debugPrint('❌ Error checking report status: $e');
+      debugPrint('Error checking report status: $e');
       return false;
     }
   }
@@ -106,7 +106,7 @@ class PostReportService {
 
       return List<Map<String, dynamic>>.from(result);
     } catch (e) {
-      debugPrint('❌ Error fetching pending reports: $e');
+      debugPrint('Error fetching pending reports: $e');
       return [];
     }
   }
@@ -125,7 +125,7 @@ class PostReportService {
 
       return List<Map<String, dynamic>>.from(result);
     } catch (e) {
-      debugPrint('❌ Error fetching post reports: $e');
+      debugPrint('Error fetching post reports: $e');
       return [];
     }
   }
@@ -148,10 +148,10 @@ class PostReportService {
         'admin_notes': adminNotes,
       }).eq('id', reportId);
 
-      debugPrint('✅ Report resolved: $reportId');
+      debugPrint('Report resolved: $reportId');
       return true;
     } catch (e) {
-      debugPrint('❌ Error resolving report: $e');
+      debugPrint('Error resolving report: $e');
       return false;
     }
   }
@@ -173,10 +173,10 @@ class PostReportService {
         'admin_notes': adminNotes,
       }).eq('id', reportId);
 
-      debugPrint('✅ Report dismissed: $reportId');
+      debugPrint('Report dismissed: $reportId');
       return true;
     } catch (e) {
-      debugPrint('❌ Error dismissing report: $e');
+      debugPrint('Error dismissing report: $e');
       return false;
     }
   }
@@ -205,7 +205,7 @@ class PostReportService {
 
       return counts;
     } catch (e) {
-      debugPrint('❌ Error fetching report stats: $e');
+      debugPrint('Error fetching report stats: $e');
       return {'total': 0, 'pending': 0, 'resolved': 0, 'dismissed': 0};
     }
   }

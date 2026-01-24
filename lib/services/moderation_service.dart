@@ -12,7 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ModerationResult {
   final bool blocked; // TRUE = block immediately
   final bool pending; // TRUE = treat as pending (fallback state)
-  final List<String> reasons; // Human‑readable reasons / categories
+  final List<String> reasons; // Human-readable reasons / categories
   final int? statusCode; // HTTP status for debugging
   final String? rawCategoryJson; // Raw categories JSON for logging/analytics
 
@@ -99,7 +99,7 @@ class ModerationService {
   static ModerationResult? _getCached(String key) {
     final entry = _cache[key];
     if (entry == null) return null;
-    // Cache TTL (optional) – keep for 30 minutes
+    // Cache TTL (optional) - keep for 30 minutes
     if (DateTime.now().difference(entry.ts) > const Duration(minutes: 30)) {
       _cache.remove(key);
       return null;
@@ -219,7 +219,7 @@ class ModerationService {
         'orc:${_hash('v1|${softHits.join('|')}|$text')}';
     final cached = _orchestratorCache[orchestratorKey];
     if (cached != null) {
-      if (kDebugMode) debugPrint('🗂️ Orchestrator cache hit');
+      if (kDebugMode) debugPrint('Orchestrator cache hit');
       return cached;
     }
 
@@ -367,7 +367,7 @@ class ModerationService {
       _orchestratorCache[orchestratorKey] = result;
       return result;
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Orchestrator exception: $e');
+      if (kDebugMode) debugPrint('Orchestrator exception: $e');
       final result = {
         'flagged': false,
         'escalate': false,
@@ -398,11 +398,11 @@ class ModerationService {
           )
           .timeout(const Duration(seconds: 8));
       if (kDebugMode) {
-        debugPrint('🔐 Moderation verify status: ${resp.statusCode}');
+        debugPrint('Moderation verify status: ${resp.statusCode}');
       }
       return resp.statusCode == 200;
     } catch (e) {
-      if (kDebugMode) debugPrint('🔐 Moderation verify failed: $e');
+      if (kDebugMode) debugPrint('Moderation verify failed: $e');
       return false;
     }
   }
@@ -435,7 +435,7 @@ class ModerationService {
     if (localFilterResult.blocked) {
       if (kDebugMode) {
         debugPrint(
-            '🚫 LAYER 1 BLOCKED: ${localFilterResult.categories.join(", ")} '
+            'LAYER 1 BLOCKED: ${localFilterResult.categories.join(", ")} '
             '(matched: ${localFilterResult.matchedTerms.take(3).join(", ")})');
       }
       return ModerationResult.blockedResult(localFilterResult.categories);
@@ -445,7 +445,7 @@ class ModerationService {
     if (localFilterResult.needsReview) {
       if (kDebugMode) {
         debugPrint(
-            '⚠️ LAYER 1 FLAGGED: ${localFilterResult.categories.join(", ")} '
+            'LAYER 1 FLAGGED: ${localFilterResult.categories.join(", ")} '
             '- Needs manual review');
       }
       // For now, let it pass to GPT for second opinion
@@ -456,7 +456,7 @@ class ModerationService {
     // ========================================================================
     // Only called if local filter passes (saves ~60-70% of API calls!)
     if (kDebugMode) {
-      debugPrint('✅ LAYER 1 PASSED → Checking LAYER 2 (GPT-4o-mini)...');
+      debugPrint('LAYER 1 PASSED -> Checking LAYER 2 (GPT-4o-mini)...');
     }
 
     final gptService = GPTTextModerationService();
@@ -469,7 +469,7 @@ class ModerationService {
     // Convert GPTModerationResult to ModerationResult
     if (gptResult.blocked) {
       if (kDebugMode) {
-        debugPrint('🚫 LAYER 2 BLOCKED: ${gptResult.reasons.join(", ")}');
+        debugPrint('LAYER 2 BLOCKED: ${gptResult.reasons.join(", ")}');
       }
       return ModerationResult.blockedResult(
         gptResult.reasons,
@@ -479,13 +479,13 @@ class ModerationService {
 
     if (gptResult.pending) {
       if (kDebugMode) {
-        debugPrint('⚠️ LAYER 2 PENDING: Manual review needed');
+        debugPrint('LAYER 2 PENDING: Manual review needed');
       }
       return ModerationResult.pendingResult;
     }
 
     if (kDebugMode) {
-      debugPrint('✅ LAYER 2 PASSED: Content approved');
+      debugPrint('LAYER 2 PASSED: Content approved');
     }
 
     return ModerationResult.approvedResult;
@@ -505,14 +505,14 @@ class ModerationService {
     final localReasons = _localBlockReasons(trimmed);
     if (localReasons.isNotEmpty) {
       if (kDebugMode) {
-        debugPrint('🚫 Local moderation blocked: ${localReasons.join('; ')}');
+        debugPrint('Local moderation blocked: ${localReasons.join('; ')}');
       }
       return ModerationResult.blockedResult(localReasons);
     }
 
     if (_apiKey.isEmpty) {
       if (kDebugMode) {
-        debugPrint('⚠️ No OpenAI key; treating as approved (dev fallback)');
+        debugPrint('No OpenAI key; treating as approved (dev fallback)');
       }
       return ModerationResult.approvedResult;
     }
@@ -523,7 +523,7 @@ class ModerationService {
     if (cached != null) {
       if (kDebugMode) {
         debugPrint(
-            '🗂️ Moderation cache hit (blocked=${cached.blocked}, pending=${cached.pending})');
+            'Moderation cache hit (blocked=${cached.blocked}, pending=${cached.pending})');
       }
       return cached;
     }
@@ -531,7 +531,7 @@ class ModerationService {
     // 3. Cooldown / rate-limit check BEFORE hitting API
     if (_underCooldown()) {
       if (kDebugMode) {
-        debugPrint('⏳ Skipping remote moderation (cooldown active)');
+        debugPrint('Skipping remote moderation (cooldown active)');
       }
       final pendingOrApproved = failClosed
           ? ModerationResult.pendingResult
@@ -541,7 +541,7 @@ class ModerationService {
     }
     if (_wouldExceedRateLimit()) {
       if (kDebugMode) {
-        debugPrint('⏳ Local throttle: too many moderation calls this minute');
+        debugPrint('Local throttle: too many moderation calls this minute');
       }
       final pendingOrApproved = failClosed
           ? ModerationResult.pendingResult
@@ -568,7 +568,7 @@ class ModerationService {
 
       if (resp.statusCode != 200) {
         if (kDebugMode) {
-          debugPrint('⚠️ Moderation HTTP ${resp.statusCode}: ${resp.body}');
+          debugPrint('Moderation HTTP ${resp.statusCode}: ${resp.body}');
         }
         if (resp.statusCode == 429) {
           // Backoff: shorter cooldown to reduce user friction
@@ -629,7 +629,7 @@ class ModerationService {
       }
       if (anyFlagged) {
         if (kDebugMode) {
-          debugPrint('🚫 Moderation blocked: ${reasons.join(', ')}');
+          debugPrint('Moderation blocked: ${reasons.join(', ')}');
         }
         final blockedRes = ModerationResult.blockedResult(reasons,
             statusCode: resp.statusCode,
@@ -642,7 +642,7 @@ class ModerationService {
       return ModerationResult.approvedResult;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Moderation exception: $e');
+        debugPrint('Moderation exception: $e');
       }
       return failClosed
           ? ModerationResult.pendingResult
@@ -674,7 +674,7 @@ class ModerationService {
       if (textResult.blocked) {
         if (kDebugMode) {
           debugPrint(
-              '🚫 Post blocked due to text content: ${textResult.reasons.join(', ')}');
+              'Post blocked due to text content: ${textResult.reasons.join(', ')}');
         }
         return textResult;
       }
@@ -682,7 +682,7 @@ class ModerationService {
       // If text is pending, mark whole post as pending
       if (textResult.pending) {
         if (kDebugMode) {
-          debugPrint('⏳ Post marked as pending due to text moderation');
+          debugPrint('Post marked as pending due to text moderation');
         }
         return textResult;
       }
@@ -691,7 +691,7 @@ class ModerationService {
     // Step 2: Check images with Hive AI (if any)
     if (imageUrls.isNotEmpty) {
       if (kDebugMode) {
-        debugPrint('🔍 Checking ${imageUrls.length} image(s) with Hive AI...');
+        debugPrint('Checking ${imageUrls.length} image(s) with Hive AI...');
       }
 
       final hiveService = HiveAIService();
@@ -700,7 +700,7 @@ class ModerationService {
       if (imageResult.blocked) {
         if (kDebugMode) {
           debugPrint(
-              '🚫 Post blocked due to inappropriate images: ${imageResult.reasons.join(', ')}');
+              'Post blocked due to inappropriate images: ${imageResult.reasons.join(', ')}');
         }
         // Convert HiveAIModerationResult to ModerationResult
         return ModerationResult.blockedResult(
@@ -713,7 +713,7 @@ class ModerationService {
     // All checks passed
     if (kDebugMode) {
       debugPrint(
-          '✅ Post approved (text and ${imageUrls.length} images checked)');
+          'Post approved (text and ${imageUrls.length} images checked)');
     }
     return ModerationResult.approvedResult;
   }

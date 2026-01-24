@@ -235,7 +235,7 @@ class _GlobalChatTabState extends State<_GlobalChatTab> {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Connect with founders worldwide! This is a premium feature exclusive to our members.',
+              'Connect with founders worldwide! This is a premium feature exclusive to our premium members.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,

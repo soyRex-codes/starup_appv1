@@ -115,22 +115,22 @@ class _NewInboxPageState extends State<NewInboxPage> {
 
                             // DEBUG: Log participant information
                             debugPrint(
-                                '🔍 Thread $i: participantIds = ${t.participantIds}');
+                                'Thread $i: participantIds = ${t.participantIds}');
                             debugPrint(
-                                '🔍 Current user ID (_me.id) = ${_me.id}');
+                                'Current user ID (_me.id) = ${_me.id}');
 
                             final otherIds = t.participantIds
                                 .where((id) => id != _me.id)
                                 .toList();
 
                             debugPrint(
-                                '🔍 otherIds after filtering = $otherIds');
+                                'otherIds after filtering = $otherIds');
 
                             // Safety check: if participantIds is empty or only contains current user
                             if (otherIds.isEmpty &&
                                 t.participantIds.isNotEmpty) {
                               debugPrint(
-                                  '⚠️  WARNING: Thread has no other participants! participantIds = ${t.participantIds}');
+                                  'WARNING: Thread has no other participants! participantIds = ${t.participantIds}');
                             }
 
                             // Prefetch profile for first other participant

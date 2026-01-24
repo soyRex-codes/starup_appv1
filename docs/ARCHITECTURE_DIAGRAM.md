@@ -1,6 +1,6 @@
-# 📐 Structured Comments - System Architecture Diagram
+# Structured Comments - System Architecture Diagram
 
-## 🎯 User Flow
+## User Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -28,27 +28,27 @@
 │ ┃  ─────────────────────────────────────────────────────  ┃ │
 │ ┃                                                         ┃ │
 │ ┃  ┌─────────────────────────────────────────────────┐  ┃ │
-│ ┃  │ 👤 John Doe            2m ago                    │  ┃ │
-│ ┃  │ [💡 Idea/Suggestion]                            │  ┃ │
+│ ┃  │ User John Doe          2m ago                    │  ┃ │
+│ ┃  │ [Idea/Suggestion]                               │  ┃ │
 │ ┃  │ This is a great concept! Have you considered... │  ┃ │
 │ ┃  │ [Reply]                                          │  ┃ │
 │ ┃  │                                                   │  ┃ │
-│ ┃  │   ⎿ 👤 Jane Smith       1m ago                   │  ┃ │
+│ ┃  │   ⎿ User Jane Smith     1m ago                   │  ┃ │
 │ ┃  │     Thanks for the feedback!                     │  ┃ │
 │ ┃  │     [Reply]                                      │  ┃ │
 │ ┃  └─────────────────────────────────────────────────┘  ┃ │
 │ ┃                                                         ┃ │
 │ ┃  ┌─────────────────────────────────────────────────┐  ┃ │
-│ ┃  │ 👤 Alice Johnson       5m ago                    │  ┃ │
-│ ┃  │ [❓ Question]                                    │  ┃ │
+│ ┃  │ User Alice Johnson     5m ago                    │  ┃ │
+│ ┃  │ [Question]                                       │  ┃ │
 │ ┃  │ What's your go-to-market strategy?              │  ┃ │
 │ ┃  │ [Reply]                                          │  ┃ │
 │ ┃  └─────────────────────────────────────────────────┘  ┃ │
 │ ┃                                                         ┃ │
 │ ┃  ─────────────────────────────────────────────────────  ┃ │
-│ ┃  [❓][💡][💪][🔗][💬] ← Category Selector            ┃ │
+│ ┃  [?][I][C][L][C] <- Category Selector                ┃ │
 │ ┃  ┌─────────────────────────────────────────────────┐  ┃ │
-│ ┃  │ Write a comment...                          [→] │  ┃ │
+│ ┃  │ Write a comment...                          [->]│  ┃ │
 │ ┃  └─────────────────────────────────────────────────┘  ┃ │
 │ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ │
 └─────────────────────────────────────────────────────────────┘
@@ -56,7 +56,7 @@
 
 ---
 
-## 🏗️ Component Architecture
+## Component Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -129,7 +129,7 @@
 
 ---
 
-## 🔄 Data Flow
+## Data Flow
 
 ### Creating a Comment
 ```
@@ -169,7 +169,7 @@ UI rebuilds with new comment visible
 
 ---
 
-## 🎭 State Management
+## State Management
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -193,7 +193,7 @@ UI rebuilds with new comment visible
 
 ---
 
-## 🔐 Security Flow
+## Security Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -228,7 +228,7 @@ UI rebuilds with new comment visible
 
 ---
 
-## 📊 Thread Organization Algorithm
+## Thread Organization Algorithm
 
 ```
 Input: Flat list of comments
@@ -275,7 +275,7 @@ Comment 3
 
 ---
 
-## 🎨 Visual Hierarchy
+## Visual Hierarchy
 
 ```
 Post Card (Full Width)
@@ -303,7 +303,7 @@ Post Card (Full Width)
 
 ---
 
-## 🚀 Performance Optimizations
+## Performance Optimizations
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -334,7 +334,7 @@ Post Card (Full Width)
 
 ---
 
-## 📱 Responsive Design
+## Responsive Design
 
 ```
 Mobile (Default)
@@ -347,8 +347,8 @@ Mobile (Default)
 │    ⎿ Reply 1A    │
 │  [Comment 2]     │
 │  ────────────────│
-│  [❓💡💪🔗💬]     │
-│  [Input...   →]  │
+│  [? I C L C]     │
+│  [Input...   ->] │
 └──────────────────┘
 
 Tablet/Desktop
@@ -361,11 +361,11 @@ Tablet/Desktop
 │    ⎿ Reply 1A                 │
 │  [Comment 2]                  │
 │      ───────────────────────  │
-│  [❓][💡][💪][🔗][💬]       │
-│  [Input field...        [→]] │
+│  [?][I][C][L][C]           │
+│  [Input field...        [->]] │
 └───────────────────────────────┘
 ```
 
 ---
 
-This visual architecture helps understand how all components work together! 🎯
+This visual architecture helps understand how all components work together!

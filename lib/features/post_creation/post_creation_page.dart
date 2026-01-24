@@ -292,7 +292,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
                     'File "${f.name}" is too large (${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB). Maximum size is 50MB.');
               }
 
-              // 🚀 COMPRESS MEDIA BEFORE UPLOAD
+              // COMPRESS MEDIA BEFORE UPLOAD
               File fileToUpload = file;
               int finalFileSize = fileSize;
 

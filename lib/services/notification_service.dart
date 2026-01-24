@@ -79,7 +79,7 @@ class NotificationService {
 
       return NotificationModel.fromJson(json);
     } catch (e) {
-      debugPrint('❌ Error creating notification: $e');
+      debugPrint('Error creating notification: $e');
       return null;
     }
   }
@@ -109,7 +109,7 @@ class NotificationService {
           .map((json) => NotificationModel.fromJson(json))
           .toList();
     } catch (e) {
-      debugPrint('❌ Error fetching notifications: $e');
+      debugPrint('Error fetching notifications: $e');
       return [];
     }
   }
@@ -127,7 +127,7 @@ class NotificationService {
       _unreadCountController.add(_cachedUnreadCount);
       return _cachedUnreadCount;
     } catch (e) {
-      debugPrint('❌ Error getting unread count: $e');
+      debugPrint('Error getting unread count: $e');
       return 0;
     }
   }
@@ -147,7 +147,7 @@ class NotificationService {
 
       return true;
     } catch (e) {
-      debugPrint('❌ Error marking notification as read: $e');
+      debugPrint('Error marking notification as read: $e');
       return false;
     }
   }
@@ -166,7 +166,7 @@ class NotificationService {
 
       return true;
     } catch (e) {
-      debugPrint('❌ Error marking all as read: $e');
+      debugPrint('Error marking all as read: $e');
       return false;
     }
   }
@@ -177,7 +177,7 @@ class NotificationService {
       await _s.from('notifications').delete().eq('id', notificationId);
       return true;
     } catch (e) {
-      debugPrint('❌ Error deleting notification: $e');
+      debugPrint('Error deleting notification: $e');
       return false;
     }
   }
@@ -196,7 +196,7 @@ class NotificationService {
 
       return true;
     } catch (e) {
-      debugPrint('❌ Error clearing read notifications: $e');
+      debugPrint('Error clearing read notifications: $e');
       return false;
     }
   }
@@ -207,7 +207,7 @@ class NotificationService {
 
   /// Start listening for new notifications [DEPRECATED: Use polling instead]
   ///
-  /// ⚠️ REAL-TIME STATUS: INACTIVE (Table not in publications) + SCALABILITY DECISION
+  /// REAL-TIME STATUS: INACTIVE (Table not in publications) + SCALABILITY DECISION
   /// The 'notifications' table is NOT enabled in Supabase real-time publications.
   /// Only these 3 tables are enabled: chat_messages, messages, oauth_authorizations
   ///
@@ -235,7 +235,7 @@ class NotificationService {
   Future<void> startListening() async {
     final userId = _s.auth.currentUser?.id;
     if (userId == null) {
-      debugPrint('⚠️ No user logged in, cannot start notification listener');
+      debugPrint('No user logged in, cannot start notification listener');
       return;
     }
 
@@ -260,7 +260,7 @@ class NotificationService {
     //         value: userId,
     //       ),
     //       callback: (payload) {
-    //         debugPrint('🔔 New notification received');
+    //         debugPrint('New notification received');
     //         _handleNewNotification(payload.newRecord);
     //       },
     //     )
@@ -274,13 +274,13 @@ class NotificationService {
     //         value: userId,
     //       ),
     //       callback: (payload) {
-    //         debugPrint('🔄 Notification updated');
+    //         debugPrint('Notification updated');
     //         _handleNotificationUpdate(payload.newRecord);
     //       },
     //     )
     //     .subscribe();
 
-    debugPrint('✅ Notification polling started for user: $userId');
+    debugPrint('Notification polling started for user: $userId');
   }
 
   /// Stop listening for notifications
@@ -288,7 +288,7 @@ class NotificationService {
     if (_notificationChannel != null) {
       await _notificationChannel!.unsubscribe();
       _notificationChannel = null;
-      debugPrint('🔕 Notification listener stopped');
+      debugPrint('Notification listener stopped');
     }
   }
 
@@ -301,7 +301,7 @@ class NotificationService {
   //       _unreadCountController.add(_cachedUnreadCount);
   //     }
   //   } catch (e) {
-  //     debugPrint('❌ Error handling new notification: $e');
+  //     debugPrint('Error handling new notification: $e');
   //   }
   // }
 
@@ -314,7 +314,7 @@ class NotificationService {
   //       _unreadCountController.add(_cachedUnreadCount);
   //     }
   //   } catch (e) {
-  //     debugPrint('❌ Error handling notification update: $e');
+  //     debugPrint('Error handling notification update: $e');
   //   }
   // }
 

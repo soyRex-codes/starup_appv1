@@ -149,7 +149,7 @@ class HelpSupportPage extends StatelessWidget {
           _buildInfoTile(
             icon: AppIcons.info(size: 24),
             title: 'Version',
-            subtitle: '1.0.0',
+            subtitle: '1.2.0',
             isDark: isDark,
           ),
 
@@ -270,7 +270,7 @@ class HelpSupportPage extends StatelessWidget {
       query: _encodeQueryParameters(<String, String>{
         'subject': 'FounderVers Support Request',
         'body':
-            'Hi FounderVers Support Team,\n\nI need assistance with:\n\n[Please describe your issue or question here]\n\nApp Version: 1.0.0\nDevice: ${_getDeviceInfo()}\n\nThank you for your help!\n\nBest regards,',
+            'Hi FounderVers Support Team,\n\nI need assistance with:\n\n[Please describe your issue or question here]\n\nApp Version: 1.2.0\nDevice: ${_getDeviceInfo()}\n\nThank you for your help!\n\nBest regards,',
       }),
     );
 

@@ -23,7 +23,7 @@ class LazyStripeService {
           (compileTimeKey.isNotEmpty ? compileTimeKey : null);
 
       if (stripePublishableKey == null || stripePublishableKey.isEmpty) {
-        if (kDebugMode) debugPrint('⚠️ Stripe publishable key not found');
+        if (kDebugMode) debugPrint('Stripe publishable key not found');
         return false;
       }
 
@@ -33,7 +33,7 @@ class LazyStripeService {
       _isInitialized = true;
       return true;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Stripe initialization failed: $e');
+      if (kDebugMode) debugPrint('Stripe initialization failed: $e');
       return false;
     }
   }

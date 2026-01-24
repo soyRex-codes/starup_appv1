@@ -5,10 +5,10 @@ import 'package:foundervers/features/ecosystem/ecosystem_application_page.dart';
 import 'package:foundervers/features/chat/chat_page_with_tabs.dart';
 import 'package:foundervers/features/business_ai/business_ai_page.dart';
 import 'package:foundervers/core/cache/feed_cache.dart';
-import 'package:foundervers/services/premium_subscription_service.dart';
-import 'package:foundervers/widgets/premium_upgrade_dialog.dart';
+
+
 import 'package:foundervers/services/deep_link_service.dart';
-import 'package:foundervers/features/premium/premium_payment_page.dart';
+
 
 import '../features/post_creation/post_creation_page.dart';
 
@@ -69,31 +69,8 @@ class _HomePageState extends State<HomePage> {
           curve: Curves.easeInOutCubic,
           child: _NavBar(
             index: _index,
-            onTap: (i) async {
-              // Check if trying to access Business.AI (premium feature)
-              if (i == 3) {
-                // Business.AI = 3 (was 2, swapped with Chat)
-                final isPremium =
-                    await PremiumSubscriptionService().checkPremiumStatus();
-                if (!isPremium) {
-                  if (!context.mounted) return;
-                  final upgrade = await PremiumUpgradeDialog.show(
-                    context,
-                    featureName: 'Business.AI',
-                  );
-                  
-                  if (!context.mounted) return;
-                  if (upgrade == true) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const PremiumPaymentPage(isAnnual: false)),
-                    );
-                  }
-                  return; // Don't switch tabs
-                }
-              }
-
+            onTap: (i) {
+              // Business.AI (index 3) now handles premium check internally with lock screen UI
               setState(() {
                 _index = i;
                 // Reset nav visibility when switching tabs

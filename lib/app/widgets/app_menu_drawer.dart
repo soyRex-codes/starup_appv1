@@ -203,7 +203,7 @@ class _AppMenuDrawerState extends State<AppMenuDrawer> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'FounderVers v1.0.0',
+                'FounderVers v1.2.0',
                 style: TextStyle(
                   fontSize: 12,
                   color: textSecondary,

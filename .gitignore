@@ -52,3 +52,10 @@ app.*.map.json
 /android/app/release
 android/key.properties
 *.keystore
+
+# Firebase/Google Cloud Service Account Keys - NEVER commit these
+*-firebase-adminsdk-*.json
+*-service-account*.json
+serviceAccountKey.json
+firebase-adminsdk*.json
+*.private-key.json

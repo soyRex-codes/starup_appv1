@@ -20,7 +20,7 @@ class UserReportService {
 
       return List<Map<String, dynamic>>.from(result);
     } catch (e) {
-      debugPrint('❌ Error fetching pending user reports: $e');
+      debugPrint('Error fetching pending user reports: $e');
       return [];
     }
   }
@@ -43,10 +43,10 @@ class UserReportService {
         'admin_notes': adminNotes,
       }).eq('id', reportId);
 
-      debugPrint('✅ User report resolved: $reportId');
+      debugPrint('User report resolved: $reportId');
       return true;
     } catch (e) {
-      debugPrint('❌ Error resolving user report: $e');
+      debugPrint('Error resolving user report: $e');
       return false;
     }
   }
@@ -68,10 +68,10 @@ class UserReportService {
         'admin_notes': adminNotes,
       }).eq('id', reportId);
 
-      debugPrint('✅ User report dismissed: $reportId');
+      debugPrint('User report dismissed: $reportId');
       return true;
     } catch (e) {
-      debugPrint('❌ Error dismissing user report: $e');
+      debugPrint('Error dismissing user report: $e');
       return false;
     }
   }

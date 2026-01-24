@@ -1,20 +1,21 @@
-import 'package:meta/meta.dart';
+import 'package:flutter/material.dart';
 
 /// Notification types supported by the app
 enum NotificationType {
-  comment('comment', 'Comment', '💬'),
-  reply('reply', 'Reply', '↩️'),
-  dm('dm', 'Message', '📨'),
-  bookmark('bookmark', 'Bookmark', '💾'),
-  collabRequest('collab_request', 'Collaboration', '🤝'),
-  system('system', 'System', '🔔'),
-  broadcast('broadcast', 'Broadcast', '📢');
+  comment('comment', 'Comment', Icons.chat_bubble_outline, Color(0xFF6B4EE6)),
+  reply('reply', 'Reply', Icons.reply, Color(0xFFFF6B35)),
+  dm('dm', 'Message', Icons.mail_outline, Colors.blue),
+  bookmark('bookmark', 'Bookmark', Icons.bookmark_outline, Color(0xFF10B981)),
+  collabRequest('collab_request', 'Collaboration', Icons.handshake_outlined, Color(0xFFFFA726)),
+  system('system', 'System', Icons.notifications_none, Colors.grey),
+  broadcast('broadcast', 'Broadcast', Icons.campaign_outlined, Color(0xFFE53935));
 
   final String value;
   final String displayName;
-  final String icon;
+  final IconData icon;
+  final Color color;
 
-  const NotificationType(this.value, this.displayName, this.icon);
+  const NotificationType(this.value, this.displayName, this.icon, this.color);
 
   static NotificationType fromString(String value) {
     return NotificationType.values.firstWhere(
@@ -143,7 +144,10 @@ class NotificationModel {
   }
 
   /// Get display icon based on type
-  String get icon => type.icon;
+  IconData get icon => type.icon;
+
+  /// Get display color
+  Color get color => type.color;
 
   /// Get human-readable time ago
   String get timeAgo {

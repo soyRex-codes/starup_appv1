@@ -3,11 +3,11 @@ import 'package:foundervers/core/storage_utils.dart';
 
 /// Category types for structured comments
 enum CommentCategory {
-  question('❓ Question', 'question'),
-  idea('💡 Idea/Suggestion', 'idea'),
-  critique('💪 Constructive Critique', 'critique'),
-  resource('🔗 Resource', 'resource'),
-  general('💬 General', 'general');
+  question('Question', 'question'),
+  idea('Idea/Suggestion', 'idea'),
+  critique('Constructive Critique', 'critique'),
+  resource('Resource', 'resource'),
+  general('General', 'general');
 
   final String displayLabel;
   final String value;

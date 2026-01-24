@@ -47,18 +47,18 @@ class IAPService {
 
     try {
       if (kIsWeb || !Platform.isIOS) {
-        debugPrint('⚠️ IAP: Not on iOS, skipping initialization');
+        debugPrint('IAP: Not on iOS, skipping initialization');
         return false;
       }
 
       _isAvailable = await _iap.isAvailable();
 
       if (!_isAvailable) {
-        debugPrint('⚠️ IAP: Not available on this device');
+        debugPrint('IAP: Not available on this device');
         return false;
       }
 
-      debugPrint('✅ IAP: Service available');
+      debugPrint('IAP: Service available');
 
       // Load products from App Store
       await _loadProducts();
@@ -67,10 +67,10 @@ class IAPService {
       _purchaseSubscription = _iap.purchaseStream.listen(
         _handlePurchaseUpdates,
         onError: (error) {
-          debugPrint('❌ IAP: Purchase stream error: $error');
+          debugPrint('IAP: Purchase stream error: $error');
         },
         onDone: () {
-          debugPrint('🔵 IAP: Purchase stream closed');
+          debugPrint('IAP: Purchase stream closed');
         },
       );
 
@@ -79,7 +79,7 @@ class IAPService {
 
     } catch (e) {
       _lastError = 'Initialization failed: $e';
-      debugPrint('❌ IAP: $_lastError');
+      debugPrint('IAP: $_lastError');
       return false;
     }
   }
@@ -89,30 +89,30 @@ class IAPService {
     try {
       final productIds = {monthlyProductId, annualProductId};
 
-      debugPrint('🔍 IAP: Fetching products: $productIds');
+      debugPrint('IAP: Fetching products: $productIds');
 
       final response = await _iap.queryProductDetails(productIds);
 
       if (response.error != null) {
         _lastError = 'Product query error: ${response.error}';
-        debugPrint('❌ IAP: $_lastError');
+        debugPrint('IAP: $_lastError');
         return;
       }
 
       _notFoundIds = response.notFoundIDs;
       if (response.notFoundIDs.isNotEmpty) {
-        debugPrint('⚠️ IAP: Products not found: ${response.notFoundIDs}');
+        debugPrint('IAP: Products not found: ${response.notFoundIDs}');
       }
 
       _products = response.productDetails;
 
-      debugPrint('✅ IAP: Loaded ${_products.length} products');
+      debugPrint('IAP: Loaded ${_products.length} products');
       for (var product in _products) {
-        debugPrint('   📦 ${product.id}: ${product.title} - ${product.price}');
+        debugPrint('   ${product.id}: ${product.title} - ${product.price}');
       }
     } catch (e) {
       _lastError = 'Failed to load products: $e';
-      debugPrint('❌ IAP: $_lastError');
+      debugPrint('IAP: $_lastError');
     }
   }
 
@@ -161,8 +161,8 @@ class IAPService {
         };
       }
 
-      debugPrint('🛒 IAP: Starting purchase for ${product.id}');
-      debugPrint('👤 User ID: $userId');
+      debugPrint('IAP: Starting purchase for ${product.id}');
+      debugPrint('User ID: $userId');
 
       // Create purchase param
       final purchaseParam = PurchaseParam(
@@ -190,7 +190,7 @@ class IAPService {
         'pending': true,
       };
     } catch (e) {
-      debugPrint('❌ IAP: Purchase error: $e');
+      debugPrint('IAP: Purchase error: $e');
       return {
         'success': false,
         'message': 'Purchase failed: ${e.toString()}',
@@ -201,12 +201,12 @@ class IAPService {
   /// Handle purchase updates from Apple
   Future<void> _handlePurchaseUpdates(List<PurchaseDetails> purchases) async {
     for (var purchase in purchases) {
-      debugPrint('🔔 IAP: Purchase update - Status: ${purchase.status}');
+      debugPrint('IAP: Purchase update - Status: ${purchase.status}');
 
       if (purchase.status == PurchaseStatus.pending) {
-        debugPrint('⏳ IAP: Purchase pending...');
+        debugPrint('IAP: Purchase pending...');
       } else if (purchase.status == PurchaseStatus.error) {
-        debugPrint('❌ IAP: Purchase error: ${purchase.error}');
+        debugPrint('IAP: Purchase error: ${purchase.error}');
         // Complete the purchase to remove from queue
         if (purchase.pendingCompletePurchase) {
           await _iap.completePurchase(purchase);
@@ -221,7 +221,7 @@ class IAPService {
           await _iap.completePurchase(purchase);
         }
       } else if (purchase.status == PurchaseStatus.canceled) {
-        debugPrint('🚫 IAP: Purchase canceled by user');
+        debugPrint('IAP: Purchase canceled by user');
         if (purchase.pendingCompletePurchase) {
           await _iap.completePurchase(purchase);
         }
@@ -232,12 +232,12 @@ class IAPService {
   /// Verify purchase with Apple and activate premium subscription
   Future<void> _verifyAndActivatePurchase(PurchaseDetails purchase) async {
     try {
-      debugPrint('🔐 IAP: Verifying purchase: ${purchase.productID}');
+      debugPrint('IAP: Verifying purchase: ${purchase.productID}');
 
       final userId = _supabase.auth.currentUser?.id;
 
       if (userId == null) {
-        debugPrint('❌ IAP: No user ID available');
+        debugPrint('IAP: No user ID available');
         return;
       }
 
@@ -251,7 +251,7 @@ class IAPService {
       );
 
       // Call Supabase Edge Function to verify receipt and activate
-      debugPrint('📡 IAP: Calling verification Edge Function');
+      debugPrint('IAP: Calling verification Edge Function');
 
       final response = await _supabase.functions.invoke(
         'verify-apple-purchase',
@@ -266,12 +266,12 @@ class IAPService {
       );
 
       if (response.status == 200) {
-        debugPrint('✅ IAP: Purchase verified and activated');
+        debugPrint('IAP: Purchase verified and activated');
       } else {
-        debugPrint('❌ IAP: Verification failed: ${response.data}');
+        debugPrint('IAP: Verification failed: ${response.data}');
       }
     } catch (e) {
-      debugPrint('❌ IAP: Verification error: $e');
+      debugPrint('IAP: Verification error: $e');
     }
   }
 
@@ -285,7 +285,7 @@ class IAPService {
         };
       }
 
-      debugPrint('🔄 IAP: Restoring purchases...');
+      debugPrint('IAP: Restoring purchases...');
 
       await _iap.restorePurchases();
 
@@ -295,7 +295,7 @@ class IAPService {
         'message': 'Restore initiated',
       };
     } catch (e) {
-      debugPrint('❌ IAP: Restore failed: $e');
+      debugPrint('IAP: Restore failed: $e');
       return {
         'success': false,
         'message': 'Restore failed: ${e.toString()}',

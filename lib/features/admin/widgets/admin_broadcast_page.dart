@@ -35,7 +35,7 @@ class _AdminBroadcastPageState extends State<AdminBroadcastPage> {
           final logs = response.data['logs'] as List?;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(isTest ? '✅ Test sent! Check your device.' : '✅ Broadcast sent successfully!'),
+              content: Text(isTest ? 'Test sent! Check your device.' : 'Broadcast sent successfully!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -73,7 +73,7 @@ class _AdminBroadcastPageState extends State<AdminBroadcastPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -226,7 +226,7 @@ class _AdminBroadcastPageState extends State<AdminBroadcastPage> {
       }
 
       // 3. Check RPC existence
-      String rpcStatus = "✅ Function exists (verified by SQL)";
+      String rpcStatus = "Function exists (verified by SQL)";
       
       if (mounted) {
         Navigator.pop(context); // Close loading
@@ -248,7 +248,7 @@ class _AdminBroadcastPageState extends State<AdminBroadcastPage> {
                     const SizedBox(height: 16),
                   ],
                   const Text('RPC Status (In-App Persistence):', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(rpcStatus, style: TextStyle(color: rpcStatus.startsWith('✅') ? Colors.green : Colors.red)),
+                  Text(rpcStatus, style: TextStyle(color: rpcStatus.contains('exists') ? Colors.green : Colors.red)),
                 ],
               ),
             ),

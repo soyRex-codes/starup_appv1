@@ -78,7 +78,7 @@ class PostCountsManager {
     _controller.add(_cache);
     
     if (kDebugMode) {
-      debugPrint('📊 PostCountsManager: Updated views for post $postId: $views');
+      debugPrint('PostCountsManager: Updated views for post $postId: $views');
     }
   }
 
@@ -89,7 +89,7 @@ class PostCountsManager {
     _controller.add(_cache);
     
     if (kDebugMode) {
-      debugPrint('📊 PostCountsManager: Updated comments for post $postId: $comments');
+      debugPrint('PostCountsManager: Updated comments for post $postId: $comments');
     }
   }
 
@@ -100,7 +100,7 @@ class PostCountsManager {
     _controller.add(_cache);
     
     if (kDebugMode) {
-      debugPrint('📊 PostCountsManager: Incremented comments for post $postId: ${current.comments + 1}');
+      debugPrint('PostCountsManager: Incremented comments for post $postId: ${current.comments + 1}');
     }
   }
 
@@ -114,7 +114,7 @@ class PostCountsManager {
     _controller.add(_cache);
     
     if (kDebugMode) {
-      debugPrint('📊 PostCountsManager: Updated counts for post $postId: ${_cache[postId]}');
+      debugPrint('PostCountsManager: Updated counts for post $postId: ${_cache[postId]}');
     }
   }
 
@@ -146,7 +146,7 @@ class PostCountsManager {
     if (updateCount > 0) {
       _controller.add(_cache);
       if (kDebugMode) {
-        debugPrint('📊 PostCountsManager: Synced $updateCount posts from database');
+        debugPrint('PostCountsManager: Synced $updateCount posts from database');
       }
     }
   }
@@ -156,7 +156,7 @@ class PostCountsManager {
     _cache.clear();
     _controller.add(_cache);
     if (kDebugMode) {
-      debugPrint('📊 PostCountsManager: Cleared all cached counts');
+      debugPrint('PostCountsManager: Cleared all cached counts');
     }
   }
 
@@ -173,7 +173,7 @@ class PostCountsManager {
       }
       
       if (kDebugMode) {
-        debugPrint('📊 PostCountsManager: Pruned $entriesToRemove old entries');
+        debugPrint('PostCountsManager: Pruned $entriesToRemove old entries');
       }
     }
   }

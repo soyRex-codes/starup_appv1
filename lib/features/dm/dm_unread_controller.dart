@@ -16,7 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// - Scales much better (each user can have many conversations, polling is lightweight)
 /// - This trade-off is EXCELLENT for scaling: support 1.5x more concurrent users!
 ///
-/// Performance: ✅ GOOD
+/// Performance: GOOD
 /// - 1 HTTP request every 10-15 seconds per active user
 /// - Minimal bandwidth (simple SQL aggregate query)
 /// - No connection slot usage
@@ -106,7 +106,7 @@ class DmUnreadController {
   }
 
   void _attach(String uid) {
-    // ⚠️ REAL-TIME SUBSCRIPTIONS: DISABLED FOR SCALABILITY
+    // REAL-TIME SUBSCRIPTIONS: DISABLED FOR SCALABILITY
     //
     // Previous code tried to subscribe to real-time updates on 'dm_messages'
     // and 'dm_participants', but these tables don't exist (dropped in migration).
@@ -130,7 +130,7 @@ class DmUnreadController {
     // ch.onPostgresChanges(
     //   event: PostgresChangeEvent.insert,
     //   schema: 'public',
-    //   table: 'dm_messages',  // ← DEAD: Table doesn't exist
+    //   table: 'dm_messages',  // DEAD: Table doesn't exist
     //   callback: (payload) {
     //     try {
     //       final newRow = payload.newRecord as Map<String, dynamic>?;
@@ -144,7 +144,7 @@ class DmUnreadController {
     // ch.onPostgresChanges(
     //   event: PostgresChangeEvent.update,
     //   schema: 'public',
-    //   table: 'dm_participants',  // ← DEAD: Table doesn't exist
+    //   table: 'dm_participants',  // DEAD: Table doesn't exist
     //   callback: (payload) {
     //     try {
     //       final newRow = payload.newRecord as Map<String, dynamic>?;

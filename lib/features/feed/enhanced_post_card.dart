@@ -157,7 +157,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:
-              Text(newStatus ? '💾 Post saved' : '🗑️ Post removed from saved'),
+              Text(newStatus ? 'Post saved' : 'Post removed from saved'),
           duration: const Duration(seconds: 1),
           behavior: SnackBarBehavior.floating,
         ),
@@ -255,11 +255,11 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
       switch (actionType.toLowerCase()) {
         case 'contact':
           messageContent =
-              '📞 GENERAL INQUIRY\n\nHi! I saw your post about "${widget.post.title}" and would like to connect. Let\'s chat!';
+              'GENERAL INQUIRY\n\nHi! I saw your post about "${widget.post.title}" and would like to connect. Let\'s chat!';
           break;
         default:
           messageContent =
-              '👋 I\'m interested in your post about "${widget.post.title}". Let\'s connect!';
+              'I\'m interested in your post about "${widget.post.title}". Let\'s connect!';
       }
 
       await _msgRepo.send(

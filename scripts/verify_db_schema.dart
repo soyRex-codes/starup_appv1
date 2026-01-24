@@ -5,7 +5,7 @@ Future<void> testDatabaseSchema() async {
   final client = Supabase.instance.client;
 
   if (kDebugMode) {
-    print('🔍 Testing database schema...');
+    print('Testing database schema...');
   }
 
   try {
@@ -15,14 +15,14 @@ Future<void> testDatabaseSchema() async {
         .select('id, type, created_at')
         .limit(1);
     if (kDebugMode) {
-      print('✅ Conversations table exists and has type column');
+      print('Conversations table exists and has type column');
     }
     if (kDebugMode) {
       print('   Sample data: $conversations');
     }
   } catch (e) {
     if (kDebugMode) {
-      print('❌ Conversations table issue: $e');
+      print('Conversations table issue: $e');
     }
   }
 
@@ -36,11 +36,11 @@ Future<void> testDatabaseSchema() async {
     // Test select
     await client.from('users').select('id').limit(1);
     if (kDebugMode) {
-      print('✅ Users table exists and allows insert/select');
+      print('Users table exists and allows insert/select');
     }
   } catch (e) {
     if (kDebugMode) {
-      print('❌ Users table issue: $e');
+      print('Users table issue: $e');
     }
   }
 
@@ -52,11 +52,11 @@ Future<void> testDatabaseSchema() async {
       'user2_id': '00000000-0000-0000-0000-000000000001'
     });
     if (kDebugMode) {
-      print('✅ get_or_create_direct_conversation function exists');
+      print('get_or_create_direct_conversation function exists');
     }
   } catch (e) {
     if (kDebugMode) {
-      print('❌ get_or_create_direct_conversation function issue: $e');
+      print('get_or_create_direct_conversation function issue: $e');
     }
   }
 }

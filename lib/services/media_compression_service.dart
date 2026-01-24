@@ -9,7 +9,7 @@ import 'package:path/path.dart' as path;
 /// Service for compressing images and videos before upload
 ///
 /// Performance targets:
-/// - Images: 2MB → 300KB (85% reduction)
+/// - Images: 2MB -> 300KB (85% reduction)
 /// - Videos: Maintain quality while reducing file size by 40-60%
 ///
 /// Quality settings:
@@ -39,7 +39,7 @@ class MediaCompressionService {
     int maxHeight = 1920,
   }) async {
     try {
-      debugPrint('📸 Compressing image: ${file.path}');
+      debugPrint('Compressing image: ${file.path}');
       final originalSize = await file.length();
       debugPrint('   Original size: ${_formatBytes(originalSize)}');
 
@@ -79,7 +79,7 @@ class MediaCompressionService {
       );
 
       if (result == null) {
-        debugPrint('⚠️ Compression failed, using original file');
+        debugPrint('Compression failed, using original file');
         return file;
       }
 
@@ -92,14 +92,14 @@ class MediaCompressionService {
 
       // If compressed file is larger (rare), use original
       if (compressedSize >= originalSize) {
-        debugPrint('⚠️ Compressed file larger than original, using original');
+        debugPrint('Compressed file larger than original, using original');
         await compressedFile.delete();
         return file;
       }
 
       return compressedFile;
     } catch (e) {
-      debugPrint('❌ Error compressing image: $e');
+      debugPrint('Error compressing image: $e');
       return file; // Return original on error
     }
   }
@@ -114,7 +114,7 @@ class MediaCompressionService {
     List<File> files, {
     int quality = 70,
   }) async {
-    debugPrint('📸 Batch compressing ${files.length} images...');
+    debugPrint('Batch compressing ${files.length} images...');
 
     final results = await Future.wait(
       files.map((file) => compressImage(file, quality: quality)),
@@ -128,7 +128,7 @@ class MediaCompressionService {
         totalCompressed.fold<int>(0, (sum, size) => sum + size);
     final reduction = ((originalSize - compressedSize) / originalSize * 100);
 
-    debugPrint('📊 Batch compression complete:');
+    debugPrint('Batch compression complete:');
     debugPrint('   Total original: ${_formatBytes(originalSize)}');
     debugPrint('   Total compressed: ${_formatBytes(compressedSize)}');
     debugPrint('   Total reduction: ${reduction.toStringAsFixed(1)}%');
@@ -151,7 +151,7 @@ class MediaCompressionService {
     VideoQuality quality = VideoQuality.MediumQuality,
   }) async {
     try {
-      debugPrint('🎥 Compressing video: ${file.path}');
+      debugPrint('Compressing video: ${file.path}');
       final originalSize = await file.length();
       debugPrint('   Original size: ${_formatBytes(originalSize)}');
 
@@ -170,7 +170,7 @@ class MediaCompressionService {
       );
 
       if (mediaInfo == null || mediaInfo.file == null) {
-        debugPrint('⚠️ Video compression failed, using original file');
+        debugPrint('Video compression failed, using original file');
         return file;
       }
 
@@ -183,14 +183,14 @@ class MediaCompressionService {
 
       // If compressed file is larger, use original
       if (compressedSize >= originalSize) {
-        debugPrint('⚠️ Compressed video larger than original, using original');
+        debugPrint('Compressed video larger than original, using original');
         await compressedFile.delete();
         return file;
       }
 
       return compressedFile;
     } catch (e) {
-      debugPrint('❌ Error compressing video: $e');
+      debugPrint('Error compressing video: $e');
       return file; // Return original on error
     }
   }
@@ -270,9 +270,9 @@ class MediaCompressionService {
   Future<void> deleteAllCache() async {
     try {
       await VideoCompress.deleteAllCache();
-      debugPrint('✅ Cleared compression cache');
+      debugPrint('Cleared compression cache');
     } catch (e) {
-      debugPrint('❌ Error clearing cache: $e');
+      debugPrint('Error clearing cache: $e');
     }
   }
 
@@ -311,7 +311,7 @@ class MediaCompressionService {
     } else if (isVideo(file)) {
       return compressVideo(file, quality: videoQuality);
     } else {
-      debugPrint('⚠️ File type not supported for compression: ${file.path}');
+      debugPrint('File type not supported for compression: ${file.path}');
       return file;
     }
   }

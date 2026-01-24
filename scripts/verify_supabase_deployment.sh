@@ -3,7 +3,7 @@
 # Quick Supabase Deployment Verification Script
 # Verifies all Supabase components are deployed correctly
 
-echo "🔍 Verifying Supabase Deployment"
+echo "Verifying Supabase Deployment"
 echo "=================================="
 echo ""
 
@@ -17,12 +17,12 @@ NC='\033[0m'
 read -p "Enter your Supabase project URL (e.g., https://xxx.supabase.co): " SUPABASE_URL
 
 if [ -z "$SUPABASE_URL" ]; then
-    echo -e "${RED}❌ Supabase URL required${NC}"
+    echo -e "${RED}Supabase URL required${NC}"
     exit 1
 fi
 
 echo ""
-echo "📡 Testing Edge Functions"
+echo "Testing Edge Functions"
 echo "-------------------------"
 
 # Test create-premium-subscription endpoint
@@ -33,10 +33,10 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     -d '{}' 2>/dev/null)
 
 if [ "$RESPONSE" = "400" ] || [ "$RESPONSE" = "200" ]; then
-    echo -e "${GREEN}✅ create-premium-subscription is deployed and responding${NC}"
+    echo -e "${GREEN}create-premium-subscription is deployed and responding${NC}"
     echo "   Status code: $RESPONSE (expected 400 for empty request)"
 else
-    echo -e "${RED}❌ create-premium-subscription not found or not responding${NC}"
+    echo -e "${RED}create-premium-subscription not found or not responding${NC}"
     echo "   Status code: $RESPONSE"
     echo "   Expected: 400 or 200"
 fi
@@ -50,16 +50,16 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     -d '{}' 2>/dev/null)
 
 if [ "$RESPONSE" = "403" ] || [ "$RESPONSE" = "400" ]; then
-    echo -e "${GREEN}✅ stripe-webhook is deployed and responding${NC}"
+    echo -e "${GREEN}stripe-webhook is deployed and responding${NC}"
     echo "   Status code: $RESPONSE (expected 403/400 without signature)"
 else
-    echo -e "${RED}❌ stripe-webhook not found or not responding${NC}"
+    echo -e "${RED}stripe-webhook not found or not responding${NC}"
     echo "   Status code: $RESPONSE"
     echo "   Expected: 403 or 400"
 fi
 
 echo ""
-echo "🗄️  Database Migration Verification"
+echo "Database Migration Verification"
 echo "------------------------------------"
 echo ""
 echo "Please verify manually in Supabase Dashboard:"
@@ -84,13 +84,13 @@ echo ""
 read -p "Have you verified the database schema? (y/n): " DB_VERIFIED
 
 if [ "$DB_VERIFIED" = "y" ] || [ "$DB_VERIFIED" = "Y" ]; then
-    echo -e "${GREEN}✅ Database schema verified${NC}"
+    echo -e "${GREEN}Database schema verified${NC}"
 else
-    echo -e "${YELLOW}⚠️  Please verify database schema${NC}"
+    echo -e "${YELLOW}Please verify database schema${NC}"
 fi
 
 echo ""
-echo "🔑 Environment Variables Verification"
+echo "Environment Variables Verification"
 echo "--------------------------------------"
 echo ""
 echo "Please verify in Supabase Dashboard → Settings → Edge Functions:"
@@ -103,9 +103,9 @@ echo ""
 read -p "Have you set both secrets? (y/n): " SECRETS_VERIFIED
 
 if [ "$SECRETS_VERIFIED" = "y" ] || [ "$SECRETS_VERIFIED" = "Y" ]; then
-    echo -e "${GREEN}✅ Secrets verified${NC}"
+    echo -e "${GREEN}Secrets verified${NC}"
 else
-    echo -e "${YELLOW}⚠️  Please set required secrets${NC}"
+    echo -e "${YELLOW}Please set required secrets${NC}"
     echo ""
     echo "To set secrets, run:"
     echo "  supabase secrets set stripe_secret_key=sk_test_xxx"
@@ -113,7 +113,7 @@ else
 fi
 
 echo ""
-echo "🔗 Stripe Webhook Configuration"
+echo "Stripe Webhook Configuration"
 echo "--------------------------------"
 echo ""
 echo "Your webhook endpoint URL:"
@@ -131,19 +131,19 @@ echo ""
 read -p "Have you configured the webhook in Stripe? (y/n): " WEBHOOK_VERIFIED
 
 if [ "$WEBHOOK_VERIFIED" = "y" ] || [ "$WEBHOOK_VERIFIED" = "Y" ]; then
-    echo -e "${GREEN}✅ Webhook configured in Stripe${NC}"
+    echo -e "${GREEN}Webhook configured in Stripe${NC}"
 else
-    echo -e "${YELLOW}⚠️  Please configure webhook in Stripe Dashboard${NC}"
+    echo -e "${YELLOW}Please configure webhook in Stripe Dashboard${NC}"
 fi
 
 echo ""
 echo "================================================"
-echo "📊 VERIFICATION SUMMARY"
+echo "VERIFICATION SUMMARY"
 echo "================================================"
 echo ""
 
 if [ "$DB_VERIFIED" = "y" ] && [ "$SECRETS_VERIFIED" = "y" ] && [ "$WEBHOOK_VERIFIED" = "y" ]; then
-    echo -e "${GREEN}✅ ALL CHECKS PASSED!${NC}"
+    echo -e "${GREEN}ALL CHECKS PASSED!${NC}"
     echo ""
     echo "Your Supabase backend is ready!"
     echo ""
@@ -153,11 +153,11 @@ if [ "$DB_VERIFIED" = "y" ] && [ "$SECRETS_VERIFIED" = "y" ] && [ "$WEBHOOK_VERI
     echo "3. Test premium subscription with card: 4242 4242 4242 4242"
     echo ""
 else
-    echo -e "${YELLOW}⚠️  SOME ITEMS NEED ATTENTION${NC}"
+    echo -e "${YELLOW}SOME ITEMS NEED ATTENTION${NC}"
     echo ""
     echo "Please complete the items marked above, then run this script again."
     echo ""
 fi
 
-echo "Verification complete! 🎉"
+echo "Verification complete!"
 echo ""

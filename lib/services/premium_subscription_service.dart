@@ -65,15 +65,15 @@ class PremiumSubscriptionService {
   /// Deactivate expired premium subscription
   Future<void> _deactivateExpiredPremium(String userId) async {
     try {
-      debugPrint('⏰ Deactivating expired premium for user: $userId');
+      debugPrint('Deactivating expired premium for user: $userId');
 
       await _supabase.from('users').update({
         'is_premium': false,
       }).eq('id', userId);
 
-      debugPrint('✅ Expired premium deactivated');
+      debugPrint('Expired premium deactivated');
     } catch (e) {
-      debugPrint('❌ Failed to deactivate expired premium: $e');
+      debugPrint('Failed to deactivate expired premium: $e');
     }
   }
 
@@ -250,10 +250,10 @@ class PremiumSubscriptionService {
       final subscriptionType = isAnnual ? 'annual' : 'monthly';
 
       // Step 1: Call Edge Function to create Stripe PaymentIntent
-      debugPrint('🔵 Calling create-premium-subscription Edge Function...');
-      debugPrint('📧 Email: $email');
-      debugPrint('💰 Amount: \$${amount.toStringAsFixed(2)}');
-      debugPrint('📅 Type: $subscriptionType');
+      debugPrint('Calling create-premium-subscription Edge Function...');
+      debugPrint('Email: $email');
+      debugPrint('Amount: \$${amount.toStringAsFixed(2)}');
+      debugPrint('Type: $subscriptionType');
 
       final response = await _supabase.functions.invoke(
         'create-premium-subscription',
@@ -265,14 +265,14 @@ class PremiumSubscriptionService {
         },
       );
 
-      debugPrint('📡 Edge Function response status: ${response.status}');
-      debugPrint('📦 Edge Function response data: ${response.data}');
+      debugPrint('Edge Function response status: ${response.status}');
+      debugPrint('Edge Function response data: ${response.data}');
 
       if (response.status != 200) {
         final errorDetails = response.data is Map
             ? response.data['details'] ?? response.data['error']
             : response.data.toString();
-        debugPrint('❌ Edge Function error: $errorDetails');
+        debugPrint('Edge Function error: $errorDetails');
         throw Exception('Failed to create payment intent: $errorDetails');
       }
 
@@ -281,7 +281,7 @@ class PremiumSubscriptionService {
 
       // On Web: Return clientSecret for WebPaymentForm to handle
       if (kIsWeb) {
-        debugPrint('🌐 Web: Returning clientSecret for WebPaymentForm');
+        debugPrint('Web: Returning clientSecret for WebPaymentForm');
         return {
           'success': true,
           'needsWebPayment': true,
@@ -304,8 +304,8 @@ class PremiumSubscriptionService {
           };
         }
 
-        debugPrint('🔧 Initializing Stripe Payment Sheet...');
-        debugPrint('🔑 Client Secret: ${clientSecret.substring(0, 20)}...');
+        debugPrint('Initializing Stripe Payment Sheet...');
+        debugPrint('Client Secret: ${clientSecret.substring(0, 20)}...');
 
         await Stripe.instance.initPaymentSheet(
           paymentSheetParameters: SetupPaymentSheetParameters(
@@ -330,13 +330,13 @@ class PremiumSubscriptionService {
           ),
         );
 
-        debugPrint('✅ Payment sheet initialized successfully');
+        debugPrint('Payment sheet initialized successfully');
 
         // Step 3: Present Stripe Payment Sheet to user
-        debugPrint('📱 Presenting payment sheet...');
+        debugPrint('Presenting payment sheet...');
         await Stripe.instance.presentPaymentSheet();
 
-        debugPrint('✅ Payment sheet completed successfully');
+        debugPrint('Payment sheet completed successfully');
 
         // Step 4: Update payment record with payment intent ID
         final updateResult = await _supabase
@@ -365,7 +365,7 @@ class PremiumSubscriptionService {
           errorMessage = 'Payment failed: ${e.error.localizedMessage}';
         }
 
-        debugPrint('❌ Stripe error: $errorMessage');
+        debugPrint('Stripe error: $errorMessage');
         return {
           'success': false,
           'message': errorMessage,
@@ -374,7 +374,7 @@ class PremiumSubscriptionService {
         };
       }
     } catch (e) {
-      debugPrint('💥 Premium payment processing exception: $e');
+      debugPrint('Premium payment processing exception: $e');
       return {
         'success': false,
         'message': 'Payment processing failed',

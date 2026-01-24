@@ -47,7 +47,7 @@ class ShareService {
             imageFile = XFile(file.path, mimeType: 'image/jpeg');
           }
         } catch (e) {
-          debugPrint('⚠️ Failed to download share image: $e');
+          debugPrint('Failed to download share image: $e');
         }
       }
 
@@ -68,16 +68,16 @@ class ShareService {
 
       // Don't show snackbar for dismissed shares - that's normal user behavior
       if (result.status == ShareResultStatus.success) {
-        debugPrint('✅ Share completed successfully');
+        debugPrint('Share completed successfully');
       } else if (result.status == ShareResultStatus.dismissed) {
         debugPrint('Share dismissed by user');
       } else if (result.status == ShareResultStatus.unavailable) {
-        debugPrint('⚠️ Share unavailable on this platform');
+        debugPrint('Share unavailable on this platform');
       }
 
       _trackShareAttempt(postId);
     } catch (e) {
-      debugPrint('❌ Share error: $e');
+      debugPrint('Share error: $e');
       // Only show error if there's an actual failure, not dismissal
       rethrow;
     }
@@ -89,7 +89,7 @@ class ShareService {
     final buffer = StringBuffer();
 
     // Hook line
-    buffer.writeln('💡 Check out this startup idea:');
+    buffer.writeln('Check out this startup idea:');
     buffer.writeln();
 
     // Post content
@@ -105,7 +105,7 @@ class ShareService {
     }
 
     buffer.writeln();
-    buffer.writeln('👆 Tap to join the discussion');
+    buffer.writeln('Tap to join the discussion');
     buffer.writeln(shareUrl);
     buffer.writeln();
     buffer.writeln(
@@ -142,14 +142,14 @@ class ShareService {
         origin.left > 10000 ||
         origin.top > 10000) {
       debugPrint(
-          '⚠️ Invalid sharePositionOrigin detected: $origin. Using safe default.');
+          'Invalid sharePositionOrigin detected: $origin. Using safe default.');
       return defaultRect;
     }
 
     // Check for zero or negative width/height
     if (origin.width <= 0 || origin.height <= 0) {
       debugPrint(
-          '⚠️ Invalid sharePositionOrigin dimensions: ${origin.width}x${origin.height}. Using safe default.');
+          'Invalid sharePositionOrigin dimensions: ${origin.width}x${origin.height}. Using safe default.');
       return defaultRect;
     }
 
@@ -159,7 +159,7 @@ class ShareService {
 
   /// Track sharing analytics
   static void _trackShareAttempt(int postId) {
-    debugPrint('📤 Share attempt for post $postId');
+    debugPrint('Share attempt for post $postId');
     // Implement analytics tracking (Firebase, Mixpanel, etc.)
   }
 }

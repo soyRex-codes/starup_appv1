@@ -80,10 +80,10 @@ class ApplicationPaymentService {
           await getApplicationFee(); // Get fee with premium discount
 
       // Step 1: Call Edge Function to create Stripe PaymentIntent
-      debugPrint('🔵 Calling create-payment-intent Edge Function...');
-      debugPrint('📧 Email: $email');
-      debugPrint('💰 Amount: \$${applicationFee.toStringAsFixed(2)}');
-      if (couponCode != null) debugPrint('🎟️ Coupon: $couponCode');
+      debugPrint('Calling create-payment-intent Edge Function...');
+      debugPrint('Email: $email');
+      debugPrint('Amount: \$${applicationFee.toStringAsFixed(2)}');
+      if (couponCode != null) debugPrint('Coupon: $couponCode');
 
       final response = await _supabase.functions.invoke(
         'create-payment-intent',
@@ -97,20 +97,20 @@ class ApplicationPaymentService {
         },
       );
 
-      debugPrint('📡 Edge Function response status: ${response.status}');
-      debugPrint('📦 Edge Function response data: ${response.data}');
+      debugPrint('Edge Function response status: ${response.status}');
+      debugPrint('Edge Function response data: ${response.data}');
 
       if (response.status != 200) {
         final errorDetails = response.data is Map
             ? response.data['details'] ?? response.data['error']
             : response.data.toString();
-        debugPrint('❌ Edge Function error: $errorDetails');
+        debugPrint('Edge Function error: $errorDetails');
         throw Exception('Failed to create payment intent: $errorDetails');
       }
 
       // Check for Free Transaction (100% off coupon)
       if (response.data['isFree'] == true) {
-        debugPrint('🎉 Transaction is free! Skipping Stripe Payment Sheet.');
+        debugPrint('Transaction is free! Skipping Stripe Payment Sheet.');
         
         // Update payment record to 'succeeded' immediately
         final updateResult = await _supabase
@@ -139,7 +139,7 @@ class ApplicationPaymentService {
 
       // On Web: Return clientSecret for WebPaymentForm to handle
       if (kIsWeb) {
-        debugPrint('🌐 Web: Returning clientSecret for WebPaymentForm');
+        debugPrint('Web: Returning clientSecret for WebPaymentForm');
         return {
           'success': true,
           'needsWebPayment': true,
@@ -248,8 +248,8 @@ class ApplicationPaymentService {
       };
     } catch (e) {
       // Edge function or general error
-      debugPrint('❌ Payment processing error: $e');
-      debugPrint('📋 Error type: ${e.runtimeType}');
+      debugPrint('Payment processing error: $e');
+      debugPrint('Error type: ${e.runtimeType}');
 
       await _supabase.from('application_payments').update({
         'status': 'failed',

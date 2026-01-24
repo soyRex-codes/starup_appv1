@@ -51,10 +51,10 @@ class Message {
       case MessageType.text:
         return content ?? '';
       case MessageType.image:
-        return '📷 Image';
+        return 'Image';
       case MessageType.file:
         final fileName = metadata['file_name'] as String?;
-        return '📎 ${fileName ?? 'File'}';
+        return fileName ?? 'File';
       case MessageType.system:
         return content ?? 'System message';
     }

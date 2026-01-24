@@ -1,4 +1,4 @@
-// 🔐 Android Release Signing Configuration
+// Android Release Signing Configuration
 // Add this code to android/app/build.gradle.kts
 
 // ============================================
@@ -92,20 +92,20 @@ key.properties
 // flutter build appbundle --release
 
 // Expected output:
-// ✓ Built build/app/outputs/bundle/release/app-release.aab
+// Built build/app/outputs/bundle/release/app-release.aab
 
 // ============================================
 // TROUBLESHOOTING
 // ============================================
 
 // Error: "Keystore file not found"
-// → Check storeFile path in key.properties matches actual keystore location
+// -> Check storeFile path in key.properties matches actual keystore location
 
 // Error: "Keystore password was incorrect"
-// → Verify storePassword and keyPassword in key.properties are correct
+// -> Verify storePassword and keyPassword in key.properties are correct
 
 // Error: "Key with alias 'foundervers' not found"
-// → Ensure keyAlias in key.properties matches the alias used when creating keystore
+// -> Ensure keyAlias in key.properties matches the alias used when creating keystore
 
 // ============================================
 // PRODUCTION CHECKLIST

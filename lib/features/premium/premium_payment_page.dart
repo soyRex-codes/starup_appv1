@@ -151,10 +151,10 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
 
   /// Process payment using Stripe (Android only)
   Future<void> _processStripePayment(String userId, String userEmail) async {
-    debugPrint('💳 Using Stripe payment');
+    debugPrint('Using Stripe payment');
 
     // Step 1: Create payment record
-    debugPrint('📝 Step 1: Creating payment record...');
+    debugPrint('Step 1: Creating payment record...');
     final paymentResult = await _premiumService.createPayment(
       isAnnual: _isAnnualPlan,
       userId: userId,
@@ -167,10 +167,10 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
 
     final payment = paymentResult['payment'] as PremiumPaymentModel;
     final paymentId = payment.id;
-    debugPrint('✅ Payment record created: $paymentId');
+    debugPrint('Payment record created: $paymentId');
 
     // Step 2: Process payment with Stripe Payment Sheet
-    debugPrint('💳 Step 2: Processing payment with Stripe...');
+    debugPrint('Step 2: Processing payment with Stripe...');
     final processResult = await _premiumService.processPayment(
       paymentId: paymentId,
       isAnnual: _isAnnualPlan,
@@ -180,7 +180,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
 
     // Handle web payment flow
     if (processResult['needsWebPayment'] == true) {
-      debugPrint('🌐 Web: Showing WebPaymentForm dialog');
+      debugPrint('Web: Showing WebPaymentForm dialog');
       setState(() => _isProcessing = false);
       
       final clientSecret = processResult['clientSecret'] as String;
@@ -202,7 +202,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
                 amount: amount,
                 onSuccess: () => Navigator.of(ctx).pop(true),
                 onError: (error) {
-                  debugPrint('❌ Web payment error: $error');
+                  debugPrint('Web payment error: $error');
                   Navigator.of(ctx).pop(false);
                 },
                 onCancel: () => Navigator.of(ctx).pop(null),
@@ -213,7 +213,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
         
         if (webPaymentResult == true) {
           // Payment successful - activate premium
-          debugPrint('✅ Web payment successful, activating premium...');
+          debugPrint('Web payment successful, activating premium...');
           final activated = await _premiumService.completePremiumPayment(
             paymentId: paymentIdFromResult,
             isAnnual: _isAnnualPlan,
@@ -243,7 +243,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
     if (!processResult['success']) {
       // Check if user cancelled
       if (processResult['cancelled'] == true) {
-        debugPrint('ℹ️ Payment cancelled by user');
+        debugPrint('Payment cancelled by user');
         setState(() {
           _errorMessage = 'Payment was cancelled';
           _isProcessing = false;
@@ -251,8 +251,8 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
         return;
       }
 
-      debugPrint('❌ Payment failed: ${processResult['message']}');
-      if (kDebugMode) debugPrint('🔍 Error details: ${processResult['error']}');
+      debugPrint('Payment failed: ${processResult['message']}');
+      if (kDebugMode) debugPrint('Error details: ${processResult['error']}');
 
       // Show user-friendly error message
       setState(() {
@@ -272,10 +272,10 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
       return;
     }
 
-    if (kDebugMode) debugPrint('✅ Payment processed successfully');
+    if (kDebugMode) debugPrint('Payment processed successfully');
 
     // Step 3: Complete premium payment and activate subscription
-    if (kDebugMode) debugPrint('🎯 Step 3: Activating premium subscription...');
+    if (kDebugMode) debugPrint('Step 3: Activating premium subscription...');
     final activated = await _premiumService.completePremiumPayment(
       paymentId: paymentId,
       isAnnual: _isAnnualPlan,
@@ -285,7 +285,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
       throw Exception('Failed to activate premium subscription');
     }
 
-    if (kDebugMode) debugPrint('🎉 Premium subscription activated successfully!');
+    if (kDebugMode) debugPrint('Premium subscription activated successfully!');
 
     // Step 4: Navigate to success page
     if (mounted) {
@@ -861,7 +861,7 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '🛠️ IAP Diagnostics',
+            'IAP Diagnostics',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
           const SizedBox(height: 8),
@@ -874,14 +874,14 @@ class _PremiumPaymentPageState extends State<PremiumPaymentPage> {
           if (iap.notFoundIds.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              '⚠️ Not Found IDs:\n${iap.notFoundIds.join("\n")}',
+              'Not Found IDs:\n${iap.notFoundIds.join("\n")}',
               style: TextStyle(fontSize: 10, color: Colors.red.shade700),
             ),
           ],
           if (iap.lastError != null) ...[
             const SizedBox(height: 4),
             Text(
-              '❌ Error: ${iap.lastError}',
+              'Error: ${iap.lastError}',
               style: TextStyle(fontSize: 10, color: Colors.red.shade700),
             ),
           ],

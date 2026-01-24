@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
     <!-- Primary Meta Tags -->
     <title>FounderVers - Connect, Build, and Grow with Founders Worldwide</title>
@@ -31,12 +31,13 @@
         content="Connect with thousands of like-minded founders. Share your startup journey, find co-founders, and grow your venture.">
     <meta property="twitter:image" content="https://foundervers.com/icons/foundervers.png">
 
-    <!-- Facivon -->
-    <link rel="icon" href="icons/foundervers.png">
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" href="favicon.png" type="image/png">
     <link rel="apple-touch-icon" href="icons/foundervers.png">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
 
     <!-- Structured Data (JSON-LD) for AI & Search Engines -->
     <script type="application/ld+json">
@@ -57,7 +58,8 @@
       "author": {
         "@type": "Organization",
         "name": "FounderVers",
-        "url": "https://foundervers.com"
+        "url": "https://foundervers.com",
+        "logo": "https://foundervers.com/icons/foundervers.png"
       },
       "aggregateRating": {
         "@type": "AggregateRating",
@@ -80,11 +82,26 @@
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#screenshots">App Preview</a>
-                <a href="#privacy">Privacy</a>
+                <a href="legal.html">Privacy</a>
                 <a href="#download">Download</a>
             </div>
+            <!-- Mobile Hamburger Menu -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </nav>
+
+    <!-- Mobile Navigation Menu -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <div class="mobile-nav-menu" id="mobileNavMenu">
+        <a href="#features">Features</a>
+        <a href="#screenshots">App Preview</a>
+        <a href="legal.html">Privacy</a>
+        <a href="#download">Download</a>
+    </div>
 
     <!-- Hero Section with Large Logo -->
     <section class="hero">
@@ -229,133 +246,20 @@
         </div>
     </section>
 
-    <!-- Privacy Policy Section -->
-    <section class="privacy-section" id="privacy">
-        <div class="privacy-container">
-            <div class="privacy-header">
-                <h2>Privacy Policy</h2>
-                <p class="privacy-updated">Last Updated: January 14, 2025</p>
-            </div>
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+        <div class="contact-container">
+            <h3>10. Contact Us</h3>
+            <p>If you have any questions, concerns, or requests, please contact us at:</p>
+            <p class="contact-info">
+                <strong>Email:</strong> <a href="mailto:foundervers@gmail.com">foundervers@gmail.com</a><br>
+                <strong>Support:</strong> <a href="mailto:foundervers@gmail.com">foundervers@gmail.com</a>
+            </p>
 
-            <div class="privacy-content">
-                <p>Welcome to FounderVers ("we," "our," or "us"). We are committed to protecting your privacy and
-                    ensuring the security of your personal information. This Privacy Policy explains how we collect,
-                    use, disclose, and safeguard your information when you use our mobile application and services.</p>
-
-                <h3>1. Information We Collect</h3>
-
-                <h4>1.1 Information You Provide</h4>
-                <p>When you create an account and use FounderVers, we collect information you voluntarily provide,
-                    including:</p>
-                <ul>
-                    <li>Profile information (name, email address, profile photo, bio)</li>
-                    <li>Content you post (text, images, videos, comments)</li>
-                    <li>Messages and communications with other users</li>
-                    <li>Business information (company name, role, industry)</li>
-                    <li>Payment information (processed securely through third-party providers)</li>
-                </ul>
-
-                <h4>1.2 Automatically Collected Information</h4>
-                <p>We automatically collect certain information when you use our services:</p>
-                <ul>
-                    <li>Device information (device type, operating system, unique identifiers)</li>
-                    <li>Usage data (features used, time spent, interactions)</li>
-                    <li>Location data (with your permission)</li>
-                    <li>Log data (IP address, browser type, access times)</li>
-                </ul>
-
-                <h3>2. How We Use Your Information</h3>
-                <p>We use the collected information for the following purposes:</p>
-                <ul>
-                    <li>Provide, maintain, and improve our services</li>
-                    <li>Personalize your experience and content recommendations</li>
-                    <li>Process transactions and send related information</li>
-                    <li>Send administrative information, updates, and security alerts</li>
-                    <li>Respond to your comments, questions, and customer service requests</li>
-                    <li>Monitor and analyze trends, usage, and activities</li>
-                    <li>Detect, prevent, and address technical issues and fraudulent activity</li>
-                    <li>Comply with legal obligations and enforce our terms</li>
-                </ul>
-
-                <div class="privacy-highlight">
-                    <h4>Your Privacy Matters</h4>
-                    <p>We will never sell your personal information to third parties. Your data is yours, and we are
-                        committed to keeping it secure and private.</p>
-                </div>
-
-                <h3>3. Information Sharing and Disclosure</h3>
-                <p>We may share your information in the following circumstances:</p>
-                <ul>
-                    <li><strong>With Other Users:</strong> Your profile information and content you post are visible to
-                        other FounderVers users according to your privacy settings.</li>
-                    <li><strong>With Service Providers:</strong> We share information with third-party service providers
-                        who perform services on our behalf (hosting, analytics, payment processing, customer support).
-                    </li>
-                    <li><strong>For Legal Reasons:</strong> We may disclose information if required by law, legal
-                        process, or governmental request, or to protect rights, property, and safety.</li>
-                    <li><strong>With Your Consent:</strong> We may share information with third parties when you give us
-                        explicit consent to do so.</li>
-                </ul>
-
-                <h3>4. Data Security</h3>
-                <p>We implement appropriate technical and organizational measures to protect your personal information
-                    against unauthorized access, alteration, disclosure, or destruction. These measures include:</p>
-                <ul>
-                    <li>Encryption of data in transit and at rest</li>
-                    <li>Regular security assessments and updates</li>
-                    <li>Access controls and authentication requirements</li>
-                    <li>Employee training on data protection</li>
-                </ul>
-                <p>However, no method of transmission over the internet or electronic storage is 100% secure. While we
-                    strive to protect your information, we cannot guarantee absolute security.</p>
-
-                <h3>5. Your Rights and Choices</h3>
-                <p>You have the following rights regarding your personal information:</p>
-                <ul>
-                    <li><strong>Access and Update:</strong> You can access and update your profile information through
-                        your account settings.</li>
-                    <li><strong>Delete:</strong> You can request deletion of your account and personal information by
-                        contacting us at privacy@foundervers.com.</li>
-                    <li><strong>Opt-Out:</strong> You can opt out of receiving promotional communications by following
-                        the unsubscribe instructions in those messages.</li>
-                    <li><strong>Data Portability:</strong> You can request a copy of your personal information in a
-                        structured, commonly used format.</li>
-                </ul>
-
-                <h3>6. Data Retention</h3>
-                <p>We retain your personal information for as long as necessary to provide our services and fulfill the
-                    purposes outlined in this Privacy Policy. When you delete your account, we will delete or anonymize
-                    your personal information, except where we are required to retain it for legal or regulatory
-                    purposes.</p>
-
-                <h3>7. Children's Privacy</h3>
-                <p>FounderVers is not intended for users under the age of 13. We do not knowingly collect personal
-                    information from children under 13. If we become aware that a child under 13 has provided us with
-                    personal information, we will take steps to delete such information.</p>
-
-                <h3>8. International Data Transfers</h3>
-                <p>Your information may be transferred to and processed in countries other than your country of
-                    residence. These countries may have different data protection laws. By using FounderVers, you
-                    consent to the transfer of your information to these countries.</p>
-
-                <h3>9. Changes to This Privacy Policy</h3>
-                <p>We may update this Privacy Policy from time to time. We will notify you of any material changes by
-                    posting the new Privacy Policy on this page and updating the "Last Updated" date. Your continued use
-                    of FounderVers after such changes constitutes acceptance of the updated policy.</p>
-
-                <h3>10. Contact Us</h3>
-                <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy
-                    practices, please contact us at:</p>
-                <p style="margin-left: 24px;">
-                    <strong>Email:</strong> <a href="mailto:foundervers@gmail.com">foundervers@gmail.com</a><br>
-                    <strong>Support:</strong> <a href="mailto:foundervers@gmail.com">foundervers@gmail.com</a>
+            <div class="privacy-highlight">
+                <p><strong>Your trust is important to us.</strong> We are committed to transparency in our data
+                    practices and to protecting your privacy as you connect and grow with the FounderVers community.
                 </p>
-
-                <div class="privacy-highlight">
-                    <p><strong>Your trust is important to us.</strong> We are committed to transparency in our data
-                        practices and to protecting your privacy as you connect and grow with the FounderVers community.
-                    </p>
-                </div>
             </div>
         </div>
     </section>
@@ -368,7 +272,7 @@
         <div class="footer-container">
             <div class="footer-links">
                 <a href="#features">Features</a>
-                <a href="#privacy">Privacy Policy</a>
+                <a href="legal.html">Privacy Policy</a>
                 <a href="legal.html">Terms of Service</a>
                 <a href="mailto:foundervers@gmail.com">Support</a>
             </div>
@@ -479,6 +383,53 @@
                 });
             });
         }
+
+        // Mobile Menu Toggle
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const mobileNavMenu = document.getElementById('mobileNavMenu');
+        const mobileNavOverlay = document.getElementById('mobileNavOverlay');
+
+        function toggleMobileMenu() {
+            mobileMenuToggle.classList.toggle('active');
+            mobileNavMenu.classList.toggle('active');
+            mobileNavOverlay.classList.toggle('active');
+            document.body.style.overflow = mobileNavMenu.classList.contains('active') ? 'hidden' : '';
+        }
+
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+        }
+
+        if (mobileNavOverlay) {
+            mobileNavOverlay.addEventListener('click', toggleMobileMenu);
+        }
+
+        // Close mobile menu when clicking nav links
+        document.querySelectorAll('.mobile-nav-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                if (mobileNavMenu.classList.contains('active')) {
+                    toggleMobileMenu();
+                }
+            });
+        });
+
+        // Disable parallax on mobile for performance
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+
+        // Update parallax scroll handler to skip on mobile
+        const originalHeroTransform = hero ? hero.style.transform : '';
+        window.addEventListener('scroll', () => {
+            if (hero) {
+                if (isMobile()) {
+                    hero.style.transform = '';
+                } else {
+                    const scrolled = window.pageYOffset;
+                    hero.style.transform = `translateY(${scrolled * 0.3}px)`;
+                }
+            }
+        });
     </script>
 </body>
 

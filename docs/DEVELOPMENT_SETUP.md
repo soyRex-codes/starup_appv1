@@ -1,6 +1,6 @@
 # Development Setup Guide - FounderVers Mobile
 
-## 🎯 Prerequisites & System Requirements
+## Prerequisites & System Requirements
 
 ### Minimum Requirements
 - **Flutter SDK**: 3.35.0+ (latest stable)  
@@ -89,7 +89,7 @@ git config --global user.email "your.email@example.com"
 git config --global init.defaultBranch main
 ```
 
-## 🚀 Project Setup
+## Project Setup
 
 ### Repository Configuration
 **Repository URL**: `https://github.com/soyRex-codes/mobile_app_foundervers.git`  
@@ -339,7 +339,7 @@ Create `.vscode/launch.json`:
 }
 ```
 
-## 🔨 Development Workflow
+## Development Workflow
 
 ### 1. Daily Development Setup
 
@@ -436,7 +436,7 @@ flutter pub global run devtools
 flutter run --profile
 ```
 
-## 🧪 Testing Setup
+## Testing Setup
 
 ### 1. Unit Test Configuration
 
@@ -523,7 +523,7 @@ void main() {
 }
 ```
 
-## 🐛 Debugging Setup
+## Debugging Setup
 
 ### 1. Logging Configuration
 
@@ -613,7 +613,7 @@ class LoggingInterceptor extends Interceptor {
 }
 ```
 
-## 📱 Platform-Specific Setup
+## Platform-Specific Setup
 
 ### iOS Development
 
@@ -698,7 +698,7 @@ xcrun simctl delete "iPhone 15 Pro Test"
    emulator -avd Pixel_7_Pro_API_33 -wipe-data
    ```
 
-## ⚡ Performance Setup
+## Performance Setup
 
 ### 1. Build Optimization
 
@@ -764,7 +764,7 @@ class HttpClient {
 }
 ```
 
-## 🔒 Security Setup
+## Security Setup
 
 ### 1. API Key Management
 

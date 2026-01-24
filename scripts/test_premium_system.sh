@@ -3,7 +3,7 @@
 # Premium Subscription System - Comprehensive Test Script
 # This script tests all components of the premium subscription system
 
-echo "🧪 Premium Subscription System - Test Suite"
+echo "Premium Subscription System - Test Suite"
 echo "============================================"
 echo ""
 
@@ -20,28 +20,28 @@ TESTS_WARNINGS=0
 
 # Function to print success
 success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}$1${NC}"
     ((TESTS_PASSED++))
 }
 
 # Function to print error
 error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
     ((TESTS_FAILED++))
 }
 
 # Function to print warning
 warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}$1${NC}"
     ((TESTS_WARNINGS++))
 }
 
 # Function to print info
 info() {
-    echo -e "ℹ️  $1"
+    echo -e "$1"
 }
 
-echo "📋 Pre-flight Checks"
+echo "Pre-flight Checks"
 echo "--------------------"
 
 # Check if Supabase CLI is installed
@@ -62,7 +62,7 @@ else
 fi
 
 echo ""
-echo "🔍 Testing Database Schema"
+echo "Testing Database Schema"
 echo "-------------------------"
 
 # Check if migrations exist
@@ -79,7 +79,7 @@ else
 fi
 
 echo ""
-echo "🔧 Testing Edge Functions"
+echo "Testing Edge Functions"
 echo "-------------------------"
 
 # Check if edge function files exist
@@ -110,7 +110,7 @@ else
 fi
 
 echo ""
-echo "📱 Testing Flutter Code"
+echo "Testing Flutter Code"
 echo "----------------------"
 
 # Check service files
@@ -189,7 +189,7 @@ else
 fi
 
 echo ""
-echo "🔐 Testing Environment Variables"
+echo "Testing Environment Variables"
 echo "--------------------------------"
 
 if [ "$SUPABASE_CLI_AVAILABLE" = true ]; then
@@ -218,7 +218,7 @@ else
 fi
 
 echo ""
-echo "🚀 Testing Edge Function Deployment"
+echo "Testing Edge Function Deployment"
 echo "-----------------------------------"
 
 # Check if functions are deployed
@@ -241,7 +241,7 @@ else
 fi
 
 echo ""
-echo "💰 Testing Pricing Configuration"
+echo "Testing Pricing Configuration"
 echo "--------------------------------"
 
 # Check pricing constants
@@ -265,7 +265,7 @@ else
 fi
 
 echo ""
-echo "📄 Testing Documentation"
+echo "Testing Documentation"
 echo "------------------------"
 
 DOCS=(
@@ -286,7 +286,7 @@ for doc in "${DOCS[@]}"; do
 done
 
 echo ""
-echo "🧹 Code Quality Checks"
+echo "Code Quality Checks"
 echo "---------------------"
 
 # Check for common issues
@@ -310,7 +310,7 @@ else
 fi
 
 echo ""
-echo "🔗 Integration Tests"
+echo "Integration Tests"
 echo "-------------------"
 
 info "These tests verify the complete flow..."
@@ -337,7 +337,7 @@ for check in "${INTEGRATION_CHECKS[@]}"; do
 done
 
 echo ""
-echo "📊 Test Summary"
+echo "Test Summary"
 echo "==============="
 echo ""
 echo -e "${GREEN}Passed:  $TESTS_PASSED${NC}"
@@ -346,17 +346,17 @@ echo -e "${YELLOW}Warnings: $TESTS_WARNINGS${NC}"
 echo ""
 
 if [ $TESTS_FAILED -eq 0 ]; then
-    echo -e "${GREEN}✨ All critical tests passed!${NC}"
+    echo -e "${GREEN}All critical tests passed!${NC}"
     echo ""
-    echo "🎯 Next Steps:"
+    echo "Next Steps:"
     echo "1. Apply database migrations (if not done)"
     echo "2. Deploy Edge Functions (if not done)"
     echo "3. Configure Stripe webhook endpoint"
     echo "4. Test payment flow with test card: 4242 4242 4242 4242"
     echo ""
-    echo "📚 See PREMIUM_QUICK_START.md for deployment guide"
+    echo "See PREMIUM_QUICK_START.md for deployment guide"
     exit 0
 else
-    echo -e "${RED}⚠️  Some tests failed. Please fix the issues above.${NC}"
+    echo -e "${RED}Some tests failed. Please fix the issues above.${NC}"
     exit 1
 fi
