@@ -59,3 +59,6 @@ android/key.properties
 serviceAccountKey.json
 firebase-adminsdk*.json
 *.private-key.json
+
+# Internal developer reference (not for public repo)
+CODEBASE_WALKTHROUGH.md
