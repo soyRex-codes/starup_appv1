@@ -36,8 +36,8 @@ void main() {
 
       // Store in cache
       cache.put(
-        category: 'Tech',
-        goal: null,
+        categories: ['Tech'],
+        goals: null,
         search: null,
         offset: 0,
         posts: mockPosts,
@@ -45,11 +45,11 @@ void main() {
 
       // Retrieve from cache
       final cached = cache.get(
-        category: 'Tech',
-        goal: null,
+        categories: ['Tech'],
+        goals: null,
         search: null,
         offset: 0,
-      );
+      )?.posts;
 
       expect(cached, isNotNull);
       expect(cached!.length, equals(2));
@@ -74,47 +74,64 @@ void main() {
 
       // Store with different parameters
       cache.put(
-          category: 'Tech',
-          goal: null,
+          categories: ['Tech'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
       cache.put(
-          category: 'Business',
-          goal: null,
+          categories: ['Business'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
       cache.put(
-          category: null,
-          goal: 'Startup',
+          categories: null,
+          goals: ['Startup'],
           search: null,
           offset: 0,
           posts: mockPosts);
       cache.put(
-          category: null,
-          goal: null,
+          categories: null,
+          goals: null,
           search: 'flutter',
           offset: 0,
           posts: mockPosts);
 
       // All should be stored separately
-      expect(cache.get(category: 'Tech', goal: null, search: null, offset: 0),
+      expect(
+          cache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
-          cache.get(category: 'Business', goal: null, search: null, offset: 0),
+          cache.get(
+              categories: ['Business'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
-          cache.get(category: null, goal: 'Startup', search: null, offset: 0),
+          cache
+              .get(
+                  categories: null, goals: ['Startup'], search: null, offset: 0)
+              ?.posts,
           isNotNull);
       expect(
-          cache.get(category: null, goal: null, search: 'flutter', offset: 0),
+          cache
+              .get(categories: null, goals: null, search: 'flutter', offset: 0)
+              ?.posts,
           isNotNull);
 
       // Different parameters should return null
       expect(
           cache.get(
-              category: 'NonExistent', goal: null, search: null, offset: 0),
+              categories: ['NonExistent'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNull);
 
       print('✅ Different cache keys test passed');
@@ -140,20 +157,23 @@ void main() {
 
       // Store a post
       cache.put(
-          category: 'Tech',
-          goal: null,
+          categories: ['Tech'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
 
       // Cache miss (not found)
       final miss = cache.get(
-          category: 'NonExistent', goal: null, search: null, offset: 0);
+          categories: ['NonExistent'],
+          goals: null,
+          search: null,
+          offset: 0)?.posts;
       expect(miss, isNull);
 
       // Cache hit (found)
-      final hit =
-          cache.get(category: 'Tech', goal: null, search: null, offset: 0);
+      final hit = cache.get(
+          categories: ['Tech'], goals: null, search: null, offset: 0)?.posts;
       expect(hit, isNotNull);
 
       final finalStats = cache.getStats();
@@ -182,15 +202,19 @@ void main() {
 
       // Store in cache
       testCache.put(
-          category: 'Tech',
-          goal: null,
+          categories: ['Tech'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
 
       // Should be available immediately
       expect(
-          testCache.get(category: 'Tech', goal: null, search: null, offset: 0),
+          testCache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
 
       // Wait for expiration
@@ -198,7 +222,11 @@ void main() {
 
       // Should be expired and return null
       expect(
-          testCache.get(category: 'Tech', goal: null, search: null, offset: 0),
+          testCache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNull);
 
       print('✅ TTL expiration test passed');
@@ -220,46 +248,63 @@ void main() {
 
       // Fill cache to limit
       testCache.put(
-          category: 'Tech',
-          goal: null,
+          categories: ['Tech'],
+          goals: null,
           search: null,
           offset: 0,
           posts: [mockPost]);
       testCache.put(
-          category: 'Business',
-          goal: null,
+          categories: ['Business'],
+          goals: null,
           search: null,
           offset: 0,
           posts: [mockPost]);
 
       // Both should be available
       expect(
-          testCache.get(category: 'Tech', goal: null, search: null, offset: 0),
+          testCache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
           testCache.get(
-              category: 'Business', goal: null, search: null, offset: 0),
+              categories: ['Business'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
 
       // Add third entry - should evict oldest
       testCache.put(
-          category: 'Finance',
-          goal: null,
+          categories: ['Finance'],
+          goals: null,
           search: null,
           offset: 0,
           posts: [mockPost]);
 
       // First entry should be evicted, last two should remain
       expect(
-          testCache.get(category: 'Tech', goal: null, search: null, offset: 0),
+          testCache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNull);
       expect(
           testCache.get(
-              category: 'Business', goal: null, search: null, offset: 0),
+              categories: ['Business'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
           testCache.get(
-              category: 'Finance', goal: null, search: null, offset: 0),
+              categories: ['Finance'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
 
       print('✅ Cache size limit test passed');
@@ -280,45 +325,71 @@ void main() {
 
       // Store multiple entries
       cache.put(
-          category: 'Tech',
-          goal: null,
+          categories: ['Tech'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
       cache.put(
-          category: 'Tech',
-          goal: 'Startup',
+          categories: ['Tech'],
+          goals: ['Startup'],
           search: null,
           offset: 0,
           posts: mockPosts);
       cache.put(
-          category: 'Business',
-          goal: null,
+          categories: ['Business'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
 
       // All should be available
-      expect(cache.get(category: 'Tech', goal: null, search: null, offset: 0),
+      expect(
+          cache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
-          cache.get(category: 'Tech', goal: 'Startup', search: null, offset: 0),
+          cache.get(
+              categories: ['Tech'],
+              goals: ['Startup'],
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
-          cache.get(category: 'Business', goal: null, search: null, offset: 0),
+          cache.get(
+              categories: ['Business'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
 
       // Invalidate specific category
-      cache.invalidate(category: 'Tech');
+      cache.invalidate(categories: ['Tech']);
 
       // Tech entries should be invalidated, Business should remain
-      expect(cache.get(category: 'Tech', goal: null, search: null, offset: 0),
+      expect(
+          cache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNull);
       expect(
-          cache.get(category: 'Tech', goal: 'Startup', search: null, offset: 0),
+          cache.get(
+              categories: ['Tech'],
+              goals: ['Startup'],
+              search: null,
+              offset: 0)?.posts,
           isNull);
       expect(
-          cache.get(category: 'Business', goal: null, search: null, offset: 0),
+          cache.get(
+              categories: ['Business'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
 
       print('✅ Cache invalidation test passed');
@@ -339,45 +410,69 @@ void main() {
 
       // Store multiple entries
       cache.put(
-          category: 'Tech',
-          goal: null,
+          categories: ['Tech'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
       cache.put(
-          category: 'Business',
-          goal: null,
+          categories: ['Business'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
       cache.put(
-          category: null,
-          goal: 'Startup',
+          categories: null,
+          goals: ['Startup'],
           search: null,
           offset: 0,
           posts: mockPosts);
 
       // All should be available
-      expect(cache.get(category: 'Tech', goal: null, search: null, offset: 0),
+      expect(
+          cache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
-          cache.get(category: 'Business', goal: null, search: null, offset: 0),
+          cache.get(
+              categories: ['Business'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
-          cache.get(category: null, goal: 'Startup', search: null, offset: 0),
+          cache
+              .get(
+                  categories: null, goals: ['Startup'], search: null, offset: 0)
+              ?.posts,
           isNotNull);
 
       // Clear all
       cache.clear();
 
       // All should be null after clear
-      expect(cache.get(category: 'Tech', goal: null, search: null, offset: 0),
+      expect(
+          cache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNull);
       expect(
-          cache.get(category: 'Business', goal: null, search: null, offset: 0),
+          cache.get(
+              categories: ['Business'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNull);
       expect(
-          cache.get(category: null, goal: 'Startup', search: null, offset: 0),
+          cache
+              .get(
+                  categories: null, goals: ['Startup'], search: null, offset: 0)
+              ?.posts,
           isNull);
 
       // Stats should be reset

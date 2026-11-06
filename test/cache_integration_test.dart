@@ -1,20 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:foundervers/core/cache/feed_cache.dart';
 import 'package:foundervers/models/post.dart';
-import 'package:foundervers/features/feed/feed_service.dart';
 
 void main() {
-  group('FeedCache Integration Tests', () {
+  group('FeedCache Workflow Tests', () {
     late FeedCache cache;
-    late FeedService feedService;
 
     setUp(() {
       cache = FeedCache.instance;
-      feedService = FeedService();
       cache.clear(); // Start with clean cache for each test
     });
 
-    test('should integrate with feed service caching', () {
+    test('should cache and retrieve feed response posts', () {
       final mockPosts = [
         PostModel(
           id: 1,
@@ -29,8 +26,8 @@ void main() {
 
       // Manually cache some data to simulate API response
       cache.put(
-        category: 'Tech',
-        goal: null,
+        categories: ['Tech'],
+        goals: null,
         search: null,
         offset: 0,
         posts: mockPosts,
@@ -38,11 +35,11 @@ void main() {
 
       // Verify cache integration
       final cached = cache.get(
-        category: 'Tech',
-        goal: null,
+        categories: ['Tech'],
+        goals: null,
         search: null,
         offset: 0,
-      );
+      )?.posts;
 
       expect(cached, isNotNull);
       expect(cached!.length, equals(1));
@@ -79,30 +76,36 @@ void main() {
       // Simulate concurrent cache operations
       final futures = [
         Future(() => cache.put(
-            category: 'Tech',
-            goal: null,
+            categories: ['Tech'],
+            goals: null,
             search: null,
             offset: 0,
             posts: mockPosts1)),
         Future(() => cache.put(
-            category: 'Business',
-            goal: null,
+            categories: ['Business'],
+            goals: null,
             search: null,
             offset: 0,
             posts: mockPosts2)),
-        Future(() =>
-            cache.get(category: 'Tech', goal: null, search: null, offset: 0)),
         Future(() => cache.get(
-            category: 'Business', goal: null, search: null, offset: 0)),
+            categories: ['Tech'], goals: null, search: null, offset: 0)?.posts),
+        Future(() => cache.get(
+            categories: ['Business'],
+            goals: null,
+            search: null,
+            offset: 0)?.posts),
       ];
 
       await Future.wait(futures);
 
       // Verify both entries are cached correctly
-      final techPosts =
-          cache.get(category: 'Tech', goal: null, search: null, offset: 0);
-      final businessPosts =
-          cache.get(category: 'Business', goal: null, search: null, offset: 0);
+      final techPosts = cache.get(
+          categories: ['Tech'], goals: null, search: null, offset: 0)?.posts;
+      final businessPosts = cache.get(
+          categories: ['Business'],
+          goals: null,
+          search: null,
+          offset: 0)?.posts;
 
       expect(techPosts, isNotNull);
       expect(businessPosts, isNotNull);
@@ -131,8 +134,8 @@ void main() {
         final categoryPosts =
             mockPosts.where((p) => p.category == category).toList();
         cache.put(
-          category: category,
-          goal: null,
+          categories: [category],
+          goals: null,
           search: null,
           offset: 0,
           posts: categoryPosts,
@@ -141,8 +144,11 @@ void main() {
 
       // Verify all categories are cached
       for (final category in categories) {
-        final cached =
-            cache.get(category: category, goal: null, search: null, offset: 0);
+        final cached = cache.get(
+            categories: [category],
+            goals: null,
+            search: null,
+            offset: 0)?.posts;
         expect(cached, isNotNull);
         expect(cached!.isNotEmpty, isTrue);
         print('✅ Category $category cached with ${cached.length} posts');
@@ -171,45 +177,71 @@ void main() {
 
       // Cache data for multiple scenarios
       cache.put(
-          category: 'Tech',
-          goal: null,
+          categories: ['Tech'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
       cache.put(
-          category: 'Tech',
-          goal: 'Startup',
+          categories: ['Tech'],
+          goals: ['Startup'],
           search: null,
           offset: 0,
           posts: mockPosts);
       cache.put(
-          category: 'Business',
-          goal: null,
+          categories: ['Business'],
+          goals: null,
           search: null,
           offset: 0,
           posts: mockPosts);
 
       // Verify all are cached
-      expect(cache.get(category: 'Tech', goal: null, search: null, offset: 0),
+      expect(
+          cache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
-          cache.get(category: 'Tech', goal: 'Startup', search: null, offset: 0),
+          cache.get(
+              categories: ['Tech'],
+              goals: ['Startup'],
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
-          cache.get(category: 'Business', goal: null, search: null, offset: 0),
+          cache.get(
+              categories: ['Business'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
 
       // Invalidate specific category
-      cache.invalidate(category: 'Tech');
+      cache.invalidate(categories: ['Tech']);
 
       // Verify selective invalidation
-      expect(cache.get(category: 'Tech', goal: null, search: null, offset: 0),
+      expect(
+          cache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNull);
       expect(
-          cache.get(category: 'Tech', goal: 'Startup', search: null, offset: 0),
+          cache.get(
+              categories: ['Tech'],
+              goals: ['Startup'],
+              search: null,
+              offset: 0)?.posts,
           isNull);
       expect(
-          cache.get(category: 'Business', goal: null, search: null, offset: 0),
+          cache.get(
+              categories: ['Business'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
 
       print('✅ Cache invalidation integration test passed');
@@ -240,8 +272,8 @@ void main() {
       ];
       for (int i = 0; i < categories.length; i++) {
         testCache.put(
-          category: categories[i],
-          goal: null,
+          categories: [categories[i]],
+          goals: null,
           search: null,
           offset: 0,
           posts: [mockPost],
@@ -255,15 +287,24 @@ void main() {
       // Check that most recent entries are still available
       expect(
           testCache.get(
-              category: 'Education', goal: null, search: null, offset: 0),
+              categories: ['Education'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
           testCache.get(
-              category: 'Healthcare', goal: null, search: null, offset: 0),
+              categories: ['Healthcare'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
           testCache.get(
-              category: 'Finance', goal: null, search: null, offset: 0),
+              categories: ['Finance'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
 
       print('✅ Memory pressure handling test passed');
@@ -289,8 +330,8 @@ void main() {
         final categoryPosts =
             mockPosts.where((p) => p.category == category).toList();
         cache.put(
-            category: category,
-            goal: null,
+            categories: [category],
+            goals: null,
             search: null,
             offset: 0,
             posts: categoryPosts);
@@ -298,33 +339,45 @@ void main() {
 
       // Simulate user searches
       cache.put(
-          category: null,
-          goal: null,
+          categories: null,
+          goals: null,
           search: 'flutter',
           offset: 0,
           posts: mockPosts.take(5).toList());
       cache.put(
-          category: null,
-          goal: null,
+          categories: null,
+          goals: null,
           search: 'startup',
           offset: 0,
           posts: mockPosts.skip(5).take(5).toList());
 
       // Simulate pagination
       cache.put(
-          category: 'Tech',
-          goal: null,
+          categories: ['Tech'],
+          goals: null,
           search: null,
           offset: 20,
           posts: mockPosts.take(10).toList());
 
       // Verify all scenarios work
-      expect(cache.get(category: 'Tech', goal: null, search: null, offset: 0),
+      expect(
+          cache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 0)?.posts,
           isNotNull);
       expect(
-          cache.get(category: null, goal: null, search: 'flutter', offset: 0),
+          cache
+              .get(categories: null, goals: null, search: 'flutter', offset: 0)
+              ?.posts,
           isNotNull);
-      expect(cache.get(category: 'Tech', goal: null, search: null, offset: 20),
+      expect(
+          cache.get(
+              categories: ['Tech'],
+              goals: null,
+              search: null,
+              offset: 20)?.posts,
           isNotNull);
 
       final stats = cache.getStats();
