@@ -1,15 +1,15 @@
 // CORS Configuration
 const ALLOWED_ORIGINS = [
-  'https://foundervers.com',
-  'https://app.foundervers.com',
-  'https://www.foundervers.com',
+  'https://terai.us',
+  'https://www.terai.us',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://localhost:8080',
 ];
 
 const DYNAMIC_ORIGIN_PATTERNS = [
-  /^https:\/\/[a-zA-Z0-9-]+\.foundervers\.com$/,
+  /^https:\/\/[a-zA-Z0-9-]+\.terai\.us$/,
+  /^https:\/\/[a-zA-Z0-9-]+\.pages\.dev$/,
   /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/,
   /^https:\/\/[a-zA-Z0-9-]+\.netlify\.app$/,
 ];

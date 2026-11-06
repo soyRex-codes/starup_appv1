@@ -5,7 +5,6 @@ import 'models/admin_user.dart';
 import 'widgets/admin_posts_page.dart';
 import 'widgets/admin_users_page.dart';
 import 'widgets/admin_analytics_page.dart';
-import 'widgets/admin_chat_moderation_page.dart';
 import 'widgets/admin_applications_page.dart';
 import 'widgets/admin_reports_page.dart';
 import 'widgets/admin_broadcast_page.dart';
@@ -32,7 +31,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     try {
       final adminUser = await AdminAuthService.getCurrentAdminUser();
       final analytics = await AdminService.getAnalytics();
-      
+
       setState(() {
         _adminUser = adminUser;
         _analytics = analytics;
@@ -134,7 +133,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             'Admin Dashboard - Full System Access',
             style: TextStyle(
               fontSize: 16,
-              color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.9),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.9),
             ),
           ),
         ],
@@ -166,40 +168,41 @@ class _AdminDashboardState extends State<AdminDashboard> {
             builder: (context, constraints) {
               // Calculate optimal aspect ratio based on available width
               double aspectRatio = constraints.maxWidth > 400 ? 7.0 : 8.0;
-              
+
               return GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: aspectRatio, // Auto-adaptive based on screen width
-            children: [
-              _buildStatCard(
-                'Users',
-                '${_analytics!['total_users']}',
-                Icons.people,
-                Colors.blue,
-              ),
-              _buildStatCard(
-                'Posts',
-                '${_analytics!['total_posts']}',
-                Icons.article,
-                Colors.green,
-              ),
-              _buildStatCard(
-                'New Users',
-                '${_analytics!['recent_users']}',
-                Icons.person_add,
-                Colors.orange,
-              ),
-              _buildStatCard(
-                'New Posts',
-                '${_analytics!['recent_posts']}',
-                Icons.new_releases,
-                Colors.purple,
-              ),
-            ],
+                childAspectRatio:
+                    aspectRatio, // Auto-adaptive based on screen width
+                children: [
+                  _buildStatCard(
+                    'Users',
+                    '${_analytics!['total_users']}',
+                    Icons.people,
+                    Colors.blue,
+                  ),
+                  _buildStatCard(
+                    'Posts',
+                    '${_analytics!['total_posts']}',
+                    Icons.article,
+                    Colors.green,
+                  ),
+                  _buildStatCard(
+                    'New Users',
+                    '${_analytics!['recent_users']}',
+                    Icons.person_add,
+                    Colors.orange,
+                  ),
+                  _buildStatCard(
+                    'New Posts',
+                    '${_analytics!['recent_posts']}',
+                    Icons.new_releases,
+                    Colors.purple,
+                  ),
+                ],
               );
             },
           ),
@@ -208,9 +211,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // Asymmetric padding
+      padding: const EdgeInsets.symmetric(
+          horizontal: 6, vertical: 3), // Asymmetric padding
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
@@ -284,7 +289,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Colors.teal,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AdminApplicationsPage()),
+                MaterialPageRoute(
+                    builder: (context) => const AdminApplicationsPage()),
               ),
             ),
             _buildActionCard(
@@ -294,17 +300,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Colors.orange,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AdminReportsPage()),
-              ),
-            ),
-            _buildActionCard(
-              'Chat Moderation',
-              'Moderate global chat',
-              Icons.chat,
-              Colors.red,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AdminChatModerationPage()),
+                MaterialPageRoute(
+                    builder: (context) => const AdminReportsPage()),
               ),
             ),
             _buildActionCard(
@@ -314,7 +311,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Colors.purple,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AdminAnalyticsPage()),
+                MaterialPageRoute(
+                    builder: (context) => const AdminAnalyticsPage()),
               ),
             ),
             _buildActionCard(
@@ -324,7 +322,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Colors.deepOrange,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AdminBroadcastPage()),
+                MaterialPageRoute(
+                    builder: (context) => const AdminBroadcastPage()),
               ),
             ),
           ],
@@ -374,16 +373,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
             const SizedBox(height: 8), // Reduced from 12
             Text(
               title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith( // Changed from titleMedium
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    // Changed from titleMedium
                     fontWeight: FontWeight.bold,
                   ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 2), // Reduced from 4
-            Flexible( // Use Flexible to prevent overflow
+            Flexible(
+              // Use Flexible to prevent overflow
               child: Text(
                 description,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(fontSize: 10),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

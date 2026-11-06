@@ -37,10 +37,6 @@ dependencies:
 
   # Runtime dependencies for Supabase-only app
   supabase_flutter: ^2.5.6 # Supabase client for Flutter
-  flutter_stripe: ^12.1.1  # Latest stable
-  flutter_stripe_web: ^7.1.1  # Latest stable for web support
-  in_app_purchase: ^3.2.3  # Apple In-App Purchase (iOS only)
-  flutter_dotenv: ^5.1.0
   image_picker: ^1.0.8
   meta: ^1.11.0
   intl: ^0.19.0
@@ -50,7 +46,7 @@ dependencies:
   photo_view: ^0.15.0    # Full image viewer with pinch-to-zoom
   url_launcher: ^6.2.2
   crypto: ^3.0.3  # For secure OTP hashing
-  http: ^1.1.0  # For OpenAI API calls
+  http: ^1.1.0
   
   # Messaging system dependencies
   cached_network_image: ^3.4.1  # For efficient image loading
@@ -102,7 +98,6 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-  - .env.mobile
   - lib/icons/
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -135,7 +130,7 @@ flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   remove_alpha_ios: true
-  image_path: "lib/icons/foundervers.png"
+  image_path: "lib/icons/Terai.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: false # Disable web since folder doesn't exist
@@ -149,12 +144,12 @@ flutter_native_splash:
   color: "#FFFFFF"
   
   # Path to splash image
-  image: lib/icons/foundervers_logo.png
+  image: lib/icons/Terai.png
   
   # Android 12+ splash screen configuration (uses padded logo to prevent clipping)
   android_12:
     color: "#FFFFFF"
-    image: lib/icons/splash_logo_padded.png
+    image: lib/icons/Terai.png
   
   # iOS configuration
   ios: true

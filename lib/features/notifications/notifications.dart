@@ -205,11 +205,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Center(
-                      child: Text(
-                        notification.icon,
-                        style: const TextStyle(fontSize: 22),
-                      ),
+                    child: Icon(
+                      notification.icon,
+                      size: 22,
+                      color: notification.color,
                     ),
                   ),
                   const SizedBox(width: 16),

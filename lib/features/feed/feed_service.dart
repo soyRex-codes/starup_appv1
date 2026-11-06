@@ -9,6 +9,7 @@ import 'package:foundervers/features/feed/feed_history_service.dart';
 
 import 'package:foundervers/services/user_blocking_service.dart';
 import 'package:foundervers/services/post_counts_manager.dart';
+import 'package:foundervers/services/post_like_service.dart';
 
 class FeedService {
   final SupabaseClient _s = Supa.client;
@@ -38,17 +39,18 @@ class FeedService {
       );
 
       if (cacheResult != null) {
+        final cachedPosts = await _hydrateLikeSummaries(cacheResult.posts);
         // CRITICAL: Sync cached posts to PostCountsManager immediately
         // This ensures widgets have data when they initialize
         final countsMap = <int, PostCounts>{};
-        for (final post in cacheResult.posts) {
+        for (final post in cachedPosts) {
           countsMap[post.id] = PostCounts(
             views: post.views,
             comments: post.commentCount,
           );
         }
         PostCountsManager.instance.syncFromDatabase(countsMap);
-        
+
         // Notify caller if background refresh is needed
         if (onCacheCheck != null) {
           onCacheCheck(cacheResult.needsRefresh);
@@ -56,7 +58,7 @@ class FeedService {
 
         // If silentRefresh, continue to fetch but return cached immediately
         if (!silentRefresh) {
-          return cacheResult.posts;
+          return cachedPosts;
         }
         // For silent refresh, we'll fetch and update cache without returning yet
       }
@@ -70,11 +72,12 @@ class FeedService {
     var q = _s.from('posts').select(
           'id,user_id,name,category,title,description,funding_goal,post_goal,post_goal_description,email,created_at,updated_at,moderation_status,status,comment_count,views',
         );
-    
+
     // Filter out blocked users
     if (blockedUserIds.isNotEmpty) {
       // Format for PostgREST: (id1,id2,id3)
-      final blockedFilter = '(${blockedUserIds.map((id) => '"$id"').join(',')})';
+      final blockedFilter =
+          '(${blockedUserIds.map((id) => '"$id"').join(',')})';
       q = q.filter('user_id', 'not.in', blockedFilter);
     }
 
@@ -149,6 +152,17 @@ class FeedService {
       post['media'] = mediaByPostId[postId] ?? [];
     }
 
+    // Load likes once for the full page rather than once per post card.
+    final likeSummaries = await PostLikeService.instance.getSummaries(
+      postIds.whereType<int>().toList(),
+    );
+    for (final post in rawPosts) {
+      final postId = post['id'] as int?;
+      final summary = postId == null ? null : likeSummaries[postId];
+      post['like_count'] = summary?.count ?? 0;
+      post['liked_by_me'] = summary?.likedByMe ?? false;
+    }
+
     // Distinct user ids
     final userIds = rawPosts
         .map((p) => (p['user_id'] ?? '').toString())
@@ -158,8 +172,9 @@ class FeedService {
 
     final Map<String, AuthorSummary> authors = {};
     if (userIds.isNotEmpty) {
-      final usersQuery = _s.from('users').select(
-          'id,name,username,full_name,avatar_url,email_verified,is_premium,premium_expires_at');
+      final usersQuery = _s
+          .from('users')
+          .select('id,name,username,full_name,avatar_url,email_verified');
       dynamic usersResp;
       if (userIds.length == 1) {
         usersResp = await usersQuery.eq('id', userIds.first);
@@ -181,9 +196,6 @@ class FeedService {
           fullName: u['full_name'] as String?,
           avatarUrl: u['avatar_url'] as String?,
           emailVerified: u['email_verified'] as bool?,
-          isPremium: u['is_premium'] as bool?,
-          premiumExpiresAt:
-              _asDate(u['premium_expires_at']),
         );
       }
     }
@@ -262,6 +274,21 @@ class FeedService {
     }
   }
 
+  Future<List<PostModel>> _hydrateLikeSummaries(List<PostModel> posts) async {
+    final summaries = await PostLikeService.instance
+        .getSummaries(posts.map((post) => post.id).toList());
+    if (summaries.isEmpty) return posts;
+    return posts.map((post) {
+      final summary = summaries[post.id];
+      return summary == null
+          ? post
+          : post.copyWith(
+              likeCount: summary.count,
+              likedByMe: summary.likedByMe,
+            );
+    }).toList();
+  }
+
   /// Clear cache when posts are modified
   void invalidateCache({List<String>? categories, List<String>? goals}) {
     _cache.invalidate(categories: categories, goals: goals);
@@ -296,13 +323,6 @@ class FeedService {
     );
 
     return posts;
-  }
-
-  DateTime? _asDate(dynamic value) {
-    if (value == null) return null;
-    if (value is DateTime) return value;
-    if (value is String) return DateTime.tryParse(value);
-    return null;
   }
 }
 

@@ -174,14 +174,14 @@ class AdminService {
       final users = await _client.from('users').select('id');
       final posts = await _client.from('posts').select('id');
 
-      // Try to get messages, fallback if table doesn't exist
+      // Count private messages without depending on the retired global chat.
       int totalMessages = 0;
       try {
-        final messages = await _client.from('chat_messages').select('id');
+        final messages = await _client.from('messages').select('id');
         totalMessages = (messages as List).length;
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('Chat messages table not found, skipping count');
+          debugPrint('Messages table not available, skipping count');
         }
       }
 
@@ -210,42 +210,6 @@ class AdminService {
     }
   }
 
-  // Global Chat Moderation
-  static Future<List<Map<String, dynamic>>> getChatMessages({
-    int limit = 100,
-    int offset = 0,
-  }) async {
-    try {
-      final messages = await _client
-          .from('chat_messages')
-          .select('''
-            *,
-            user:users(id, name, email)
-          ''')
-          .order('created_at', ascending: false)
-          .range(offset, offset + limit - 1);
-
-      return List<Map<String, dynamic>>.from(messages);
-    } catch (e) {
-      if (kDebugMode) debugPrint('Get chat messages error: $e');
-      rethrow;
-    }
-  }
-
-  static Future<void> deleteChatMessage(int messageId, String reason) async {
-    try {
-      await AdminAuthService.logAdminAction('delete_chat_message', {
-        'message_id': messageId,
-        'reason': reason,
-      });
-
-      await _client.from('chat_messages').delete().eq('id', messageId);
-    } catch (e) {
-      if (kDebugMode) debugPrint('Delete chat message error: $e');
-      rethrow;
-    }
-  }
-
   // Business Applications Management
   static Future<List<Map<String, dynamic>>> getAllApplications({
     int limit = 50,
@@ -266,9 +230,10 @@ class AdminService {
       var finalQuery = serviceType != null && serviceType.isNotEmpty
           ? filteredQuery.eq('service_type', serviceType)
           : filteredQuery;
-      
+
       if (searchQuery != null && searchQuery.isNotEmpty) {
-        finalQuery = finalQuery.or('applicant_name.ilike.%$searchQuery%,applicant_email.ilike.%$searchQuery%');
+        finalQuery = finalQuery.or(
+            'applicant_name.ilike.%$searchQuery%,applicant_email.ilike.%$searchQuery%');
       }
 
       final applications = await finalQuery

@@ -43,8 +43,6 @@ class AuthorSummary {
   final String? fullName;
   final String? avatarUrl;
   final bool? emailVerified; // For blue verification badge
-  final bool? isPremium; // For golden premium badge
-  final DateTime? premiumExpiresAt; // When premium expires
 
   const AuthorSummary({
     required this.userId,
@@ -53,16 +51,7 @@ class AuthorSummary {
     this.fullName,
     this.avatarUrl,
     this.emailVerified,
-    this.isPremium,
-    this.premiumExpiresAt,
   });
-
-  /// Check if user has active premium subscription
-  bool get hasActivePremium {
-    if (isPremium != true) return false;
-    if (premiumExpiresAt == null) return true; // Lifetime premium
-    return premiumExpiresAt!.isAfter(DateTime.now());
-  }
 
   /// Get display name prioritizing full name over name over username
   String get displayName {
@@ -121,6 +110,8 @@ class PostModel {
   final int
       commentCount; // Denormalized count from database (eliminates N+1 queries)
   final int views; // View count for social proof
+  final int likeCount;
+  final bool likedByMe;
   final List<PostMedia> media;
   final AuthorSummary? author; // hydrated separately
 
@@ -141,11 +132,18 @@ class PostModel {
     this.status,
     this.commentCount = 0, // Default to 0 if not provided
     this.views = 0, // Default to 0 if not provided
+    this.likeCount = 0,
+    this.likedByMe = false,
     this.media = const [],
     this.author,
   });
 
-  PostModel copyWith({AuthorSummary? author}) => PostModel(
+  PostModel copyWith({
+    AuthorSummary? author,
+    int? likeCount,
+    bool? likedByMe,
+  }) =>
+      PostModel(
         id: id,
         userId: userId,
         title: title,
@@ -162,6 +160,8 @@ class PostModel {
         status: status,
         commentCount: commentCount, // Include in copyWith
         views: views, // Include in copyWith
+        likeCount: likeCount ?? this.likeCount,
+        likedByMe: likedByMe ?? this.likedByMe,
         media: media,
         author: author ?? this.author,
       );
@@ -184,6 +184,8 @@ class PostModel {
         commentCount: _asInt(json['comment_count']) ??
             0, // Parse comment_count from database
         views: _asInt(json['views']) ?? 0, // Parse views from database
+        likeCount: _asInt(json['like_count']) ?? 0,
+        likedByMe: json['liked_by_me'] == true,
         media: (json['media'] as List<dynamic>?)
                 ?.map((m) => PostMedia.fromJson(m as Map<String, dynamic>))
                 .where((media) {
@@ -240,9 +242,6 @@ AuthorSummary? _authorFromJson(dynamic value) {
       avatarUrl: resolvedAvatar,
       emailVerified:
           map['emailVerified'] as bool? ?? map['email_verified'] as bool?,
-      isPremium: map['isPremium'] as bool? ?? map['is_premium'] as bool?,
-      premiumExpiresAt:
-          _asDate(map['premiumExpiresAt'] ?? map['premium_expires_at']),
     );
   }
 

@@ -250,8 +250,7 @@ class BookmarkService {
         try {
           final usersResp = await _client
               .from('users')
-              .select(
-                  'id,name,username,full_name,avatar_url,email_verified,is_premium,premium_expires_at')
+              .select('id,name,username,full_name,avatar_url,email_verified')
               .filter(
                 'id',
                 'in',

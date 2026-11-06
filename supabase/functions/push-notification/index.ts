@@ -2,8 +2,35 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as admin from "npm:firebase-admin@11.11.1";
 
+const webhookSecret = Deno.env.get("PUSH_WEBHOOK_SECRET");
+const textEncoder = new TextEncoder();
+
+async function hasValidWebhookSecret(request: Request): Promise<boolean> {
+  const suppliedSecret = request.headers.get("x-terai-webhook-secret");
+  if (!webhookSecret || !suppliedSecret) return false;
+
+  const [expectedHash, suppliedHash] = await Promise.all([
+    crypto.subtle.digest("SHA-256", textEncoder.encode(webhookSecret)),
+    crypto.subtle.digest("SHA-256", textEncoder.encode(suppliedSecret)),
+  ]);
+  const expected = new Uint8Array(expectedHash);
+  const supplied = new Uint8Array(suppliedHash);
+  let difference = 0;
+  for (let index = 0; index < expected.length; index++) {
+    difference |= expected[index] ^ supplied[index];
+  }
+  return difference === 0;
+}
+
+function json(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 // Initialize Firebase Admin
-// The FIREBASE_SERVICE_ACCOUNT env var must be the JSON content of the service account key
+// The Firebase Admin credential remains in an Edge Function secret.
 const serviceAccount = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
 if (serviceAccount) {
   try {
@@ -21,26 +48,38 @@ if (serviceAccount) {
 }
 
 serve(async (req) => {
-  // 1. Parse the webhook payload
-  const payload = await req.json();
-  console.log("Webhook received:", JSON.stringify(payload));
+  if (req.method !== "POST") {
+    return json({ error: "Method not allowed" }, 405);
+  }
+  if (!(await hasValidWebhookSecret(req))) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  let payload: Record<string, any>;
+  try {
+    payload = await req.json();
+  } catch (_) {
+    return json({ error: "Invalid JSON" }, 400);
+  }
 
   // Only handle INSERT events on 'notifications' table
   if (payload.type !== "INSERT" || payload.table !== "notifications") {
-    return new Response("Ignored", { status: 200 });
+    return json({ ignored: true }, 200);
   }
 
   const notification = payload.record;
+  if (!notification || typeof notification !== "object") {
+    return json({ error: "Invalid notification payload" }, 400);
+  }
   const userId = notification.user_id;
 
   // Ignore 'broadcast' type notifications as they are handled via FCM Topic
   if (notification.type === 'broadcast') {
-    console.log("Skipping broadcast notification (handled via Topic)");
-    return new Response("Skipped broadcast", { status: 200 });
+    return json({ skipped: "broadcast" }, 200);
   }
 
   if (!userId) {
-    return new Response("No user_id", { status: 400 });
+    return json({ error: "Missing user ID" }, 400);
   }
 
   // 2. Initialize Supabase Client
@@ -55,21 +94,19 @@ serve(async (req) => {
     .eq("user_id", userId);
 
   if (error) {
-    console.error("Error fetching devices:", error);
-    return new Response("Database error", { status: 500 });
+    console.error("Error fetching notification devices", error);
+    return json({ error: "Database error" }, 500);
   }
 
   if (!devices || devices.length === 0) {
-    console.log(`No devices found for user ${userId}`);
-    return new Response("No devices", { status: 200 });
+    return json({ sent: 0, reason: "No registered devices" }, 200);
   }
 
   const tokens = devices.map((d) => d.fcm_token);
-  console.log(`Found ${tokens.length} tokens for user ${userId}`);
 
   // 4. Send Notification via Firebase
   if (admin.apps.length === 0) {
-    return new Response("Firebase not initialized", { status: 500 });
+    return json({ error: "Firebase not initialized" }, 500);
   }
 
   const message = {
@@ -89,7 +126,6 @@ serve(async (req) => {
 
   try {
     const response = await admin.messaging().sendMulticast(message);
-    console.log("Successfully sent message:", response);
 
     // Optional: Remove invalid tokens
     if (response.failureCount > 0) {
@@ -100,7 +136,6 @@ serve(async (req) => {
         }
       });
       if (failedTokens.length > 0) {
-        console.log("Removing invalid tokens:", failedTokens);
         await supabase
           .from("user_devices")
           .delete()
@@ -108,12 +143,12 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify(response), {
-      headers: { "Content-Type": "application/json" },
-      status: 200,
-    });
+    return json(
+      { sent: response.successCount, failed: response.failureCount },
+      200,
+    );
   } catch (error) {
-    console.error("Error sending message:", error);
-    return new Response("Error sending message", { status: 500 });
+    console.error("Error sending push notification", error);
+    return json({ error: "Notification delivery failed" }, 500);
   }
 });

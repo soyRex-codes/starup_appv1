@@ -18,13 +18,11 @@ class AppIcons {
   // Commonly used icons as helpers
   static Image feed({double? size}) => asset('home.png', size: size);
   static Image appLogo({double? size}) =>
-      asset('foundervers_logo.png', size: size);
+      asset('Terai.png', size: size);
   static Image chat({double? size}) => asset('chat.png', size: size);
-  // Global community chat icon (bottom nav)
-  static Image globalChat({double? size}) =>
-      asset('Global_chat.png', size: size);
   static Image dms({double? size}) => asset('inbox.png', size: size);
-  static Image profile({double? size, Color? color}) => asset('profile.png', size: size, color: color);
+  static Image profile({double? size, Color? color}) =>
+      asset('profile.png', size: size, color: color);
   static Image search({double? size}) => asset('search.png', size: size);
   static Image filter({double? size}) => asset('filter.png', size: size);
   // Post creation icon
@@ -33,8 +31,10 @@ class AppIcons {
   static Image add({double? size}) => post(size: size); // backwards compat
   static Image delete({double? size}) => asset('delete.png', size: size);
   static Image edit({double? size}) => asset('edit.png', size: size);
-  static Image money({double? size, Color? color}) => asset('invest_icon.png', size: size, color: color);
-  static Image collab({double? size, Color? color}) => asset('collab_icon.png', size: size, color: color);
+  static Image money({double? size, Color? color}) =>
+      asset('invest_icon.png', size: size, color: color);
+  static Image collab({double? size, Color? color}) =>
+      asset('collab_icon.png', size: size, color: color);
   static Image contact({double? size}) => asset('contact_icon.png', size: size);
   static Image refresh({double? size}) =>
       asset('dashboard.png', size: size); // placeholder
@@ -44,7 +44,8 @@ class AppIcons {
   static Image warning({double? size}) => asset('warning.png', size: size);
   static Image upload({double? size}) => asset('upload.png', size: size);
   static Image menu({double? size}) => asset('Menu.png', size: size);
-  static Image settings({double? size, Color? color}) => asset('settings.png', size: size, color: color);
+  static Image settings({double? size, Color? color}) =>
+      asset('settings.png', size: size, color: color);
   static Image backArrow({double? size}) => asset('back-arrow.png', size: size);
   static Image analytics({double? size}) => asset('analytics.png', size: size);
   static Image apply({double? size}) => asset('apply.png', size: size);
@@ -54,7 +55,8 @@ class AppIcons {
   static Image error({double? size}) => asset('error.png', size: size);
   static Image feedback({double? size}) => asset('feedback.png', size: size);
   static Image google({double? size}) => asset('google.png', size: size);
-  static Image info({double? size, Color? color}) => asset('info.png', size: size, color: color);
+  static Image info({double? size, Color? color}) =>
+      asset('info.png', size: size, color: color);
   static Image invest({double? size}) => asset('invest_icon.png', size: size);
   static Image investHistory({double? size}) =>
       asset('investment history.png', size: size);
@@ -73,6 +75,8 @@ class AppIcons {
   static Image suggest({double? size}) => asset('suggest.png', size: size);
   static Image close({double? size}) => asset('delete.png', size: size);
   static Image circle({double? size}) => asset('info.png', size: size);
-  static Image about({double? size, Color? color}) => asset('about.png', size: size, color: color);
-  static Image help({double? size, Color? color}) => asset('feedback.png', size: size, color: color);
+  static Image about({double? size, Color? color}) =>
+      asset('about.png', size: size, color: color);
+  static Image help({double? size, Color? color}) =>
+      asset('feedback.png', size: size, color: color);
 }

@@ -339,7 +339,7 @@ class _SuggestionsInboxState extends State<SuggestionsInbox>
     super.build(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Suggestions Inbox'),
+        title: const Text('Product Feedback'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -381,19 +381,19 @@ class _SuggestionsInboxState extends State<SuggestionsInbox>
                       const SizedBox(height: 16),
                       Text(
                         _filter == 'all'
-                            ? 'No suggestions yet'
+                            ? 'No product feedback yet'
                             : _filter == 'unread'
-                                ? 'No unread suggestions'
-                                : 'No read suggestions',
+                                ? 'No unread product feedback'
+                                : 'No read product feedback',
                         style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _filter == 'all'
-                            ? 'Suggestions from users will appear here'
+                            ? 'Feedback from users will appear here'
                             : _filter == 'unread'
-                                ? 'New suggestions will appear here'
-                                : 'Read suggestions will appear here',
+                                ? 'New product feedback will appear here'
+                                : 'Read product feedback will appear here',
                         style: TextStyle(color: Colors.grey[500]),
                         textAlign: TextAlign.center,
                       ),

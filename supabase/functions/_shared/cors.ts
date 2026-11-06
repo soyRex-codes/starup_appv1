@@ -7,9 +7,8 @@ declare const Deno: {
 
 // Read allowed origins from environment variables
 const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS')?.split(',').map((origin: string) => origin.trim()) || [
-  'https://foundervers.com',
-  'https://app.foundervers.com',
-  'https://www.foundervers.com',
+  'https://terai.us',
+  'https://www.terai.us',
   'http://localhost:3000', // Development
   'http://127.0.0.1:3000', // Development
   'http://localhost:8080', // Development alternative
@@ -35,7 +34,8 @@ export function validateOrigin(request: Request): string | null {
 
   // Additional regex-based validation for dynamic subdomains (optional)
   const dynamicPatterns = [
-    /^https:\/\/[a-zA-Z0-9-]+\.foundervers\.com$/,
+    /^https:\/\/[a-zA-Z0-9-]+\.terai\.us$/,
+    /^https:\/\/[a-zA-Z0-9-]+\.pages\.dev$/,
     /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/, // For Vercel deployments
     /^https:\/\/[a-zA-Z0-9-]+\.netlify\.app$/, // For Netlify deployments
   ];
@@ -149,10 +149,3 @@ export function handleCorsPreflightRequest(request: Request): Response | null {
  * - Support for dynamic subdomain patterns
  * - Credentials support for validated origins only
  */
-
-// Legacy export for backward compatibility (DEPRECATED - DO NOT USE)
-// Use createCorsHeaders() with validateOrigin() instead
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*', // ⚠️ INSECURE - Only for backward compatibility
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}

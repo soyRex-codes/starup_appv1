@@ -1,22 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../services/business_application_service.dart';
 import '../../services/file_upload_service.dart';
-import 'payment_summary_page.dart';
 import 'ecosystem_service_model.dart';
-
-enum BusinessServiceType {
-  taxHelp,
-  businessRegistration,
-  appDevelopment,
-  marketing,
-  employeeHiring,
-  investorFinding,
-  businessConsultation,
-  marketResearch,
-  patentFiling,
-  softwareAudit,
-}
 
 enum PortalView {
   form,
@@ -64,66 +49,6 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
     super.dispose();
   }
 
-  bool _isSubmitting = false;
-
-  void _submitForm() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      _formKey.currentState?.save();
-
-      setState(() {
-        _isSubmitting = true;
-      });
-
-      try {
-        // Get service type key from enum
-        final serviceTypeKey = _getServiceTypeKey(_selectedService!);
-
-        // Get applicant information from form data
-        final applicantName = _formData['applicant_name']?.toString() ?? '';
-        final applicantEmail = _formData['applicant_email']?.toString() ?? '';
-
-        // Remove applicant info from form data since it's passed separately
-        final formDataCopy = Map<String, dynamic>.from(_formData);
-        formDataCopy.remove('applicant_name');
-        formDataCopy.remove('applicant_email');
-
-        // Save application as DRAFT before payment
-        final result = await BusinessApplicationService.saveDraftApplication(
-          serviceType: serviceTypeKey,
-          applicantName: applicantName,
-          applicantEmail: applicantEmail,
-          formData: formDataCopy,
-        );
-
-        if (result['success'] == true) {
-          final applicationId = result['application_id'] as int;
-          final applicationData = result['data'] as Map<String, dynamic>;
-
-          // Navigate to payment summary page
-          if (mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PaymentSummaryPage(
-                  applicationId: applicationId,
-                  applicationData: applicationData,
-                ),
-              ),
-            );
-          }
-        } else {
-          _showErrorSnackBar(result['message'] ??
-              'Failed to save application. Please try again.');
-        }
-      } catch (e) {
-        _showErrorSnackBar('An error occurred: ${e.toString()}');
-      } finally {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    }
-  }
-
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -132,31 +57,6 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         duration: const Duration(seconds: 3),
       ),
     );
-  }
-
-  String _getServiceTypeKey(BusinessServiceType serviceType) {
-    switch (serviceType) {
-      case BusinessServiceType.taxHelp:
-        return 'tax_help';
-      case BusinessServiceType.businessRegistration:
-        return 'business_registration';
-      case BusinessServiceType.appDevelopment:
-        return 'app_development';
-      case BusinessServiceType.marketing:
-        return 'marketing';
-      case BusinessServiceType.employeeHiring:
-        return 'employee_hiring';
-      case BusinessServiceType.investorFinding:
-        return 'investor_finding';
-      case BusinessServiceType.businessConsultation:
-        return 'business_consultation';
-      case BusinessServiceType.marketResearch:
-        return 'market_research';
-      case BusinessServiceType.patentFiling:
-        return 'patent_filing';
-      case BusinessServiceType.softwareAudit:
-        return 'software_audit';
-    }
   }
 
   void _backToEcosystem() async {
@@ -178,41 +78,41 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        onTap: () {
-          // Dismiss keyboard when tapping outside form fields
-          FocusScope.of(context).unfocus();
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(_getAppBarTitle()),
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            foregroundColor: Theme.of(context).colorScheme.onSurface,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () async {
-                // Always go back to Ecosystem Applications
-                if (mounted) {
-                  Navigator.of(context).pop();
-                }
-              },
-            ),
-          ),
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context).colorScheme.surface,
-                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-                ],
-              ),
-            ),
-            child: _buildCurrentView(),
+      onTap: () {
+        // Dismiss keyboard when tapping outside form fields
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_getAppBarTitle()),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () async {
+              // Always go back to Ecosystem Applications
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
+            },
           ),
         ),
-      );
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+              ],
+            ),
+          ),
+          child: _buildCurrentView(),
+        ),
+      ),
+    );
   }
 
   String _getAppBarTitle() {
@@ -284,7 +184,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: _isSubmitting ? null : _submitForm,
+              onPressed: null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4CAF50),
                 foregroundColor: Colors.white,
@@ -292,29 +192,20 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.arrow_forward, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'Review & Pay',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.schedule_rounded, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Coming Soon',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -383,8 +274,10 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
           Text(
             'Thank you for your ${_getServiceTitle(_selectedService!).toLowerCase()} request. Our team will review your submission and get back to you within 24-48 hours.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
                 ),
             textAlign: TextAlign.center,
           ),
@@ -1660,6 +1553,7 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
       ),
     );
   }
+
   List<Widget> _buildSoftwareAuditForm() {
     return [
       _buildDropdownField(
@@ -1678,7 +1572,8 @@ class _BusinessServicesPortalState extends State<BusinessServicesPortal> {
         ['In Development', 'Live/Production', 'Legacy Codebase'],
         'currentStatus',
       ),
-      _buildTextAreaField('Specific concerns or areas to focus on', 'auditConcerns'),
+      _buildTextAreaField(
+          'Specific concerns or areas to focus on', 'auditConcerns'),
       _buildTextInputField('Link to Codebase/Repo (optional)', 'repoLink'),
       _buildFileUploadField('Upload architecture diagrams or docs',
           fieldKey: 'audit_documents'),

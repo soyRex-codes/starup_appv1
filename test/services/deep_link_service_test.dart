@@ -11,7 +11,7 @@ import 'package:foundervers/services/deep_link_service.dart';
 
 void main() {
   group('DeepLinkService Utility', () {
-    const host = 'foundervers.com';
+    const host = 'terai.us';
 
     test('generatePostLink creates correct URL', () {
       final link = DeepLinkService.generatePostLink(123);
@@ -32,7 +32,7 @@ void main() {
     // To test parsing logic without mocking the whole app, we'd essentially be testing Uri.parse
     // but let's verifying our expected URL structure matches standard URI parsing
     test('standard URI parsing works for our scheme', () {
-      final uri = Uri.parse('https://foundervers.com/posts/123');
+      final uri = Uri.parse('https://terai.us/posts/123');
       expect(uri.pathSegments[0], 'posts');
       expect(uri.pathSegments[1], '123');
     });
@@ -41,9 +41,9 @@ void main() {
       // scheme://host/path -> foundervers://posts/123
       // DeepLinkService logic treats host as first segment for custom schemes if path is not empty?
       // Actually standard: foundervers://posts/123 -> host=posts, path=/123 ?
-      // No: URL 'foundervers://posts/123'. 
-      // host=posts. pathSegments=['123']. 
-      
+      // No: URL 'foundervers://posts/123'.
+      // host=posts. pathSegments=['123'].
+
       final uri = Uri.parse('foundervers://posts/123');
       // If logic is:
       // if (link.host.isNotEmpty) segments.add(link.host); // 'posts'

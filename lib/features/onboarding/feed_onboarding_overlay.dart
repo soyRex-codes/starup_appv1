@@ -110,7 +110,7 @@ class _OnboardingDialogState extends State<OnboardingDialog> {
       iconColor: Color(0xFF00BCD4),
       title: 'Explore All Features',
       description:
-          'Access Ecosystem services, Business.AI tools, and connect via Chat!',
+          'Explore upcoming Ecosystem services and connect through private messages!',
     ),
   ];
 

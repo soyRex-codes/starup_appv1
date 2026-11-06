@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Colors required for Stripe SDK Material Theme -->
-    <color name="stripe_primary">#FFA726</color>
-    <color name="stripe_primary_dark">#FB8C00</color>
-    <color name="stripe_accent">#FFA726</color>
-</resources>

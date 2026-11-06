@@ -7,6 +7,7 @@ import 'package:foundervers/features/notifications/device_service.dart';
 import 'package:foundervers/main.dart';
 import 'package:foundervers/features/notifications/notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:foundervers/core/env.dart';
 
 /// Service to handle Push Notifications via Firebase Cloud Messaging (FCM)
 class PushNotificationService {
@@ -131,15 +132,23 @@ class PushNotificationService {
           }
         }
         if (apnsToken == null) {
-          debugPrint('APNs token not available after retries. Push notifications may not work.');
+          debugPrint(
+              'APNs token not available after retries. Push notifications may not work.');
           return;
         }
         debugPrint('APNs Token: $apnsToken');
       }
 
+      if (kIsWeb && AppEnv.firebaseVapidKey.isEmpty) {
+        debugPrint(
+          'Web push is not configured: FIREBASE_VAPID_KEY is missing.',
+        );
+        return;
+      }
 
-
-      final token = await _fcm.getToken();
+      final token = kIsWeb
+          ? await _fcm.getToken(vapidKey: AppEnv.firebaseVapidKey)
+          : await _fcm.getToken();
       if (token != null) {
         debugPrint('FCM Token: $token');
         final user = Supabase.instance.client.auth.currentUser;
@@ -202,7 +211,7 @@ class PushNotificationService {
   /// Handle notification tap when app is in background
   void _handleMessageOpenedApp(RemoteMessage message) {
     debugPrint('Message opened from background: ${message.data}');
-    
+
     // Navigate to notifications page
     navigatorKey.currentState?.push(
       MaterialPageRoute(builder: (_) => const NotificationsPage()),

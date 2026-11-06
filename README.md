@@ -1,3 +1,11 @@
+# Terai web
+
+Current deployment: **https://terai.us**. Editable Flutter source is in `lib/`, web configuration is in `web/`, and backend source is in `supabase/`.
+
+See [current setup and deployment instructions](docs/DEPLOYMENT.md) and [repository contribution workflow](AGENTS.md). The sections below are retained historical documentation from FounderVers; use the current guide for builds and deployment.
+
+---
+
 # FounderVers Mobile App - Developer Documentation
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.24+-blue.svg)](https://flutter.dev)

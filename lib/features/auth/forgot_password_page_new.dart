@@ -28,13 +28,13 @@ class _ForgotPasswordPageNewState extends State<ForgotPasswordPageNew> {
     // More robust email validation that works for all standard email formats
     // Accepts emails from 3 characters minimum (a@b.c) up to 254 characters (RFC 5321)
     if (email.isEmpty || email.length < 3) return false;
-    
+
     // Simple and reliable email regex that accepts all valid formats
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
       caseSensitive: false,
     );
-    
+
     final isValid = emailRegex.hasMatch(email);
     debugPrint('📧 Email validation: "$email" -> $isValid');
     return isValid;
@@ -49,11 +49,18 @@ class _ForgotPasswordPageNewState extends State<ForgotPasswordPageNew> {
     });
 
     try {
-      await PasswordResetService.instance.requestPasswordReset(
+      final result = await PasswordResetService.instance.requestPasswordReset(
         email: _emailController.text.trim(),
       );
 
       if (mounted) {
+        if (result['success'] != true) {
+          setState(() {
+            _errorMessage = result['message'] as String? ??
+                'Failed to send verification code. Please try again.';
+          });
+          return;
+        }
         // Always navigate to OTP screen (generic success message prevents enumeration)
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -85,18 +92,18 @@ class _ForgotPasswordPageNewState extends State<ForgotPasswordPageNew> {
     }
 
     final email = value.trim();
-    
+
     // Check minimum length
     if (email.length < 3) {
       return 'Email address is too short';
     }
-    
+
     // More robust email validation
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
       caseSensitive: false,
     );
-    
+
     if (!emailRegex.hasMatch(email)) {
       return 'Please enter a valid email address';
     }

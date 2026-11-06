@@ -13,7 +13,6 @@ import 'package:foundervers/features/feed/feed_service.dart';
 import 'package:foundervers/features/dm/new_dm_repos.dart';
 import 'package:foundervers/features/suggestions/suggestion_form.dart';
 import 'package:foundervers/features/messaging/message_compose_sheet.dart';
-import 'package:foundervers/app/app_icons.dart';
 import 'package:foundervers/widgets/video_player_widget.dart';
 import 'package:foundervers/widgets/comments/comment_sheet.dart';
 import 'package:foundervers/services/comment_service.dart';
@@ -23,6 +22,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:foundervers/widgets/report_post_dialog.dart';
 import 'package:foundervers/services/view_analytics_service.dart';
 import 'package:foundervers/services/post_counts_manager.dart';
+import 'package:foundervers/services/post_like_service.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -54,6 +54,9 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   bool _isDescriptionExpanded = false;
   bool _isBookmarked = false;
   bool _isTogglingBookmark = false;
+  late bool _isLiked;
+  late int _likeCount;
+  bool _isTogglingLike = false;
   final ThreadRepository _threadRepo = ThreadRepository();
   final MessageRepository _msgRepo = MessageRepository();
   final _me = Supabase.instance.client.auth.currentUser;
@@ -63,19 +66,22 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   // View tracking state
   bool _hasViewBeenCounted = false;
   Timer? _viewTimer;
-  
+
   // NEW: Replace local state with managed counts
   StreamSubscription<PostCounts>? _countsSubscription;
   PostCounts? _counts;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
+    _isLiked = widget.post.likedByMe;
+    _likeCount = widget.post.likeCount;
+
     // Initialize counts from PostCountsManager OR use widget.post as fallback
     // This prevents showing 0 before manager is populated
     final managedCounts = PostCountsManager.instance.getCounts(widget.post.id);
-    
+
     // If manager has no data yet, initialize it with widget.post values
     if (managedCounts.views == 0 && managedCounts.comments == 0) {
       // Seed the manager with current post data
@@ -91,19 +97,18 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
     } else {
       _counts = managedCounts;
     }
-    
+
     // Subscribe to count updates
-    _countsSubscription = PostCountsManager.instance
-        .watchCounts(widget.post.id)
-        .listen((counts) {
+    _countsSubscription =
+        PostCountsManager.instance.watchCounts(widget.post.id).listen((counts) {
       if (mounted) {
         setState(() => _counts = counts);
       }
     });
-    
+
     _checkBookmarkStatus();
   }
-  
+
   @override
   void dispose() {
     _countsSubscription?.cancel();
@@ -115,6 +120,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   void didUpdateWidget(EnhancedPostCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.post.id != widget.post.id) {
+      _isLiked = widget.post.likedByMe;
+      _likeCount = widget.post.likeCount;
       // Post changed, resubscribe to new post's counts
       _countsSubscription?.cancel();
       _counts = PostCountsManager.instance.getCounts(widget.post.id);
@@ -125,6 +132,62 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
           setState(() => _counts = counts);
         }
       });
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_isTogglingLike) return;
+    if (_me == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to like posts.')),
+      );
+      return;
+    }
+
+    final previousLiked = _isLiked;
+    final previousCount = _likeCount;
+    final nextLiked = !previousLiked;
+    setState(() {
+      _isTogglingLike = true;
+      _isLiked = nextLiked;
+      _likeCount = nextLiked
+          ? previousCount + 1
+          : (previousCount > 0 ? previousCount - 1 : 0);
+    });
+
+    try {
+      await PostLikeService.instance.setLiked(
+        postId: widget.post.id,
+        liked: nextLiked,
+      );
+      if (mounted) setState(() => _isTogglingLike = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isTogglingLike = false;
+        _isLiked = previousLiked;
+        _likeCount = previousCount;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Likes are not available yet. Please try again soon.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _sharePost() async {
+    try {
+      await ShareService.sharePost(
+        postId: widget.post.id,
+        title: widget.post.title,
+        description: widget.post.description,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to share this post.')),
+      );
     }
   }
 
@@ -156,8 +219,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text(newStatus ? 'Post saved' : 'Post removed from saved'),
+          content: Text(newStatus ? 'Post saved' : 'Post removed from saved'),
           duration: const Duration(seconds: 1),
           behavior: SnackBarBehavior.floating,
         ),
@@ -186,7 +248,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
 
   Future<void> _recordView() async {
     _hasViewBeenCounted = true;
-    final counted = await ViewAnalyticsService().trackView(widget.post.id.toString());
+    final counted =
+        await ViewAnalyticsService().trackView(widget.post.id.toString());
     if (counted && mounted) {
       // Trigger rebuild to show updated count (Optimistic UI)
       setState(() {});
@@ -340,20 +403,16 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
       onVisibilityChanged: _handleVisibilityChanged,
       child: _PressScale(
         child: Container(
-          margin: const EdgeInsets.only(bottom: 8, left: 0, right: 0),
+          margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Theme.of(context).dividerColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+                color: Colors.black.withValues(alpha: 0.045),
+                blurRadius: 22,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -403,7 +462,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                         child: Center(
                           child: Icon(Icons.lightbulb_outline,
                               size: 56,
-                              color: const Color(0xFFFF6B2C).withValues(alpha: 0.3)),
+                              color: const Color(0xFFFF6B2C)
+                                  .withValues(alpha: 0.3)),
                         ),
                       ),
                     ),
@@ -411,7 +471,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
 
                 // Content Section - Full width optimization
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -549,22 +609,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        // Premium badge (golden ticket) for premium users
-                                        if (widget.post.author
-                                                ?.hasActivePremium ==
-                                            true)
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(left: 4),
-                                            child: Icon(
-                                              Icons.verified,
-                                              size: 18,
-                                              color: Colors.amber[600],
-                                            ),
-                                          )
-                                        // Blue verified badge for email-verified non-premium users
-                                        else if (widget
-                                                .post.author?.emailVerified ==
+                                        // Blue badge for verified users.
+                                        if (widget.post.author?.emailVerified ==
                                             true)
                                           Padding(
                                             padding:
@@ -599,13 +645,6 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                   ],
                                 ),
                               ),
-                              // Bookmark Button - Clean icon-only button
-                              _BookmarkButton(
-                                isBookmarked: _isBookmarked,
-                                isLoading: _isTogglingBookmark,
-                                onToggle: _toggleBookmark,
-                              ),
-                              const SizedBox(width: 4),
                               // Menu with Share + Edit/Delete options
                               // Menu with Share + Edit/Delete options
                               PopupMenuButton<String>(
@@ -621,9 +660,9 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                     Rect? sharePositionOrigin;
 
                                     try {
-                                      final RenderBox? box =
-                                          _menuKey.currentContext?.findRenderObject()
-                                              as RenderBox?;
+                                      final RenderBox? box = _menuKey
+                                          .currentContext
+                                          ?.findRenderObject() as RenderBox?;
 
                                       if (box != null && box.hasSize) {
                                         final offset =
@@ -642,8 +681,7 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                     } catch (e) {
                                       messenger.showSnackBar(
                                         SnackBar(
-                                            content:
-                                                Text('Share failed: $e')),
+                                            content: Text('Share failed: $e')),
                                       );
                                     }
                                   } else if (value == 'edit') {
@@ -871,7 +909,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                               onOpen: (link) async {
                                 final uri = Uri.parse(link.url);
                                 if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  await launchUrl(uri,
+                                      mode: LaunchMode.externalApplication);
                                 }
                               },
                               style: TextStyle(
@@ -890,10 +929,15 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                 decorationColor: const Color(0xFFFF6B2C),
                               ),
                             ),
-                            if (_shouldShowSeeMore || ((_counts?.views ?? widget.post.views) > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id.toString()) > 0)) ...[
+                            if (_shouldShowSeeMore ||
+                                ((_counts?.views ?? widget.post.views) > 0 ||
+                                    ViewAnalyticsService().getPendingViewCount(
+                                            widget.post.id.toString()) >
+                                        0)) ...[
                               const SizedBox(height: 6),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   if (_shouldShowSeeMore)
@@ -912,8 +956,10 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                           fontSize: 14,
                                           color: Theme.of(context).brightness ==
                                                   Brightness.dark
-                                              ? const Color(0xFFFF8C5A) // Orange for dark mode
-                                              : const Color(0xFFFF6B35), // Orange accent for light mode
+                                              ? const Color(
+                                                  0xFFFF8C5A) // Orange for dark mode
+                                              : const Color(
+                                                  0xFFFF6B35), // Orange accent for light mode
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -922,13 +968,20 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                     const SizedBox.shrink(),
 
                                   // View Counter - use managed counts + pending
-                                  if ((_counts?.views ?? widget.post.views) > 0 || ViewAnalyticsService().getPendingViewCount(widget.post.id.toString()) > 0)
+                                  if ((_counts?.views ?? widget.post.views) >
+                                          0 ||
+                                      ViewAnalyticsService()
+                                              .getPendingViewCount(
+                                                  widget.post.id.toString()) >
+                                          0)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: Theme.of(context).brightness == Brightness.dark 
-                                            ? Colors.white.withValues(alpha: 0.05) 
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.white
+                                                .withValues(alpha: 0.05)
                                             : Colors.grey[100],
                                         borderRadius: BorderRadius.circular(6),
                                       ),
@@ -936,9 +989,11 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(Icons.visibility_outlined,
-                                              size: 12, 
-                                              color: Theme.of(context).brightness == Brightness.dark 
-                                                  ? Colors.grey[400] 
+                                              size: 12,
+                                              color: Theme.of(context)
+                                                          .brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.grey[400]
                                                   : Colors.grey[500]),
                                           const SizedBox(width: 4),
                                           Text(
@@ -946,8 +1001,10 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w500,
-                                              color: Theme.of(context).brightness == Brightness.dark 
-                                                  ? Colors.grey[400] 
+                                              color: Theme.of(context)
+                                                          .brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.grey[400]
                                                   : Colors.grey[600],
                                             ),
                                           ),
@@ -960,65 +1017,61 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
                           ],
                         ),
 
-                        // Action Buttons Row - Modern Instagram/LinkedIn Style
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            // Show Invest, Collab, Suggest only if not own post
-                            if (widget.meUid != widget.post.userId) ...[
-                              Flexible(
-                                fit: FlexFit.loose,
-                                child: _ModernActionButton(
-                                  label: 'Invest',
-                                  icon: AppIcons.money(size: 16, color: const Color.fromARGB(255, 54, 209, 101)),
-                                  variant: ActionButtonVariant.primary,
-                                  onPressed: () =>
-                                      _handleActionButton('invest'),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                fit: FlexFit.loose,
-                                child: _ModernActionButton(
-                                  label: 'Collab',
-                                  icon: AppIcons.collab(size: 16, color: const Color.fromARGB(255, 15, 209, 219)),
-                                  variant: ActionButtonVariant.secondary,
-                                  onPressed: () =>
-                                      _handleActionButton('collab'),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                fit: FlexFit.loose,
-                                child: _ModernActionButton(
-                                  label: 'Suggest',
-                                  icon: const SizedBox
-                                      .shrink(), // No icon for Suggest button
-                                  variant: ActionButtonVariant.tertiary,
-                                  onPressed: () =>
-                                      _handleActionButton('suggest'),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            // Comment Button - Always visible with badge (just show count number)
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: _ModernActionButton(
-                                label:
-                                    (_counts?.comments ?? widget.post.commentCount) > 0 
-                                        ? '${_counts?.comments ?? widget.post.commentCount}' 
-                                        : '',
-                                icon: const Icon(Icons.chat_bubble_outline,
-                                    size: 16),
-                                variant: ActionButtonVariant.outlined,
-                                onPressed: _openComments,
+                        const SizedBox(height: 12),
+                        Divider(color: Theme.of(context).dividerColor),
+                        const SizedBox(height: 4),
+                        Row(children: [
+                          _PostAction(
+                            icon: _isLiked
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            label: _likeCount > 0 ? '$_likeCount' : 'Like',
+                            color: _isLiked ? const Color(0xFFE5484D) : null,
+                            busy: _isTogglingLike,
+                            onTap: _toggleLike,
+                          ),
+                          _PostAction(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            label: (_counts?.comments ??
+                                        widget.post.commentCount) >
+                                    0
+                                ? '${_counts?.comments ?? widget.post.commentCount}'
+                                : 'Comment',
+                            onTap: _openComments,
+                          ),
+                          _PostAction(
+                            icon: Icons.send_outlined,
+                            label: 'Share',
+                            onTap: _sharePost,
+                          ),
+                          const Spacer(),
+                          _PostAction(
+                            icon: _isBookmarked
+                                ? Icons.bookmark_rounded
+                                : Icons.bookmark_border_rounded,
+                            tooltip: _isBookmarked ? 'Saved' : 'Save',
+                            busy: _isTogglingBookmark,
+                            onTap: _toggleBookmark,
+                          ),
+                        ]),
+                        if (widget.meUid != widget.post.userId) ...[
+                          const SizedBox(height: 8),
+                          Row(children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _handleActionButton('collab'),
+                                icon: const Icon(Icons.handshake_outlined,
+                                    size: 18),
+                                label: const Text('Collaborate'),
                               ),
                             ),
-                            const SizedBox(width: 8),
-
-                          ],
-                        ),
+                            const SizedBox(width: 10),
+                            TextButton(
+                              onPressed: () => _handleActionButton('suggest'),
+                              child: const Text('Send suggestion'),
+                            ),
+                          ]),
+                        ],
                       ]),
                 ),
               ]),
@@ -1045,7 +1098,8 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
         final latestCount =
             await _commentService.getCommentCount(widget.post.id);
         // Update manager with latest from API
-        PostCountsManager.instance.updateCommentCount(widget.post.id, latestCount);
+        PostCountsManager.instance
+            .updateCommentCount(widget.post.id, latestCount);
         latestFromSheet = latestCount;
       } catch (_) {
         // Ignore failures silently; existing count will remain until next refresh.
@@ -1059,153 +1113,57 @@ class _EnhancedPostCardState extends State<EnhancedPostCard> {
   }
 }
 
-/// Modern action button variants following social media best practices
-enum ActionButtonVariant {
-  primary, // Solid orange - most important action
-  secondary, // Outlined orange - supporting action
-  tertiary, // Ghost/subtle - less important
-  outlined, // Simple black/white - for comments
-}
-
-/// Modern action button with consistent design system
-class _ModernActionButton extends StatefulWidget {
-  const _ModernActionButton({
-    required this.label,
+class _PostAction extends StatelessWidget {
+  const _PostAction({
     required this.icon,
-    required this.variant,
-    required this.onPressed,
+    required this.onTap,
+    this.label,
+    this.tooltip,
+    this.color,
+    this.busy = false,
   });
 
-  final String label;
-  final Widget icon;
-  final ActionButtonVariant variant;
-  final VoidCallback onPressed;
-
-  @override
-  State<_ModernActionButton> createState() => _ModernActionButtonState();
-}
-
-class _ModernActionButtonState extends State<_ModernActionButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _scale = Tween<double>(begin: 1.0, end: 0.92).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? label;
+  final String? tooltip;
+  final Color? color;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
-    // Define colors based on variant - Modern, professional color system
-    Color backgroundColor;
-    Color foregroundColor;
-    Color borderColor;
-    double elevation;
-
-    switch (widget.variant) {
-      case ActionButtonVariant.primary:
-        backgroundColor = Theme.of(context).cardColor; // Theme-aware
-        foregroundColor = const Color.fromARGB(255, 54, 209, 101); // Green icon
-        borderColor = const Color(0xFFD1D5DB); // Black border
-        elevation = 0;
-        break;
-      case ActionButtonVariant.secondary:
-        backgroundColor = Theme.of(context).cardColor; // Theme-aware
-        foregroundColor =
-            const Color.fromARGB(255, 15, 209, 219); // white - Partnership
-        borderColor = const Color(0xFFD1D5DB); // Black border
-        elevation = 0;
-        break;
-      case ActionButtonVariant.tertiary:
-        backgroundColor = Theme.of(context).cardColor; // Theme-aware
-        foregroundColor = const Color(0xFFF97316); // Vibrant Orange - Ideas
-        borderColor = const Color(0xFFD1D5DB); // Black border;
-        elevation = 0;
-        break;
-      case ActionButtonVariant.outlined:
-        backgroundColor = Theme.of(context).cardColor; // Theme-aware
-        foregroundColor =
-            Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
-        borderColor = const Color(0xFFD1D5DB); // Black border
-        elevation = 0;
-        break;
-    }
-
-    return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
-      onTapUp: (_) {
-        _controller.reverse();
-        widget.onPressed();
-      },
-      onTapCancel: () => _controller.reverse(),
-      child: AnimatedBuilder(
-        animation: _scale,
-        builder: (context, child) => Transform.scale(
-          scale: _scale.value,
-          child: child,
-        ),
-        child: Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-                color: borderColor,
-                width: 1.5),
-            boxShadow: elevation > 0
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (widget.icon is! SizedBox ||
-                  (widget.icon as SizedBox).width != 0) ...[
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: widget.icon,
+    final foreground = color ?? Theme.of(context).textTheme.bodySmall?.color;
+    return Tooltip(
+      message: tooltip ?? label ?? '',
+      child: InkWell(
+        onTap: busy ? null : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 9),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (busy)
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: foreground,
                 ),
-                if (widget.label.isNotEmpty) const SizedBox(width: 5),
-              ],
-              if (widget.label.isNotEmpty)
-                Flexible(
-                  child: Text(
-                    widget.label,
-                    style: TextStyle(
-                      color: foregroundColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
+              )
+            else
+              Icon(icon, size: 22, color: foreground),
+            if (label != null) ...[
+              const SizedBox(width: 6),
+              Text(
+                label!,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
             ],
-          ),
+          ]),
         ),
       ),
     );
@@ -1489,8 +1447,9 @@ class _AvatarCircle extends StatelessWidget {
         backgroundImage: url != null
             ? CachedNetworkImageProvider(
                 StorageUtils.resolvePublicUrl(
-                  url!,
-                ) ?? '',
+                      url!,
+                    ) ??
+                    '',
               )
             : null,
         child: url == null
@@ -1683,46 +1642,6 @@ class _MediaCarouselState extends State<_MediaCarousel> {
             ),
         ],
       ],
-    );
-  }
-}
-
-/// Bookmark button with filled/outlined states
-class _BookmarkButton extends StatelessWidget {
-  const _BookmarkButton({
-    required this.isBookmarked,
-    required this.isLoading,
-    required this.onToggle,
-  });
-
-  final bool isBookmarked;
-  final bool isLoading;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    const bookmarkColor = Color(0xFF10B981); // Green for save action
-
-    return IconButton(
-      icon: isLoading
-          ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: bookmarkColor,
-              ),
-            )
-          : Icon(
-              isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
-              size: 22,
-              color: bookmarkColor,
-            ),
-      onPressed: isLoading ? null : onToggle,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-      splashRadius: 20,
-      tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark post',
     );
   }
 }

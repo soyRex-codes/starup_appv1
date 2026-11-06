@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:foundervers/core/storage_utils.dart';
 import 'package:foundervers/features/auth/user_service.dart';
 import 'package:foundervers/features/post_creation/post_service.dart';
 import 'package:foundervers/features/profile/edit_profile_page.dart';
-import 'package:foundervers/features/premium/premium_payment_page.dart';
 import 'package:foundervers/models/post.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -49,7 +46,8 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
 
   Future<void> _checkBlockStatus() async {
     if (_targetUserId != null && !_isOwnProfile) {
-      final isBlocked = await UserBlockingService().isUserBlocked(_targetUserId!);
+      final isBlocked =
+          await UserBlockingService().isUserBlocked(_targetUserId!);
       if (mounted) {
         setState(() {
           _isUserBlocked = isBlocked;
@@ -112,7 +110,8 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                       value: 'unblock',
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+                          Icon(Icons.check_circle_outline,
+                              color: Colors.green, size: 20),
                           SizedBox(width: 8),
                           Text('Unblock User'),
                         ],
@@ -135,7 +134,8 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                     value: 'report',
                     child: Row(
                       children: [
-                        Icon(Icons.flag_outlined, color: Colors.orange, size: 20),
+                        Icon(Icons.flag_outlined,
+                            color: Colors.orange, size: 20),
                         SizedBox(width: 8),
                         Text('Report User'),
                       ],
@@ -199,8 +199,6 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
       ),
     );
   }
-
-
 
   Future<void> _confirmBlockUser() async {
     final confirmed = await showDialog<bool>(
@@ -286,8 +284,6 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
     }
   }
 
-
-
   Future<void> _showReportUserDialog() async {
     final reasonController = TextEditingController();
     String selectedReason = 'Spam';
@@ -317,7 +313,8 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                   decoration: const InputDecoration(
                     labelText: 'Reason',
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   items: reasons
                       .map((r) => DropdownMenuItem(value: r, child: Text(r)))
@@ -367,7 +364,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
         // Wait, I need to check imports.
         // I'll assume I need to add the import if it's missing, but let's check imports first.
         // Actually, I can just use ModerationService() constructor.
-        
+
         await ModerationService().reportUser(
           reportedUserId: _targetUserId!,
           reason: selectedReason,
@@ -377,7 +374,8 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Report submitted. Thank you for helping keep our community safe.'),
+              content: Text(
+                  'Report submitted. Thank you for helping keep our community safe.'),
               backgroundColor: Colors.green,
             ),
           );
@@ -437,22 +435,9 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
       profile['avatar_url'] as String?,
     );
     final emailVerified = profile['email_verified'] as bool? ?? false;
-    final isPremium = profile['is_premium'] as bool? ?? false;
-    final premiumExpiresAt = profile['premium_expires_at'] as String?;
     final email = _isOwnProfile
         ? (profile['email'] as String?)
         : null; // Only show email to self
-
-    // Check if premium is still active
-    bool hasActivePremium = isPremium;
-    if (isPremium && premiumExpiresAt != null) {
-      try {
-        final expiryDate = DateTime.parse(premiumExpiresAt);
-        hasActivePremium = expiryDate.isAfter(DateTime.now());
-      } catch (e) {
-        hasActivePremium = false;
-      }
-    }
 
     DateTime? joinDate;
     if (createdAt != null) {
@@ -476,8 +461,9 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
               CircleAvatar(
                 radius: 40,
                 backgroundColor: Colors.grey[300],
-                backgroundImage:
-                    avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
+                backgroundImage: avatarUrl != null
+                    ? CachedNetworkImageProvider(avatarUrl)
+                    : null,
                 child: avatarUrl == null
                     ? Icon(Icons.person, size: 40, color: Colors.grey[600])
                     : null,
@@ -507,16 +493,7 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (hasActivePremium)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: Icon(
-                              Icons.verified,
-                              size: 16,
-                              color: Colors.amber[600],
-                            ),
-                          )
-                        else if (emailVerified)
+                        if (emailVerified)
                           Padding(
                             padding: const EdgeInsets.only(left: 4),
                             child: Icon(
@@ -668,57 +645,6 @@ class _UnifiedProfilePageState extends State<UnifiedProfilePage>
                         const Text('Message', style: TextStyle(fontSize: 14)),
                   ),
           ),
-
-          // Expired premium banner (only for own profile)
-          if (_isOwnProfile && isPremium && !hasActivePremium) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                border: Border.all(color: Colors.orange.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline,
-                      color: Colors.orange.shade700, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Your premium subscription has expired',
-                      style: TextStyle(
-                        color: Colors.orange.shade900,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-
-                  if (kIsWeb || !Platform.isIOS)
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const PremiumPaymentPage(isAnnual: false),
-                          ),
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        backgroundColor: Colors.orange.shade700,
-                        foregroundColor: Colors.white,
-                      ),
-                      child:
-                          const Text('Renew', style: TextStyle(fontSize: 12)),
-                    ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );

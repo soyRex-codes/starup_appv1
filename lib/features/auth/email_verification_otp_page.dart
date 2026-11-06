@@ -14,7 +14,8 @@ class EmailVerificationOtpPage extends StatefulWidget {
   });
 
   @override
-  State<EmailVerificationOtpPage> createState() => _EmailVerificationOtpPageState();
+  State<EmailVerificationOtpPage> createState() =>
+      _EmailVerificationOtpPageState();
 }
 
 class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
@@ -63,7 +64,8 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
     });
 
     try {
-      final result = await PasswordResetService.instance.verifyEmailVerificationOTP(
+      final result =
+          await PasswordResetService.instance.verifyEmailVerificationOTP(
         email: widget.email,
         otp: _otpController.text.trim(),
       );
@@ -72,7 +74,7 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
         if (result['success']) {
           // Mark email as verified in our users table
           await AuthService.instance.markEmailAsVerified();
-          
+
           if (!mounted) return;
 
           // Email verified successfully - session should now be active
@@ -81,11 +83,11 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
             '/',
             (route) => false,
           );
-          
+
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Email verified successfully! Welcome to FounderVers!'),
+              content: Text('Email verified successfully! Welcome to Terai!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -120,7 +122,8 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
     });
 
     try {
-      final result = await PasswordResetService.instance.requestEmailVerification(
+      final result =
+          await PasswordResetService.instance.requestEmailVerification(
         email: widget.email,
       );
 
@@ -182,17 +185,17 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
         if (result['success'] == true) {
           // Email was confirmed via link
           await AuthService.instance.markEmailAsVerified();
-          
+
           if (!mounted) return;
 
           Navigator.of(context).pushNamedAndRemoveUntil(
             '/',
             (route) => false,
           );
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Email verified successfully! Welcome to FounderVers!'),
+              content: Text('Email verified successfully! Welcome to Terai!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -289,7 +292,8 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
                   color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                    color:
+                        Theme.of(context).primaryColor.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -369,11 +373,13 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                      Icon(Icons.error_outline,
+                          color: Colors.red[700], size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -410,7 +416,8 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : const Text(
@@ -437,9 +444,7 @@ class _EmailVerificationOtpPageState extends State<EmailVerificationOtpPage> {
                   TextButton(
                     onPressed: _canResend && !_isLoading ? _resendCode : null,
                     child: Text(
-                      _canResend
-                          ? 'Resend'
-                          : 'Resend in ${_resendCountdown}s',
+                      _canResend ? 'Resend' : 'Resend in ${_resendCountdown}s',
                       style: TextStyle(
                         color: _canResend
                             ? Theme.of(context).primaryColor
