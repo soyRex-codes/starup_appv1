@@ -55,6 +55,7 @@ android/key.properties
 
 # Firebase/Google Cloud Service Account Keys - NEVER commit these
 *-firebase-adminsdk-*.json
+lib/icons/*-firebase-adminsdk-*.json
 *-service-account*.json
 serviceAccountKey.json
 firebase-adminsdk*.json
@@ -62,3 +63,6 @@ firebase-adminsdk*.json
 
 # Internal developer reference (not for public repo)
 CODEBASE_WALKTHROUGH.md
+
+# Supabase CLI local project cache (not source configuration)
+supabase/.temp/

@@ -184,7 +184,7 @@ class AuthService {
     return await _client.auth.verifyOTP(
       email: email,
       token: token,
-      type: OtpType.email, // Use email OTP type
+      type: OtpType.recovery,
     );
   }
 

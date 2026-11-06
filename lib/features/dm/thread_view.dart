@@ -12,7 +12,6 @@ import 'package:foundervers/core/storage_utils.dart';
 import 'new_dm_repos.dart';
 import 'dm_profile_cache.dart';
 import 'dm_service.dart';
-import '../../app/app_icons.dart';
 import '../../app/theme.dart';
 import '../../features/profile/unified_profile_page.dart';
 import '../../services/media_compression_service.dart';
@@ -42,14 +41,14 @@ class _ThreadViewState extends State<ThreadView> {
   bool _loadingProfile = true;
   final _picker = ImagePicker();
   bool _uploading = false;
-  
+
   // Staged media for preview before sending
   Uint8List? _stagedMediaBytes;
   String? _stagedFileName;
   String? _stagedFileExt;
   String? _stagedMessageType; // 'image' or 'file'
   int? _stagedFileSize;
-  
+
   static const int _maxFileSize = 10 * 1024 * 1024; // 10MB
 
   @override
@@ -131,7 +130,7 @@ class _ThreadViewState extends State<ThreadView> {
     // Guard: Must have either media or text
     if (_stagedMediaBytes == null && text.isEmpty) return;
     if (_me == null) return;
-    
+
     // Prevent multiple clicks
     if (_sending) return;
 
@@ -170,7 +169,7 @@ class _ThreadViewState extends State<ThreadView> {
         });
         _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
         _input.clear();
-        
+
         final persisted = await _msgRepo.send(
             threadId: widget.thread.threadId, senderId: _me.id, body: text);
         setState(() {
@@ -194,20 +193,21 @@ class _ThreadViewState extends State<ThreadView> {
         source: ImageSource.gallery,
         imageQuality: 70, // Compress to save data
       );
-      
+
       if (image == null) return;
 
       // Compress image for staging
       final originalFile = File(image.path);
-      final compressedFile = await MediaCompressionService.instance.compressImage(
+      final compressedFile =
+          await MediaCompressionService.instance.compressImage(
         originalFile,
         quality: 70, // Balanced quality
       );
-      
+
       final bytes = await compressedFile.readAsBytes();
       final fileExt = compressedFile.path.split('.').last;
       final fileSize = await compressedFile.length();
-      
+
       if (mounted) {
         setState(() {
           _stagedMediaBytes = bytes;
@@ -235,7 +235,7 @@ class _ThreadViewState extends State<ThreadView> {
 
       if (result == null || result.files.isEmpty) return;
       final file = result.files.first;
-      
+
       if (file.size > _maxFileSize) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -296,7 +296,7 @@ class _ThreadViewState extends State<ThreadView> {
     try {
       // 1. Upload to Supabase Storage
       // Use a timestamp prefix for images to ensure uniqueness if not provided
-      final storagePath = messageType == 'image' 
+      final storagePath = messageType == 'image'
           ? '${_me.id}/$fileName' // fileName is already timestamped for images
           : '${_me.id}/${DateTime.now().millisecondsSinceEpoch}_$fileName'; // Add timestamp for files
 
@@ -320,7 +320,7 @@ class _ThreadViewState extends State<ThreadView> {
 
       // 4. Send Message
       final content = messageType == 'image' ? 'Image' : '$fileName';
-      
+
       final optimistic = ChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         conversationId: widget.thread.threadId,
@@ -348,7 +348,6 @@ class _ThreadViewState extends State<ThreadView> {
         final idx = _messages.indexWhere((m) => m.id == optimistic.id);
         if (idx != -1) _messages[idx] = persisted;
       });
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -380,7 +379,9 @@ class _ThreadViewState extends State<ThreadView> {
             children: [
               ListTile(
                 leading: const Icon(Icons.photo_library, color: Colors.purple),
-                title: Text('Photo Gallery', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                title: Text('Photo Gallery',
+                    style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87)),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage();
@@ -388,7 +389,9 @@ class _ThreadViewState extends State<ThreadView> {
               ),
               ListTile(
                 leading: const Icon(Icons.description, color: Colors.blue),
-                title: Text('Document', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                title: Text('Document',
+                    style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87)),
                 onTap: () {
                   Navigator.pop(context);
                   _pickFile();
@@ -441,20 +444,20 @@ class _ThreadViewState extends State<ThreadView> {
         try {
           final newRow = payload.newRecord;
           if (newRow.isEmpty) return;
-          
+
           // Convert to ChatMessage
           // Note: newRow might be missing joined fields, but ChatMessage.fromJson handles basic fields
           final msg = ChatMessage.fromJson(newRow);
-          
+
           if (_messages.any((m) => m.id == msg.id)) return;
-          
+
           if (mounted) {
             setState(() {
               _messages.add(msg);
               _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
             });
           }
-          
+
           if (msg.senderId != _me?.id) {
             _markThreadRead();
           }
@@ -463,7 +466,7 @@ class _ThreadViewState extends State<ThreadView> {
         }
       },
     );
-    
+
     _channel!.subscribe();
   }
 
@@ -484,7 +487,8 @@ class _ThreadViewState extends State<ThreadView> {
 
   Future<void> _deleteMessage(String messageId) async {
     try {
-      await DMService.instance.deleteMessage(messageId, widget.thread.conversationId);
+      await DMService.instance
+          .deleteMessage(messageId, widget.thread.conversationId);
       setState(() {
         _messages.removeWhere((m) => m.id == messageId);
       });
@@ -533,7 +537,33 @@ class _ThreadViewState extends State<ThreadView> {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(_conversationTitle)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              _ConversationAvatar(profile: _otherParticipant),
+              const SizedBox(width: 11),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_conversationTitle,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          )),
+                  Text('Direct message',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          )),
+                ],
+              ),
+            ],
+          ),
+        ),
         body: Column(children: [
           Expanded(
             child: _loading && _messages.isEmpty
@@ -557,7 +587,7 @@ class _ThreadViewState extends State<ThreadView> {
                       return false;
                     },
                     child: ListView.builder(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.fromLTRB(14, 18, 14, 20),
                       reverse: false,
                       itemCount: _messages.length,
                       itemBuilder: (context, i) {
@@ -579,14 +609,20 @@ class _ThreadViewState extends State<ThreadView> {
               children: [
                 if (_stagedMediaBytes != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    color: Theme.of(context).cardColor,
+                    margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
                     child: Row(
                       children: [
                         if (_stagedMessageType == 'image')
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.memory(_stagedMediaBytes!, width: 60, height: 60, fit: BoxFit.cover),
+                            child: Image.memory(_stagedMediaBytes!,
+                                width: 60, height: 60, fit: BoxFit.cover),
                           )
                         else
                           Container(
@@ -596,7 +632,8 @@ class _ThreadViewState extends State<ThreadView> {
                               color: Colors.grey[300],
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.description, color: Colors.blue, size: 30),
+                            child: const Icon(Icons.description,
+                                color: Colors.blue, size: 30),
                           ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -607,12 +644,14 @@ class _ThreadViewState extends State<ThreadView> {
                                 _stagedFileName ?? 'File',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 13),
                               ),
                               if (_stagedFileSize != null)
                                 Text(
                                   '${(_stagedFileSize! / 1024).toStringAsFixed(1)} KB',
-                                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                  style: const TextStyle(
+                                      color: Colors.grey, fontSize: 12),
                                 ),
                             ],
                           ),
@@ -624,57 +663,116 @@ class _ThreadViewState extends State<ThreadView> {
                       ],
                     ),
                   ),
-                Row(children: [
-              Expanded(
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: _uploading 
-                            ? const SizedBox(
-                                width: 20, 
-                                height: 20, 
-                                child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.add_circle_outline, color: Colors.grey),
-                        onPressed: _uploading ? null : _showAttachmentOptions,
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _input,
-                          minLines: 1,
-                          maxLines: 5,
-                          textInputAction: TextInputAction.send,
-                          decoration: const InputDecoration(
-                            hintText: 'Message',
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          ),
-                          onSubmitted: (text) {
-                            if (!_sending) _send();
-                          },
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 5, bottom: 3),
+                          child: IconButton(
+                            tooltip: 'Add attachment',
+                            icon: _uploading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))
+                                : Icon(Icons.add_rounded,
+                                    color:
+                                        Theme.of(context).colorScheme.primary),
+                            onPressed:
+                                _uploading ? null : _showAttachmentOptions,
+                          ),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: _input,
+                            minLines: 1,
+                            maxLines: 5,
+                            textInputAction: TextInputAction.send,
+                            decoration: InputDecoration(
+                              hintText: 'Write a message…',
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 13),
+                              hintStyle: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                            onSubmitted: (text) {
+                              if (!_sending) _send();
+                            },
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 5, bottom: 5),
+                          child: IconButton.filled(
+                            tooltip: 'Send message',
+                            onPressed: _sending ? null : _send,
+                            icon: _sending
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))
+                                : const Icon(Icons.arrow_upward_rounded,
+                                    size: 20),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              IconButton(
-                icon: _sending
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : AppIcons.send(size: 22),
-                onPressed: _sending ? null : _send,
-              )
-            ]),
               ],
             ),
           )
         ]),
       ),
+    );
+  }
+}
+
+class _ConversationAvatar extends StatelessWidget {
+  const _ConversationAvatar({required this.profile});
+  final ProfileModel? profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = profile?.avatarUrl;
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: AppColors.primarySoft,
+      backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+          ? NetworkImage(imageUrl)
+          : null,
+      child: imageUrl == null || imageUrl.isEmpty
+          ? Text(
+              (profile?.name?.trim().isNotEmpty == true
+                      ? profile!.name!.trim()[0]
+                      : '?')
+                  .toUpperCase(),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          : null,
     );
   }
 }
@@ -710,7 +808,13 @@ class _MessageBubbleState extends State<_MessageBubble> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final foreground = widget.mine
+        ? Theme.of(context).colorScheme.onPrimary
+        : Theme.of(context).colorScheme.onSurface;
+    final bubbleColor = widget.mine
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.surface;
+
     final bubble = GestureDetector(
       onLongPress: widget.onDelete != null
           ? () {
@@ -741,182 +845,230 @@ class _MessageBubbleState extends State<_MessageBubble> {
             }
           : null,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(10),
+        margin: EdgeInsets.only(
+          top: 5,
+          bottom: 5,
+          left: widget.mine ? 42 : 0,
+          right: widget.mine ? 0 : 42,
+        ),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         decoration: BoxDecoration(
-          color: widget.mine
-              ? AppColors.primary.withValues(alpha: 0.15)
-              : (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(8),
+          color: bubbleColor,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(widget.mine ? 20 : 5),
+            bottomRight: Radius.circular(widget.mine ? 5 : 20),
+          ),
+          border: widget.mine
+              ? null
+              : Border.all(color: Theme.of(context).dividerColor),
+          boxShadow: [
+            if (!widget.mine)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.035),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-          if (!widget.mine)
-            GestureDetector(
-              onTap: () {
-                if (widget.message.senderId.isNotEmpty) {
+            if (!widget.mine)
+              GestureDetector(
+                onTap: () {
+                  if (widget.message.senderId.isNotEmpty) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => UnifiedProfilePage(
+                          userId: widget.message.senderId,
+                          userName: _sender?.name,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Text(
+                    (_sender?.name ?? widget.message.senderId)
+                        .split('\n')
+                        .first,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.primary,
+                    )),
+              ),
+            if (!widget.mine) const SizedBox(height: 2),
+            if (widget.message.messageType == 'image')
+              GestureDetector(
+                onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => UnifiedProfilePage(
-                        userId: widget.message.senderId,
-                        userName: _sender?.name,
-                      ),
-                    ),
-                  );
-                }
-              },
-              child: Text(
-                  (_sender?.name ?? widget.message.senderId).split('\n').first,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color:
-                        AppColors.primary, // Use orange for clickable usernames
-                    decoration: TextDecoration.underline,
-                  )),
-            ),
-          if (!widget.mine) const SizedBox(height: 2),
-          if (widget.message.messageType == 'image')
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => Scaffold(
-                      backgroundColor: Colors.black,
-                      appBar: AppBar(
+                      builder: (_) => Scaffold(
                         backgroundColor: Colors.black,
-                        iconTheme: const IconThemeData(color: Colors.white),
-                      ),
-                      body: Center(
+                        appBar: AppBar(
+                          backgroundColor: Colors.black,
+                          iconTheme: const IconThemeData(color: Colors.white),
+                        ),
+                        body: Center(
                           child: InteractiveViewer(
                             child: CachedNetworkImage(
                               // Request high-res but optimized image for full screen
                               imageUrl: StorageUtils.resolvePublicUrl(
-                                widget.message.metadata['path'],
-                                bucket: 'chat-media',
-                              ) ?? widget.message.metadata['url'] ?? '',
+                                    widget.message.metadata['path'],
+                                    bucket: 'chat-media',
+                                  ) ??
+                                  widget.message.metadata['url'] ??
+                                  '',
                               placeholder: (context, url) =>
                                   const CircularProgressIndicator(),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.error, color: Colors.white),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.error, color: Colors.white),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  // Request small thumbnail for bubble
-                  imageUrl: StorageUtils.resolvePublicUrl(
-                    widget.message.metadata['path'],
-                    bucket: 'chat-media',
-                  ) ?? widget.message.metadata['url'] ?? '',
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    width: 200,
-                    height: 200,
-                    color: Colors.grey[300],
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    width: 200,
-                    height: 200,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.broken_image),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: CachedNetworkImage(
+                    // Request small thumbnail for bubble
+                    imageUrl: StorageUtils.resolvePublicUrl(
+                          widget.message.metadata['path'],
+                          bucket: 'chat-media',
+                        ) ??
+                        widget.message.metadata['url'] ??
+                        '',
+                    width: 220,
+                    height: 220,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      width: 220,
+                      height: 220,
+                      color: Colors.grey[300],
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      width: 220,
+                      height: 220,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.broken_image),
+                    ),
                   ),
                 ),
-              ),
-            )
-          else if (widget.message.messageType == 'file')
-            GestureDetector(
-              onTap: () async {
-                final url = widget.message.metadata['url'];
-                if (url != null) {
-                  final uri = Uri.parse(url);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+              )
+            else if (widget.message.messageType == 'file')
+              GestureDetector(
+                onTap: () async {
+                  final url = widget.message.metadata['url'];
+                  if (url != null) {
+                    final uri = Uri.parse(url);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
+                    }
                   }
-                }
-              },
-              child: Container(
-                width: 200,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: widget.mine ? Colors.white.withValues(alpha: 0.2) : Colors.grey[300],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: widget.mine ? Colors.white.withValues(alpha: 0.3) : Colors.grey[400]!,
+                },
+                child: Container(
+                  width: 240,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: widget.mine
+                        ? Colors.white.withValues(alpha: 0.14)
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: widget.mine
+                          ? Colors.white.withValues(alpha: 0.3)
+                          : Theme.of(context).dividerColor,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.description,
+                            color: Colors.blue, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.message.metadata['file_name'] ??
+                                  'Document',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: foreground,
+                              ),
+                            ),
+                            Text(
+                              _formatFileSize(
+                                  widget.message.metadata['file_size']),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: foreground.withValues(alpha: 0.72),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.description, color: Colors.blue, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.message.metadata['file_name'] ?? 'Document',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: widget.mine ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            _formatFileSize(widget.message.metadata['file_size']),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: widget.mine ? Colors.white70 : Colors.black54,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              )
+            else
+              Text(
+                widget.message.content,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.35,
+                  color: foreground,
                 ),
               ),
-            )
-          else
-            Text(
-              widget.message.content,
-              style: TextStyle(
-                fontSize: 15,
-                color: isDark 
-                    ? const Color(0xFFE0E0E0) // Light text for dark mode
-                    : Colors.black87, // Dark text for light mode
+            const SizedBox(height: 5),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                _formatMessageTime(widget.message.createdAt),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: foreground.withValues(alpha: 0.68),
+                ),
               ),
             ),
-        ],
-    ),
+          ],
+        ),
       ),
     );
     return Align(
       alignment: widget.mine ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
         child: bubble,
       ),
     );
   }
+
+  String _formatMessageTime(DateTime value) {
+    final hour = value.hour % 12 == 0 ? 12 : value.hour % 12;
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${value.hour >= 12 ? 'PM' : 'AM'}';
+  }
+
   String _formatFileSize(dynamic size) {
     if (size == null) return '';
     final bytes = size is int ? size : int.tryParse(size.toString()) ?? 0;

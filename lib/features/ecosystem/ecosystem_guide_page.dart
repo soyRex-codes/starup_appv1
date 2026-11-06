@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'ecosystem_service_model.dart';
-import 'business_services_portal.dart';
 
 class EcosystemGuidePage extends StatelessWidget {
   const EcosystemGuidePage({super.key});
@@ -65,15 +64,19 @@ class EcosystemGuidePage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _buildProcessStep(1, 'Select Service', 'Choose the service that fits your current needs.'),
-                  _buildProcessStep(2, 'Submit Request', 'Fill out a simple form with your requirements.'),
-                  _buildProcessStep(3, 'Consultation', 'Connect with our experts to finalize the plan.'),
-                  _buildProcessStep(4, 'Execution', 'We deliver high-quality results to move you forward.'),
+                  _buildProcessStep(1, 'Select Service',
+                      'Choose the service that fits your current needs.'),
+                  _buildProcessStep(2, 'Submit Request',
+                      'Fill out a simple form with your requirements.'),
+                  _buildProcessStep(3, 'Consultation',
+                      'Connect with our experts to finalize the plan.'),
+                  _buildProcessStep(4, 'Execution',
+                      'We deliver high-quality results to move you forward.'),
                 ],
               ),
             ),
             const SizedBox(height: 32),
-            
+
             const Text(
               'Service Details',
               style: TextStyle(
@@ -91,7 +94,8 @@ class EcosystemGuidePage extends StatelessWidget {
               itemCount: ecosystemServices.length,
               separatorBuilder: (context, index) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
-                return _buildServiceDetailCard(context, ecosystemServices[index]);
+                return _buildServiceDetailCard(
+                    context, ecosystemServices[index]);
               },
             ),
           ],
@@ -152,7 +156,8 @@ class EcosystemGuidePage extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceDetailCard(BuildContext context, EcosystemServiceData service) {
+  Widget _buildServiceDetailCard(
+      BuildContext context, EcosystemServiceData service) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -201,7 +206,7 @@ class EcosystemGuidePage extends StatelessWidget {
           children: [
             const Divider(),
             const SizedBox(height: 16),
-            
+
             Text(
               'What\'s Included:',
               style: TextStyle(
@@ -211,65 +216,59 @@ class EcosystemGuidePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            
+
             // Rich Feature List
             ...service.features.map((feature) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 2),
-                    child: Icon(
-                      Icons.check_circle,
-                      size: 18,
-                      color: service.color,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          feature.title,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A1A1A),
-                          ),
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 2),
+                        child: Icon(
+                          Icons.check_circle,
+                          size: 18,
+                          color: service.color,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          feature.description,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            color: Colors.grey[600],
-                            height: 1.4,
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              feature.title,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              feature.description,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                color: Colors.grey[600],
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )),
+                )),
 
             const Divider(),
             const SizedBox(height: 12),
-            _buildInfoRow(Icons.monetization_on_outlined, 'Pricing', service.pricing),
+            _buildInfoRow(
+                Icons.monetization_on_outlined, 'Pricing', service.pricing),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BusinessServicesPortal(initialService: service.type),
-                    ),
-                  );
-                },
+                onPressed: null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: service.color,
                   foregroundColor: Colors.white,
@@ -280,7 +279,7 @@ class EcosystemGuidePage extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: const Text(
-                  'Get Started',
+                  'Coming Soon',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),

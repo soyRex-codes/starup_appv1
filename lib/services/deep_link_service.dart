@@ -7,9 +7,9 @@ import 'package:foundervers/app/home_page.dart';
 
 /// Service for handling deep links and app-to-app navigation
 class DeepLinkService {
-  static const String _primaryHost = 'foundervers.com';
-  static const String _legacyHost = 'startupnest-a3jdnswbja-uc.a.run.app';
-  static const String _downloadUrl = 'https://foundervers.com/download';
+  static const String _primaryHost = 'terai.us';
+  static const String _legacyHost = 'foundervers.com';
+  static const String _downloadUrl = 'https://terai.us';
 
   static late AppLinks _appLinks;
   static BuildContext? _context;
@@ -69,13 +69,13 @@ class DeepLinkService {
     // Duplicate detection - prevent same link from being processed twice
     final linkString = link.toString();
     final now = DateTime.now();
-    if (_lastHandledLink == linkString && 
+    if (_lastHandledLink == linkString &&
         _lastHandledTime != null &&
         now.difference(_lastHandledTime!) < _duplicateThreshold) {
       debugPrint('Skipping duplicate link (already handled): $linkString');
       return;
     }
-    
+
     // Mark this link as handled
     _lastHandledLink = linkString;
     _lastHandledTime = now;
@@ -133,7 +133,7 @@ class DeepLinkService {
       // Fetch the post from Supabase
       final postService = PostService();
       final post = await postService.getPostById(postId);
-      
+
       if (post == null) {
         debugPrint('Post $postId not found');
         _showError('Post not found');

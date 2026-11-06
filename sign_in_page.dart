@@ -5,7 +5,7 @@ import 'package:foundervers/features/auth/auth_service.dart';
 import 'package:foundervers/features/auth/otp_verification_page.dart';
 import 'package:foundervers/features/auth/forgot_password_page_new.dart';
 import 'package:foundervers/services/password_reset_service.dart';
-import 'package:foundervers/widgets/foundervers_logo.dart';
+import 'package:foundervers/widgets/terai_logo.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SignInPage extends StatefulWidget {
@@ -234,7 +234,7 @@ class _SignInPageState extends State<SignInPage> {
 
             // App Logo
             const Center(
-              child: FounderVersLogo(
+              child: TeraiLogo(
                 width: 80,
                 height: 80,
               ),

@@ -317,7 +317,7 @@ class PublicProfilePage extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Posts list
-          FutureBuilder<List<Map<String, dynamic>>>(
+          FutureBuilder<List<PostModel>>(
             future: _fetchUserPosts(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -375,7 +375,7 @@ class PublicProfilePage extends StatelessWidget {
   }
 
   /// Fetch posts for this user
-  Future<List<Map<String, dynamic>>> _fetchUserPosts() async {
+  Future<List<PostModel>> _fetchUserPosts() async {
     try {
       final postService = PostService();
       return await postService.fetchUserPosts(userId: userId);
@@ -386,19 +386,10 @@ class PublicProfilePage extends StatelessWidget {
   }
 
   /// Build individual post item
-  Widget _buildPostItem(BuildContext context, Map<String, dynamic> postData) {
-    final title = postData['title'] as String? ?? 'Untitled';
-    final category = postData['category'] as String?;
-    final createdAt = postData['created_at'] as String?;
-
-    DateTime? postDate;
-    if (createdAt != null) {
-      try {
-        postDate = DateTime.parse(createdAt);
-      } catch (e) {
-        debugPrint('Error parsing post date: $e');
-      }
-    }
+  Widget _buildPostItem(BuildContext context, PostModel post) {
+    final title = post.title.isEmpty ? 'Untitled' : post.title;
+    final category = post.category;
+    final postDate = post.createdAt;
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -441,21 +432,12 @@ class PublicProfilePage extends StatelessWidget {
       ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
-        // Navigate to post detail
-        try {
-          final post = PostModel.fromJson(postData);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostDetailPage(post: post),
-            ),
-          );
-        } catch (e) {
-          debugPrint('Error converting post data: $e');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error loading post details')),
-          );
-        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PostDetailPage(post: post),
+          ),
+        );
       },
     );
   }

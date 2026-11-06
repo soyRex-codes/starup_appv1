@@ -339,8 +339,7 @@ class PostService {
       try {
         final usersResp = await _s
             .from('users')
-            .select(
-                'id,name,username,full_name,avatar_url,email_verified,is_premium,premium_expires_at')
+            .select('id,name,username,full_name,avatar_url,email_verified')
             .filter(
               'id',
               'in',
@@ -413,13 +412,12 @@ class PostService {
       return {};
     }
   }
+
   /// Fetch a single post by ID
   Future<PostModel?> getPostById(int id) async {
     try {
       final supabase = Supabase.instance.client;
-      final response = await supabase
-          .from('posts')
-          .select('''
+      final response = await supabase.from('posts').select('''
             *,
             media (*),
             users:user_id (
@@ -429,9 +427,7 @@ class PostService {
               avatar_url,
               bio
             )
-          ''')
-          .eq('id', id)
-          .maybeSingle();
+          ''').eq('id', id).maybeSingle();
 
       if (response == null) return null;
 

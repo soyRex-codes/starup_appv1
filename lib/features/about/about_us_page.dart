@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:foundervers/widgets/foundervers_logo.dart';
+import 'package:foundervers/widgets/terai_logo.dart';
 
 class AboutUsPage extends StatelessWidget {
   const AboutUsPage({super.key});
@@ -23,7 +23,7 @@ class AboutUsPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'About FounderVers',
+          'About Terai',
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.w600,
@@ -69,10 +69,10 @@ class AboutUsPage extends StatelessWidget {
                 children: [
                   // App Logo
                   Container(
-                    width: isSmallScreen ? 64 : 80,
-                    height: isSmallScreen ? 64 : 80,
+                    width: isSmallScreen ? 180 : 220,
+                    height: isSmallScreen ? 75 : 95,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
                           color: Theme.of(context)
@@ -84,14 +84,14 @@ class AboutUsPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: FounderVersLogo(
-                      width: isSmallScreen ? 64 : 80,
-                      height: isSmallScreen ? 64 : 80,
+                    child: TeraiLogo(
+                      width: isSmallScreen ? 180 : 220,
+                      height: isSmallScreen ? 75 : 95,
                     ),
                   ),
                   SizedBox(height: isSmallScreen ? 12 : 16),
                   Text(
-                    'FounderVers',
+                    'Terai',
                     style: TextStyle(
                       fontSize: isSmallScreen ? 24 : 28,
                       fontWeight: FontWeight.bold,
@@ -121,7 +121,7 @@ class AboutUsPage extends StatelessWidget {
               iconColor: Colors.orange,
               title: 'Our Mission',
               content:
-                  'We believe every great idea deserves the right connections to become reality. FounderVers exists to bridge the gap between visionary founders, passionate investors, and skilled collaborators.',
+                  'We believe every great idea deserves the right connections to become reality. Terai exists to bridge the gap between visionary founders, passionate investors, and skilled collaborators.',
               isSmallScreen: isSmallScreen,
             ),
 

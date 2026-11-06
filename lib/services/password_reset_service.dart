@@ -39,28 +39,17 @@ class PasswordResetService {
         throw Exception('Invalid email format');
       }
 
-      // Determine if we should create user based on purpose
-      bool shouldCreateUser = purpose == 'signup';
-
-      if (kDebugMode) {
-        debugPrint('shouldCreateUser: $shouldCreateUser for purpose: $purpose');
-      }
-
       // Use Supabase's OTP system
       if (purpose == 'signup') {
-        // For signup, use resend with OtpType.signup to trigger the "Confirm Signup" template
-        // This avoids using the "Magic Link" template which might be customized for Password Reset
+        // Resend the Confirm Signup template, which must contain {{ .Token }}.
         await _client.auth.resend(
           type: OtpType.signup,
           email: email,
         );
       } else {
-        // For password reset, use signInWithOtp (Magic Link template)
-        // This sends an email OTP, not a recovery OTP
-        await _client.auth.signInWithOtp(
-          email: email,
-          shouldCreateUser: shouldCreateUser,
-        );
+        // Use Supabase's recovery flow. The Recovery template must contain
+        // {{ .Token }} so the user receives a six-digit OTP, not a magic link.
+        await _client.auth.resetPasswordForEmail(email);
       }
 
       if (kDebugMode) {
@@ -165,13 +154,12 @@ class PasswordResetService {
       if (kDebugMode) {
         debugPrint('Verifying $purpose OTP for: $email');
         debugPrint('OTP length: ${otp.length}');
-        debugPrint('OTP content: $otp');
       }
 
       // Verify OTP with Supabase Auth
-      // Use OtpType.signup for signup verification, OtpType.email for password reset (Magic Link)
-      final otpType = purpose == 'signup' ? OtpType.signup : OtpType.email;
-      
+      // The verification type must match the operation that issued the OTP.
+      final otpType = purpose == 'signup' ? OtpType.signup : OtpType.recovery;
+
       final response = await _client.auth.verifyOTP(
         type: otpType,
         token: otp,

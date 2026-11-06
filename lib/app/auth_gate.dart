@@ -5,10 +5,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:foundervers/app/home_page.dart';
 import 'package:foundervers/features/auth/sign_in_page.dart';
 import 'package:foundervers/features/auth/user_service.dart';
-import 'package:foundervers/widgets/foundervers_logo.dart';
+import 'package:foundervers/widgets/terai_logo.dart';
 import 'package:foundervers/services/bookmark_service.dart';
 import 'package:foundervers/services/notification_service.dart';
-import 'package:foundervers/services/premium_subscription_service.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -57,7 +56,7 @@ class _AuthGateState extends State<AuthGate> {
       (data) {
         final AuthChangeEvent event = data.event;
         final Session? session = data.session;
-        
+
         final bool isAuth = session != null;
 
         if (_isAuthenticated != isAuth) {
@@ -197,8 +196,8 @@ Future<void> _postAuthHousekeeping(User user, BuildContext context) async {
       name: user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? '',
       username: user.email?.split('@')[0],
       fullName: user.userMetadata?['full_name'],
-      // NOTE: avatarUrl intentionally NOT passed here - profile data should 
-      // be managed separately from auth flow to prevent overwriting user's 
+      // NOTE: avatarUrl intentionally NOT passed here - profile data should
+      // be managed separately from auth flow to prevent overwriting user's
       // custom avatar with null from auth metadata
       emailVerified: user.emailConfirmedAt != null,
       updateLastLoginOnlyIfExists: false,
@@ -216,13 +215,6 @@ Future<void> _postAuthHousekeeping(User user, BuildContext context) async {
       debugPrint('🔔 Notification listener started');
     }).catchError((e) {
       debugPrint('⚠️ Failed to start notification listener: $e');
-    });
-
-    // Check and refresh premium subscription status
-    PremiumSubscriptionService().checkPremiumStatus().then((isActive) {
-      debugPrint('💎 Premium status checked: $isActive');
-    }).catchError((e) {
-      debugPrint('⚠️ Failed to check premium status: $e');
     });
   } catch (e, st) {
     if (kDebugMode) debugPrint('Auth housekeeping failed: $e\n$st');

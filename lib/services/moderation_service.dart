@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:crypto/crypto.dart';
-import '../core/env.dart';
 import 'hive_ai_service.dart';
 import 'gpt_text_moderation_service.dart';
 import 'local_text_filter_service.dart';
@@ -41,7 +40,9 @@ class ModerationResult {
 class ModerationService {
   static const String _baseUrl = 'https://api.openai.com/v1/moderations';
   static const String _model = 'omni-moderation-latest';
-  static String get _apiKey => AppEnv.openAIAPIKey;
+  // Direct provider access is intentionally disabled in clients. Active text
+  // moderation is routed through GPTTextModerationService and its Edge Function.
+  static const String _apiKey = '';
 
   // Extremely obvious disallowed terms (lower-case, no punctuation). Keep short & targeted.
   static final List<RegExp> _hardBlockPatterns = [
@@ -215,8 +216,7 @@ class ModerationService {
         softHits.isEmpty; // always true unless high-risk triggered
 
     // 3. Cache lookup (by SHA1 of text and presence of soft hits)
-    final orchestratorKey =
-        'orc:${_hash('v1|${softHits.join('|')}|$text')}';
+    final orchestratorKey = 'orc:${_hash('v1|${softHits.join('|')}|$text')}';
     final cached = _orchestratorCache[orchestratorKey];
     if (cached != null) {
       if (kDebugMode) debugPrint('Orchestrator cache hit');
@@ -708,12 +708,19 @@ class ModerationService {
           statusCode: imageResult.statusCode,
         );
       }
+
+      if (imageResult.pending) {
+        if (kDebugMode) {
+          debugPrint(
+              'Post marked as pending because image moderation is unavailable');
+        }
+        return ModerationResult.pendingResult;
+      }
     }
 
     // All checks passed
     if (kDebugMode) {
-      debugPrint(
-          'Post approved (text and ${imageUrls.length} images checked)');
+      debugPrint('Post approved (text and ${imageUrls.length} images checked)');
     }
     return ModerationResult.approvedResult;
   }
@@ -724,8 +731,6 @@ class ModerationService {
     final r = await moderateText(content: content);
     return r.blocked;
   }
-
-
 
   /// Report a user for violating community guidelines
   Future<bool> reportUser({

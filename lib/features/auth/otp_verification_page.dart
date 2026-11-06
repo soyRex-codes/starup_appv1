@@ -27,7 +27,8 @@ class OtpVerificationPage extends StatefulWidget {
       email: email,
       type: OtpType.passwordReset,
       title: 'Reset Your Password',
-      description: 'Enter the 6-digit code sent to your email to reset your password.',
+      description:
+          'Enter the 6-digit code sent to your email to reset your password.',
     );
   }
 
@@ -37,7 +38,8 @@ class OtpVerificationPage extends StatefulWidget {
       email: email,
       type: OtpType.emailVerification,
       title: 'Verify Your Email',
-      description: 'Enter the 6-digit code sent to your email to verify your account.',
+      description:
+          'Enter the 6-digit code sent to your email to verify your account.',
     );
   }
 
@@ -123,17 +125,17 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           } else {
             // Email verification successful - mark as verified and go home
             await AuthService.instance.markEmailAsVerified();
-            
+
             if (!mounted) return;
 
             Navigator.of(context).pushNamedAndRemoveUntil(
               '/',
               (route) => false,
             );
-            
+
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Email verified successfully! Welcome to FounderVers!'),
+                content: Text('Email verified successfully! Welcome to Terai!'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -233,9 +235,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height - 
-                         MediaQuery.of(context).padding.top - 
-                         kToolbarHeight,
+              minHeight: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top -
+                  kToolbarHeight,
             ),
             child: Padding(
               padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.06),
@@ -243,7 +245,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height * 0.03),
-                  
+
                   // Title and Description
                   Text(
                     widget.title,
@@ -332,7 +334,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                          Icon(Icons.error_outline,
+                              color: Colors.red[700], size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -354,7 +357,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _isOtpComplete && !_isLoading ? _verifyOtp : null,
+                      onPressed:
+                          _isOtpComplete && !_isLoading ? _verifyOtp : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
                         foregroundColor: Colors.white,
@@ -369,11 +373,14 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : Text(
-                              widget.type == OtpType.passwordReset ? 'Verify Code' : 'Verify Email',
+                              widget.type == OtpType.passwordReset
+                                  ? 'Verify Code'
+                                  : 'Verify Email',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -390,13 +397,15 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                       Flexible(
                         child: Text(
                           'Didn\'t receive the code? ',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                         ),
                       ),
                       TextButton(
-                        onPressed: _canResend && !_isLoading ? _resendCode : null,
+                        onPressed:
+                            _canResend && !_isLoading ? _resendCode : null,
                         child: Text(
                           _canResend
                               ? 'Resend'
@@ -416,7 +425,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                   // Security Notice
                   Container(
-                    padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
+                    padding: EdgeInsets.all(
+                        MediaQuery.of(context).size.width * 0.05),
                     decoration: BoxDecoration(
                       color: Colors.blue[50],
                       borderRadius: BorderRadius.circular(12),
@@ -428,17 +438,19 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                         const SizedBox(height: 8),
                         Text(
                           'Security Notice',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue[700],
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[700],
+                                  ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'This code will expire in 5 minutes for your security. Never share this code with anyone.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.blue[600],
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.blue[600],
+                                  ),
                           textAlign: TextAlign.center,
                         ),
                       ],

@@ -1,16 +1,13 @@
 import 'dart:developer';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart' as dotenv;
 import 'package:foundervers/app/auth_gate.dart';
+import 'package:foundervers/core/env.dart';
 import 'package:foundervers/services/network_service.dart';
-import 'package:foundervers/services/iap_service.dart';
-import 'package:foundervers/widgets/foundervers_logo.dart';
+import 'package:foundervers/widgets/terai_logo.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:foundervers/services/push_notification_service.dart';
 import 'package:foundervers/features/feed/feed_history_service.dart';
+import 'package:foundervers/firebase_options.dart';
 
 /// Handles async initialization of Supabase while showing loading UI.
 /// Defers Firebase/Push notifications until after first frame.
@@ -33,10 +30,8 @@ class _AppInitializerState extends State<AppInitializer> {
 
   Future<void> _initializeApp() async {
     try {
-      final supabaseUrl = dotenv.dotenv.maybeGet('SUPABASE_URL') ??
-          const String.fromEnvironment('SUPABASE_URL');
-      final supabaseAnonKey = dotenv.dotenv.maybeGet('SUPABASE_ANON_KEY') ??
-          const String.fromEnvironment('SUPABASE_ANON_KEY');
+      final supabaseUrl = AppEnv.supabaseUrl;
+      final supabaseAnonKey = AppEnv.supabaseAnonKey;
 
       if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
         throw Exception('Missing Supabase configuration');
@@ -77,7 +72,9 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _initializeDeferredServices() async {
     // Firebase (for push notifications)
     try {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       log('✅ Firebase initialized (deferred)');
     } catch (e) {
       log('⚠️ Firebase initialization failed: $e');
@@ -98,21 +95,6 @@ class _AppInitializerState extends State<AppInitializer> {
     } catch (e) {
       log('⚠️ Push Notification initialization failed: $e');
     }
-
-    // Apple In-App Purchase for iOS (premium subscriptions)
-    if (!kIsWeb && Platform.isIOS) {
-      try {
-        final iapService = IAPService();
-        final isAvailable = await iapService.initialize();
-        if (isAvailable) {
-          log('✅ Apple In-App Purchase initialized (deferred)');
-        } else {
-          log('⚠️ Apple In-App Purchase not available');
-        }
-      } catch (e) {
-        log('⚠️ IAP initialization failed: $e');
-      }
-    }
   }
 
   @override
@@ -121,47 +103,61 @@ class _AppInitializerState extends State<AppInitializer> {
     if (_hasError) {
       return Scaffold(
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.wifi_off,
-                  size: 80,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Connection Error',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Unable to connect to the server.\nPlease check your internet connection.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _hasError = false;
-                    });
-                    _initializeApp();
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Icon(Icons.cloud_off_outlined,
+                              color: Theme.of(context).colorScheme.primary),
+                        ),
+                        const SizedBox(height: 22),
+                        Text('We could not connect',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                            textAlign: TextAlign.center),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Check your connection, then try again. Your account and data are safe.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.color),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 26),
+                        FilledButton.icon(
+                          onPressed: () {
+                            setState(() => _hasError = false);
+                            _initializeApp();
+                          },
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Try again'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -172,22 +168,25 @@ class _AppInitializerState extends State<AppInitializer> {
     if (!_isInitialized) {
       return Scaffold(
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SplashLogo(),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.primary,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 260),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SplashLogo(),
+                const SizedBox(height: 30),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(
+                    minHeight: 3,
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.10),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );

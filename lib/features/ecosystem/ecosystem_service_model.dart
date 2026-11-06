@@ -1,5 +1,17 @@
 import 'package:flutter/material.dart';
-import 'business_services_portal.dart';
+
+enum BusinessServiceType {
+  taxHelp,
+  businessRegistration,
+  appDevelopment,
+  marketing,
+  employeeHiring,
+  investorFinding,
+  businessConsultation,
+  marketResearch,
+  patentFiling,
+  softwareAudit,
+}
 
 class ServiceFeature {
   final String title;
@@ -45,10 +57,9 @@ class EcosystemServiceData {
         return BusinessServiceType.marketResearch;
       case 'Patent Filing':
         return BusinessServiceType.patentFiling;
-      case 'Tax Help':
-        return BusinessServiceType.taxHelp;
       case 'Legal':
         return BusinessServiceType.businessRegistration;
+      case 'Tax Help':
       default:
         return BusinessServiceType.taxHelp;
     }
@@ -61,7 +72,7 @@ final List<EcosystemServiceData> ecosystemServices = [
     'Strategic business & technical advice',
     'lib/icons/consultation.png',
     const Color(0xFF673AB7),
-    null,
+    'Coming Soon',
     [
       ServiceFeature(
         'CTO for a Day',
@@ -91,7 +102,7 @@ final List<EcosystemServiceData> ecosystemServices = [
     'Product-market fit analysis',
     'lib/icons/market-research.png',
     const Color(0xFF009688),
-    null,
+    'Coming Soon',
     [
       ServiceFeature(
         'Competitor Analysis',
@@ -117,7 +128,7 @@ final List<EcosystemServiceData> ecosystemServices = [
     'Mobile, Web & Desktop Apps Development',
     'lib/icons/development.png',
     const Color(0xFF00BCD4),
-    'Trending',
+    'Coming Soon',
     [
       ServiceFeature(
         'UI/UX Design',
@@ -151,7 +162,7 @@ final List<EcosystemServiceData> ecosystemServices = [
     'Employee recruitment',
     'lib/icons/HR_Employeer_hiring.png',
     const Color(0xFF4CAF50),
-    null,
+    'Coming Soon',
     [
       ServiceFeature(
         'Pre-vetted Candidates',
@@ -173,7 +184,7 @@ final List<EcosystemServiceData> ecosystemServices = [
     'Advertisement, campaigns, & Reviews',
     'lib/icons/marketting & adverstisement.png',
     const Color(0xFFFF5722),
-    null,
+    'Coming Soon',
     [
       ServiceFeature(
         'Product Explainer Videos',
@@ -195,7 +206,7 @@ final List<EcosystemServiceData> ecosystemServices = [
     'Find funding opportunities',
     'lib/icons/investor.png',
     const Color(0xFFFFB300),
-    'Popular',
+    'Coming Soon',
     [
       ServiceFeature(
         'Pitch Deck Polish',
@@ -217,7 +228,7 @@ final List<EcosystemServiceData> ecosystemServices = [
     'Software audit & security',
     'lib/icons/development.png',
     const Color(0xFF00BCD4),
-    'Trending',
+    'Coming Soon',
     [
       ServiceFeature(
         'Code Quality Audit',
@@ -240,11 +251,9 @@ final List<EcosystemServiceData> ecosystemServices = [
     'lib/icons/patent_filing.png',
     const Color(0xFFE91E63),
     'Coming Soon',
-    [
-      'Patent Search',
-      'Provisional Patent Filing',
-      'Trademark Registration'
-    ].map((e) => ServiceFeature(e, 'Detailed description coming soon...')).toList(),
+    ['Patent Search', 'Provisional Patent Filing', 'Trademark Registration']
+        .map((e) => ServiceFeature(e, 'Detailed description coming soon...'))
+        .toList(),
     'One-time set Fees depending on complexity',
   ),
   EcosystemServiceData(
@@ -253,11 +262,9 @@ final List<EcosystemServiceData> ecosystemServices = [
     'lib/icons/Legal_compliant.png',
     const Color(0xFF9C27B0),
     'Coming Soon',
-    [
-      'Entity Formation (LLC/C-Corp)',
-      'Operating Agreements',
-      'Contract Review'
-    ].map((e) => ServiceFeature(e, 'Detailed description coming soon...')).toList(),
+    ['Entity Formation (LLC/C-Corp)', 'Operating Agreements', 'Contract Review']
+        .map((e) => ServiceFeature(e, 'Detailed description coming soon...'))
+        .toList(),
     '1 Free consultation on Application submission',
   ),
   EcosystemServiceData(
@@ -266,11 +273,9 @@ final List<EcosystemServiceData> ecosystemServices = [
     'lib/icons/tax_help.png',
     const Color(0xFF2196F3),
     'Coming Soon',
-    [
-      'R&D Tax Credits',
-      'Annual Filing',
-      'Bookkeeping Setup'
-    ].map((e) => ServiceFeature(e, 'Detailed description coming soon...')).toList(),
+    ['R&D Tax Credits', 'Annual Filing', 'Bookkeeping Setup']
+        .map((e) => ServiceFeature(e, 'Detailed description coming soon...'))
+        .toList(),
     '1 Free consultation on Application submission',
   )
 ];

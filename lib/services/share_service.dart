@@ -41,7 +41,8 @@ class ShareService {
           final response = await http.get(uri);
           if (response.statusCode == 200) {
             final tempDir = await getTemporaryDirectory();
-            final fileName = 'share_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            final fileName =
+                'share_${DateTime.now().millisecondsSinceEpoch}.jpg';
             final file = File('${tempDir.path}/$fileName');
             await file.writeAsBytes(response.bodyBytes);
             imageFile = XFile(file.path, mimeType: 'image/jpeg');
@@ -89,7 +90,7 @@ class ShareService {
     final buffer = StringBuffer();
 
     // Hook line
-    buffer.writeln('Check out this startup idea:');
+    buffer.writeln('Take a look at this idea on Terai:');
     buffer.writeln();
 
     // Post content
@@ -105,13 +106,10 @@ class ShareService {
     }
 
     buffer.writeln();
-    buffer.writeln('Tap to join the discussion');
+    buffer.writeln('Join the conversation');
     buffer.writeln(shareUrl);
     buffer.writeln();
-    buffer.writeln(
-        'No app yet? Download FounderVers: ${DeepLinkService.fallbackDownloadUrl}');
-    buffer.writeln();
-    buffer.writeln('#startups #entrepreneurship #FounderVers');
+    buffer.writeln('#Terai #ProblemSolvers #BuildTogether');
 
     return buffer.toString();
   }

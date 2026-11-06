@@ -19,9 +19,10 @@ import '../../app/theme.dart';
 import '../../app/widgets/app_header.dart';
 
 class FeedPage extends StatefulWidget {
-  const FeedPage({super.key, this.onNavVisibilityChanged});
+  const FeedPage({super.key, this.onNavVisibilityChanged, this.onCreatePost});
 
   final ValueChanged<bool>? onNavVisibilityChanged;
+  final VoidCallback? onCreatePost;
 
   @override
   FeedPageState createState() => FeedPageState();
@@ -62,7 +63,7 @@ class FeedPageState extends State<FeedPage> {
     _load();
     _checkOnboarding();
     _setupScrollListener();
-    
+
     // Listen for block/unblock events to auto-refresh feed
     _blockSubscription = UserBlockingService().onBlockStateChanged.listen((_) {
       if (mounted) {
@@ -181,7 +182,8 @@ class FeedPageState extends State<FeedPage> {
 
       // Mark posts as seen for Smart Feed algorithm
       if (filtered.isNotEmpty) {
-        FeedHistoryService.instance.markAsSeen(filtered.map((p) => p.id).toList());
+        FeedHistoryService.instance
+            .markAsSeen(filtered.map((p) => p.id).toList());
       }
 
       // Schedule background refresh if cache was stale
@@ -276,7 +278,8 @@ class FeedPageState extends State<FeedPage> {
         context: context,
         barrierDismissible: false, // Prevent accidental dismissal
         builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
             child: ClipRRect(
@@ -373,8 +376,6 @@ class FeedPageState extends State<FeedPage> {
     }
   }
 
-
-
   void _onSearchChanged(String query) {
     // Cancel previous timer
     _searchTimer?.cancel();
@@ -425,7 +426,8 @@ class FeedPageState extends State<FeedPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isLargeScreen = MediaQuery.of(context).size.width > 600;
+    final isLargeScreen = MediaQuery.of(context).size.width >= 700;
+    final theme = Theme.of(context);
 
     // No more client-side filtering - all filtering is now server-side
     final displayPosts = _posts;
@@ -446,14 +448,20 @@ class FeedPageState extends State<FeedPage> {
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOutCubic,
               child: Material(
-                elevation: 3,
-                color: Colors.white,
+                elevation: 0,
+                color: theme.colorScheme.surface,
                 child: SafeArea(
                   bottom: false,
                   child: AppHeader(
                     searchText: _search,
                     onSearchChanged: _onSearchChanged,
                     onClearSearch: _onClearSearch,
+                    onCreatePost: MediaQuery.sizeOf(context).width >=
+                                TeraiBreakpoints.mobile &&
+                            MediaQuery.sizeOf(context).width <
+                                TeraiBreakpoints.desktop
+                        ? widget.onCreatePost
+                        : null,
                     onFilterTap: _openFilterSheet,
                     onSearchFocusChanged: _handleSearchFocusChanged,
                     hasActiveFilters:
@@ -472,13 +480,16 @@ class FeedPageState extends State<FeedPage> {
             child: RefreshIndicator(
               onRefresh: _refreshFeed,
               color: AppColors.primary, // Use orange for refresh indicator
-              backgroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.surface,
               displacement: 40,
               strokeWidth: 2.5,
               child: _loading
                   ? ListView(
                       controller: _scrollCtrl,
-                      padding: EdgeInsets.zero,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isLargeScreen ? 24 : 12,
+                        vertical: 12,
+                      ),
                       children: [
                         ...List.generate(
                             4,
@@ -491,13 +502,18 @@ class FeedPageState extends State<FeedPage> {
                                 )),
                       ],
                     )
-                    : _error != null
-                        ? ErrorStateWidget(
-                            onRetry: () => _load(reset: true),
-                          )
-                        : ListView.builder(
+                  : _error != null
+                      ? ErrorStateWidget(
+                          onRetry: () => _load(reset: true),
+                        )
+                      : ListView.builder(
                           controller: _scrollCtrl,
-                          padding: EdgeInsets.zero,
+                          padding: EdgeInsets.fromLTRB(
+                            isLargeScreen ? 24 : 12,
+                            12,
+                            isLargeScreen ? 24 : 12,
+                            24,
+                          ),
                           itemCount: displayPosts.length + 1,
                           itemBuilder: (context, i) {
                             if (i == displayPosts.length) {
@@ -536,14 +552,14 @@ class FeedPageState extends State<FeedPage> {
 
                             return Padding(
                               padding: EdgeInsets.only(
-                                top: i == 0 ? 8 : 0,
-                                bottom: 12,
+                                top: i == 0 ? 4 : 0,
+                                bottom: 8,
                               ),
                               child: isLargeScreen
                                   ? Center(
                                       child: ConstrainedBox(
                                         constraints:
-                                            const BoxConstraints(maxWidth: 700),
+                                            const BoxConstraints(maxWidth: 680),
                                         child: postCard,
                                       ),
                                     )

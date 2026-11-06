@@ -153,11 +153,10 @@ class NotificationCard extends StatelessWidget {
         color: _getIconBackgroundColor(),
         shape: BoxShape.circle,
       ),
-      child: Center(
-        child: Text(
-          notification.icon,
-          style: const TextStyle(fontSize: 20),
-        ),
+      child: Icon(
+        notification.icon,
+        size: 20,
+        color: notification.color,
       ),
     );
   }
